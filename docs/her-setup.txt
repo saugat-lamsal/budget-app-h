@@ -1,0 +1,166 @@
+HER APP ONLINE: HIS STEPS, THEN HERS (plain steps)
+
+Her roadmap, Phase 2. Plaid's test bank only: nothing here touches a real
+account. About an hour. No account was made from here: each step below is
+his to do (or hers, where it says so), or Claude's at his word.
+
+Her app: budget-app-h-lbwr, at https://budget-app-h-lbwr.fly.dev
+Her volume: budget_h_data (ewr, 1 GB)
+Her backups: her own R2 bucket, folder budget-h
+If the app name is taken in step 2, pick another (lowercase letters, digits
+and dashes) and change it in fly.toml in two places (app, and APP_ORIGIN).
+Use your name wherever this says budget-app-h-lbwr.
+
+Every fly command below names the app (--app budget-app-h-lbwr), so it can
+never reach his app (budget-app-x7q2) from the wrong folder.
+
+Costs: about $3.84 a month more on his Fly account (one small machine and a
+1 GB volume, Fly's prices of Oct 2026). R2 and UptimeRobot stay free at
+this size.
+
+
+WHEN
+
+- Steps 0 to 4 can be done any time.
+- The first deploy (step 5) can come any time after PR 2 is merged. It is
+  harmless early: the test bank only, and on connection day her real books
+  get a new volume and backup folder anyway. Until PR 6, the test bank
+  connects one made-up bank by itself on the first start; the rehearsal
+  with two made-up banks waits for PR 6.
+- Her real banks: only on connection day (her roadmap, Phase 3), after
+  PR 12.
+
+
+0. A FOLDER OF ITS OWN FOR HER REPO, ON THIS PC
+
+   Her repo was first cloned into a folder the Claude app made for one
+   session, which goes away with that session. Give it a lasting home
+   next to his, in PowerShell:
+        cd C:\Users\sauga\dev
+        git clone https://github.com/saugat-lamsal/budget-app-h
+        cd budget-app-h
+        git remote add upstream https://github.com/saugat-lamsal/budget-app
+        git remote set-url --push upstream DISABLED
+        git config merge.ours.driver true
+        npm ci
+   Check: git remote -v shows upstream's push as DISABLED. Every command
+   below runs in this folder (C:\Users\sauga\dev\budget-app-h), never in
+   his (C:\Users\sauga\dev\budget-app).
+
+1. HER PLAID TEAM'S TEST KEYS (her team is already made)
+   a. In Plaid's dashboard, switch to her team (not his).
+   b. Check it says Trial, 0 of 10 connections.
+   c. Developers > Keys: copy the client_id and the Sandbox secret. Not the
+      Production secret: that one waits for connection day.
+   d. Never submit a Production application for her team either (it is
+      one-way and ends the Trial).
+
+2. HER FLY APP AND ITS VOLUME (on his Fly account; not deployed yet)
+        fly apps create budget-app-h-lbwr
+        fly volumes create budget_h_data --app budget-app-h-lbwr --region ewr --size 1 --yes
+   One volume, on purpose, as on his: the R2 backups cover it.
+
+3. HER OWN R2 BUCKET (on his Cloudflare account)
+   a. R2 Object Storage > Create bucket: name budget-h-backups, location
+      Automatic.
+   b. R2 > Manage API tokens > Create API token:
+        Permissions: Object Read & Write
+        Specify bucket: Apply to specific buckets only > budget-h-backups
+        TTL: Forever
+      A token of its own, for her bucket only: his token cannot read her
+      books, and hers cannot read his. Copy, before closing the page (shown
+      once): the Access Key ID, the Secret Access Key, and the S3 endpoint
+      (https://<account id>.r2.cloudflarestorage.com, without the bucket
+      name after it).
+
+4. HER SECRETS (new ones: never his)
+   a. Two new keys, in her folder:
+        node -e "console.log(require('node:crypto').randomBytes(32).toString('base64'))"
+      (her BANK_TOKEN_KEY), and
+        npm run push-keys
+      (her VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY).
+   b. In her folder make a file named .env.fly (git never takes it:
+      .gitignore has .env.*) with these lines, filled in:
+        PLAID_CLIENT_ID=      (her team's, from 1c)
+        PLAID_SECRET=         (her team's Sandbox secret, from 1c)
+        BANK_TOKEN_KEY=       (from 4a)
+        VAPID_PUBLIC_KEY=     (from 4a)
+        VAPID_PRIVATE_KEY=    (from 4a)
+        VAPID_SUBJECT=mailto:(the email push services may write to)
+        R2_ENDPOINT=          (from 3b)
+        R2_BUCKET=budget-h-backups
+        R2_ACCESS_KEY_ID=     (from 3b)
+        R2_SECRET_ACCESS_KEY= (from 3b)
+      Watch for Notepad adding a byte order mark at the start (it did on
+      his connection day): save as "UTF-8", not "UTF-8 with BOM".
+   c. Send them to her app (this keeps them out of PowerShell's history):
+        Get-Content .env.fly | fly secrets import --app budget-app-h-lbwr
+   d. Delete .env.fly. Keep her BANK_TOKEN_KEY and R2 keys in the password
+      manager, in entries of their own, named for her app. Without her
+      BANK_TOKEN_KEY a rebuilt copy cannot open her bank connections.
+   e. fly secrets list --app budget-app-h-lbwr shows the ten names (never
+      the values).
+
+5. THE FIRST DEPLOY (in her folder, on main)
+        fly deploy --app budget-app-h-lbwr --ha=false --remote-only
+   (--ha=false: one machine only; Fly would otherwise add a second.)
+   Then:
+        fly status --app budget-app-h-lbwr          one machine, started
+        fly machine list --app budget-app-h-lbwr    exactly one
+        fly logs --app budget-app-h-lbwr            "starting with empty books",
+                                                    "Budget app: Plaid's test bank only, hosted",
+                                                    "the test bank is connected"
+   Open https://budget-app-h-lbwr.fly.dev/health: it says ok.
+   In Cloudflare, budget-h-backups now has files under budget-h/.
+   From the second deploy on, every deploy starts with the deploy check,
+   in her folder (it reads her app's name from fly.toml):
+        npm run deploy-check
+   and deploys only on "The backup works.", then that exact image.
+
+6. THE FIRST RESTORE TEST
+        fly ssh console --app budget-app-h-lbwr -C "node /app/serve/restore-check.mjs"
+   The last line must be: The backup works.
+   Again once a month, and after anything odd.
+
+7. THE UPTIME MONITORS (on his UptimeRobot account)
+   a. New monitor: HTTP(s), https://budget-app-h-lbwr.fly.dev/health, every
+      5 minutes, alert to his email (and hers, if she wants).
+   b. New monitor: HTTP(s), https://budget-app-h-lbwr.fly.dev/health/backups,
+      every 5 minutes, the same alerts.
+   c. Name both for her app, so an alert says which app is down.
+
+8. ON HER IPHONE (hers; he reads her the code)
+   a. In Safari open https://budget-app-h-lbwr.fly.dev. Share > Add to Home
+      Screen > Add. From now on open it from the home screen only.
+   b. The login page: tap "Use a one-time code". On his PC, in her folder:
+        fly ssh console --app budget-app-h-lbwr -C "node /app/serve/login-code.mjs"
+      She types the 12 digits (good once, for 15 minutes). Face ID makes her
+      passkey. Home opens.
+   c. Setup day: Home says Start setup day. Go through it with the test
+      bank's made-up accounts.
+   d. Settings > Notifications > Turn on. Allow when iOS asks.
+   e. Settings > Notifications > Send a test alert, with the phone locked to
+      see it on the lock screen.
+
+
+HER IPHONE CHECKLIST (tick each)
+
+[ ] The permission prompt came when she tapped Turn on (not before), and
+    the card then says "On for this phone".
+[ ] The test alert came, on the lock screen, in words with no amount.
+[ ] A real alert (the 8:00 PM daily review, with something waiting in
+    Review) came with no amount on the lock screen (10.10).
+[ ] Tapping the test alert opened Settings; tapping the daily review opened
+    Review.
+[ ] It works against the test bank: Home shows safe to spend; Settings >
+    Bank shows "Checked at" a time in the last hour; Review lists the test
+    bank's items; one answer in Review goes through.
+[ ] Logging out and back in with Face ID works (no code the second time).
+    Logging out turns notifications off on that phone (10.11): Turn on
+    again.
+[ ] The app opens full screen from the home screen, and the notch and the
+    home bar cover nothing.
+[ ] Both UptimeRobot monitors show up.
+
+Tell Claude which boxes are not ticked, and what was seen. Nothing from her
+screens (amounts, names) goes in the repo.

@@ -7,3 +7,4 @@ budget-app-rulebook.md merge=ours
 budget-app-roadmap.md merge=ours
 fly.toml merge=ours
 litestream.yml merge=ours
+test/hosting-config.test.ts merge=ours

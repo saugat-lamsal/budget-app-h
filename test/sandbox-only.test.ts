@@ -52,15 +52,18 @@ describe('safety: nothing points at a real bank', () => {
   });
 
   // Phase 7 (his yes, Oct 12): fly.toml, the hosted server's settings, is the
-  // one file that says production. Nothing else may set it, in any form.
-  it('safety: no file sets PLAID_ENV to anything but sandbox, but fly.toml, which says production', () => {
+  // one file that may say production. Nothing else may set it, in any form.
+  // Her plan, PR 2: her fly.toml says sandbox until her connection day
+  // (test/hosting-config.test.ts holds it to that), so here fly.toml says
+  // production at most once, in exactly that form.
+  it('safety: no file sets PLAID_ENV to anything but sandbox, but fly.toml, which may say production', () => {
     const found = projectFiles().filter((path) => {
       const text = readFileSync(new URL(path, repoRoot), 'utf8');
       return realEnv.test(text) || (/\.ya?ml$/i.test(path) && realEnvYaml.test(text)) || (/\.toml$/i.test(path) && realEnvToml.test(text));
     });
-    expect(found).toEqual(['fly.toml']);
+    expect(found.filter((path) => path !== 'fly.toml')).toEqual([]);
     const said = [...readFileSync(new URL('fly.toml', repoRoot), 'utf8').matchAll(new RegExp(realEnvToml.source, 'gm'))].map((m) => m[0].trim());
-    expect(said).toEqual([join('PLAID_ENV', ' = "production"')]);
+    expect(said).toEqual(found.includes('fly.toml') ? [join('PLAID_ENV', ' = "production"')] : []);
   });
 
   it('safety: every Plaid address in the server code is the test bank, the real one in the lock alone, or Plaid Link\'s own script and frame on the Bank page (1.1)', () => {

@@ -1,4 +1,6 @@
 // Types for scripts/deploy-check-lib.mjs, so its tests are type-checked.
+// The app named in fly.toml (her plan, PR 2).
+export function appOf(flyToml: string): string;
 export const APP: string;
 export const CHECK_COMMAND: string;
 export const WORKS: string;

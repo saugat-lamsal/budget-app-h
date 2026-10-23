@@ -14,10 +14,12 @@ dbs:
       type: s3
       endpoint: ${R2_ENDPOINT}
       bucket: ${R2_BUCKET}
-      # Phase 7: the real bank's books, in a folder of their own. The test
-      # bank's are in "budget", kept as the way back; a new machine with an
-      # empty volume restores from here, so it never brings those back.
-      path: budget-real
+      # Her books, in her own bucket (never upstream's). The test bank's
+      # books are in "budget-h". On connection day her real books get a
+      # folder of their own (budget-h-real), so a new machine with an empty
+      # volume never brings the test bank's back. This file is always hers
+      # in a merge from upstream (.gitattributes).
+      path: budget-h
       region: auto
       access-key-id: ${R2_ACCESS_KEY_ID}
       secret-access-key: ${R2_SECRET_ACCESS_KEY}
