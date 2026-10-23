@@ -948,8 +948,10 @@ export function SwipeSort({
     if (!reduced && from !== 'translateX(0px)') el.animate([{ transform: from }, { transform: 'translateX(0px)' }], { duration: QUICK_S * 1000, easing: `cubic-bezier(${EASE.join(', ')})` });
   };
   // An answer that went through takes the card off the screen with its item.
-  // One that did not (it was refused, or nothing happened) brings it back.
-  useEffect(() => {
+  // One that did not (it was refused, or nothing happened) brings it back,
+  // in the same commit that shows the refusal: a passive effect can run after
+  // a frame with the refusal already drawn (B264, on a busy machine).
+  useLayoutEffect(() => {
     if (!busy && flown.current) bringBack();
   });
   useEffect(() => {
