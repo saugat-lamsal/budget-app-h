@@ -1,0 +1,74 @@
+HER QUESTIONS (started Oct 23, 2026)
+
+Questions about her setup, so they never mix with upstream's QUESTIONS.md.
+Part A (HA1, HA2, ...) needs his answer, or hers through him. Part B (HB1,
+...) is readings made while building, for him to check. Each answer goes
+into the rulebook as a section from 60 up, with his OK.
+
+No numbers from her real accounts are written here.
+
+
+PART A. WAITING FOR AN ANSWER
+
+HA1 (plan Q2). A Wishlist item bought for less or more than its price.
+    Rule 50.3 (approved text, PR 10).
+    Option 1: mark it bought, and the bucket goes down by what it really
+    cost. The difference stays in, or comes out of, Wishlist.
+    Option 2: ask each time whether the difference comes from Wishlist or
+    from wants.
+    And a refunded item: (a) it stays bought, and she can add it again;
+    (b) it comes back on the list in its old place.
+    Recommended: option 1 and (a). It is what the bank did, it needs no
+    extra question, and a refund often means the item was swapped, not
+    dropped.
+    Needed for PR 10.
+
+HA2 (plan Q4). Her phone. Is it an iPhone?
+    iPhone: notifications need the app added to the home screen (iOS 16.4
+    or later), as on his. Android: Chrome works, with or without the home
+    screen.
+    Recommended: whatever she has. The app already works on both, and only
+    the setup steps in docs/her-setup.txt differ. Testing stays in Chromium
+    and WebKit, as now.
+    Needed before her phone's setup (Phase 2).
+
+HA3 (plan Q5). Her home time zone and her pay schedule.
+    Both are settings already; only their starting values are needed. Time
+    zone: where she lives (America/New_York to start, as upstream). Pay
+    schedule: every 14 days, or twice a month (the 15th and the last day),
+    read off her pay stubs.
+    Recommended: set both on setup day from her own answers. Nothing has
+    to be built for either.
+    Needed before her setup day.
+
+HA4 (plan Q6). Two paychecks waiting for her yes at once.
+    Rule 51.2 (approved text, PR 4).
+    Option 1: the older one is answered first, and a yes to the newer one
+    is refused until then.
+    Option 2: either order.
+    Recommended: option 1. Pay periods have to start in date order (B53),
+    and saying yes out of order would split the newer paycheck before the
+    older one has closed its pay period.
+    Needed for PR 4.
+
+HA5 (plan Q7). Fly region for her app.
+    ewr (New Jersey) as on his, or the region nearest where she lives.
+    Recommended: ewr unless she is far from the East Coast. The app is one
+    person's and light; a nearer region only saves a few tenths of a
+    second per screen.
+    Needed before his Fly steps (Phase 2).
+
+
+PART A, ANSWERED
+
+Plan Q1, Oct 23: the Wishlist money is kept in the savings account. And
+    when she buys a Wishlist item, the app tells her to move that amount
+    from savings to checking before the card is due (rule 50.4, approved).
+Plan Q3, Oct 23: her own Plaid team, already made.
+Plan Q8, Oct 23: the bank names stay (Capital One, American Express).
+    Never account numbers, balances, her stores or her name.
+
+
+PART B. READINGS FOR HIM TO CHECK
+
+(none yet)

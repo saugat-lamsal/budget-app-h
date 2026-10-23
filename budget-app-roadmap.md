@@ -1,121 +1,97 @@
-# Budget App Roadmap
+# Budget App Roadmap, her setup
 
 Each phase has a finish line. We do not start the next phase until the
-current one crosses it. Sizes are rough guesses, not promises.
+current one crosses it. The pull requests are the ones in
+docs/her-plan.txt, in that order. Sizes are rough guesses, not promises.
+
+Upstream's roadmap (Phases 0 to 8 for his setup) is done up to his Phase 7
+and stays in upstream's history. Everything it built is the starting point
+here: the money math, the simulator, the bank connection, the screens, the
+alerts, the phone, hosting and backups.
 
 
-## Phase 0. Setup (small)
+## Phase 0. The repo (small) - done Oct 23, 2026
 
-- Create the project and put the rulebook in it.
-- TypeScript, with a test runner that runs everything with one command.
-- Sign up for Plaid and get test-bank keys. No real accounts yet.
+- A copy of upstream main (af53eee) in budget-app-h. upstream is fetch
+  only (push URL DISABLED), and origin is budget-app-h.
+- The plan, approved: docs/her-plan.txt.
+- PR 1: her CLAUDE.md, this roadmap, her rulebook draft H1, her notes,
+  and how to merge from upstream (docs/her-merging.txt).
 
-Finish line: one command runs the tests and they pass.
-
-
-## Phase 1. The money math (large)
-
-- Build the bucket math as its own piece: no screens, no bank, no database.
-- Cover the rulebook: payday, spending, transfers, deposits, other people's
-  money, mom, safe to spend, self-check, changes, setup day.
-- All amounts in whole cents.
-- At least one test per numbered rule, named after the rule (for example
-  "4.6 pending charge counts once").
-
-Finish line: every numbered rule has a passing test.
+Finish line: the plan is approved, and PR 1 is merged.
 
 
-## Phase 2. Stress testing (medium)
+## Phase 1. Her setup in the code (large)
 
-- Simulated you: a script that invents a realistic money life and
-  fast-forwards through it. Paychecks every two weeks, card swipes, pending
-  charges that post later, refunds, split purchases, mom payments on random
-  days, friends' cash in and out, card payments, three-paycheck months,
-  settings changed mid-year.
-- Random scenarios: thousands of made-up histories, each checked against
-  rules that must always hold:
-  - the paycheck parts add up to the paycheck exactly
-  - nothing is counted twice
-  - the self-check passes on every simulated day
-  - a transfer between your own accounts never changes a bucket
-- Second opinion: a separate AI agent writes its own tests from the rulebook
-  without seeing the code. Any disagreement gets settled against the
-  rulebook, and the rulebook gets clearer if it was vague.
+Each pull request stops for his review before it is merged. The ones that
+change the money math get the full testing bar (CLAUDE.md, point 7).
 
-Finish line: thousands of simulated years pass with zero self-check failures,
-and both sets of tests pass.
+- PR 2: hosting config for her own Fly app (no account made).
+- PR 3: the mom reserve and the old card, switched off and hidden. Her
+  simulated life starts. Full bar.
+- PR 4: "Ask before splitting a paycheck". Full bar.
+- PR 5: the second card. Full bar.
+- PR 6: two bank connections. The long runs through the bank connection.
+- PR 7: both cards on Home, set aside, reminders per card.
+- PR 8: the statement view, per card.
+- PR 9: the Wishlist bucket, and moving Wishlist money for a purchase
+  (50.4). Full bar. Second opinion recommended.
+- PR 10: Wishlist items. Full bar.
+- PR 11: Trends for her setup.
+- PR 12: the end check: break-it on every break new in PRs 3 to 11, 1,000
+  of her simulated lives of 5 years, 20 years through the bank connection
+  and the database with restarts, an agent through a full pay period on
+  the screens, the table of every rule and its tests
+  (docs/her-report.txt).
 
-
-## Phase 3. Bank connection, test bank only (medium)
-
-- Connect to Plaid's test bank with made-up accounts and transactions.
-- Pull transactions, balances, and credit card due dates into a database.
-- Handle pending charges turning into posted ones.
-- Store the bank access key encrypted, on the server only.
-
-Finish line: test-bank activity flows in and the app's totals match the test
-bank's balances.
+Finish line: section H of the rulebook is empty (every approved text is in
+force, with its tests), every numbered rule has a passing test, and PR 12's
+runs pass with zero self-check failures.
 
 
-## Phase 4. The screens (large)
+## Phase 2. Hosting, test bank only (small)
 
-- Login with a passkey or Face ID.
-- Home: safe to spend, days to payday, anything needing attention.
-- Buckets: what is left in each, mom reserve, held for others.
-- Daily review: one tap per unsorted item, with "always do this". A refund
-  lists the purchases it likely belongs to (QUESTIONS.md A15).
-- Payday: move-to-savings amount and the leftover choice.
-- Settings: every number and rule, plus the change log.
-- Setup day, including bank rules suggested from the bank's own labels, for
-  you to confirm (QUESTIONS.md A12).
-- An AI agent uses the app in a browser like a person would and checks that
-  what the screens show matches the money math.
+- His steps in docs/her-setup.txt (PR 2): her own Fly app and volume, her
+  own R2 bucket and token, new secrets (bank key, push keys, her Plaid
+  team's sandbox keys), UptimeRobot on /health and /health/backups.
+- The deploy check before every deploy, from the first one.
+- Her phone: the one-time code, her passkey, the home-screen app,
+  notifications, the test alert.
+- The rehearsal: two made-up banks through Plaid's real window, the four
+  picks, setup day on the test bank.
 
-Finish line: an agent completes a full simulated pay period through the
-screens and every number matches.
+Finish line: the app works on her phone against the test bank, with both
+made-up banks connected and the self-check passing.
 
 
-## Phase 5. Reminders and alerts (medium)
+## Phase 3. Connection day (small)
 
-- Phone notifications from the home-screen app.
-- Card reminders, low and empty bucket, daily review, self-check mismatch,
-  bank needs re-login, and the bank taking back a transaction (10.6).
-- Tested with a fake clock so we can jump to any date.
+- The switch PR: her Plaid team's production secret, PLAID_ENV production,
+  a fresh volume and backup folder.
+- She connects Capital One, then American Express, typing her own logins
+  in Plaid's window (2 of her team's 10).
+- Check that each bank sends what the app needs: transactions, balances,
+  and each card's statement balance, minimum, due date and statement date.
+  Anything missing becomes a question before the trial starts.
+- Setup day with her real balances and her split.
 
-Finish line: in simulation, every alert fires at the right time, once, and
-never when it should not.
-
-
-## Phase 6. Security check and hosting (small)
-
-- Pick hosting and put the app online.
-- Confirm: bank key encrypted, no secrets in the phone app, login required
-  on every screen, backups on, nothing sensitive in logs.
-
-Finish line: the checklist passes and the app works on your iPhone against
-the test bank.
+Finish line: setup day is done and the self-check passes.
 
 
-## Phase 7. Trial on your real accounts (about a month)
+## Phase 4. Trial on her real accounts (about a month)
 
-- Connect Bank of America (uses 1 of your 10 slots).
-- Do setup day with real balances.
-- Run for two pay periods. Once a week, compare the app to your statements.
+- Run for two pay periods. Once a week, compare the app with her
+  statements, card by card (the statement view helps).
 - Any mismatch becomes a new test before it gets fixed.
-- Keep a copy of the real history, with names removed, as a permanent test
-  that every future change must pass.
+- Nothing from her real accounts goes in the repo, not even with names
+  removed.
 
-Finish line: 30 days in a row with no self-check mismatches and no surprises
-against your statements.
+Finish line: 30 days in a row with no self-check mismatches and no
+surprises against her statements.
 
 
-## Phase 8. Live
+## Phase 5. Live
 
-- You rely on the alerts and numbers day to day.
+- She relies on the alerts and numbers day to day.
 - The daily self-check stays on for good.
-- Later, if you want them: charts, subscription spotting, savings goals.
-
-
-## Waiting on
-
-- Promo end date for the old card. Needed for the payoff countdown only.
+- Upstream's fixes are merged in as they come (docs/her-merging.txt).

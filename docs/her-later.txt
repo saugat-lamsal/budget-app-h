@@ -1,0 +1,34 @@
+THINGS TO COME BACK TO, HER SETUP (started Oct 23, 2026)
+
+One list of every fix, change and idea for her app, so nothing is lost.
+Upstream's own list is docs/later.txt (his, read-only here). Each item is
+done the usual way: his OK where the rulebook changes, a test first, then
+the code. No numbers from her real accounts are written here; "nnnn" stands
+for an account's last digits.
+
+Marked: FIX (the app does something wrong or unhelpful), DECIDE (needs a
+call first), HIS (a step only he can do), HERS (a step only she can do),
+LATER (an idea for after her trial).
+
+
+FROM THE PLAN (Oct 23)
+
+1. DECIDE. HA1 to HA5 in docs/her-questions.txt (plan Q2, Q4 to Q7).
+
+2. HIS, Phase 2. His steps in docs/her-setup.txt (PR 2): her Fly app and
+   volume, her R2 bucket and token, the secrets, UptimeRobot.
+
+3. HIS, on every machine that merges upstream: git config
+   merge.ours.driver true (docs/her-merging.txt). Done in the first
+   clone, Oct 23.
+
+4. LATER. Upstream's later.txt items that may matter to her too, once her
+   trial shows: Plaid timing gaps (his B230, B231, already built), a
+   paycheck split across two accounts by her employer (his item 4), a
+   bank leaving out a card's statement date (his A52, built as the closing
+   day per card), bucket suggestions in Review (his item 12, not built).
+
+5. WATCH, connection day. What Capital One and American Express each send
+   for the cards (statement date, balance, minimum, due date). Bank of
+   America left out the statement date; either of hers may leave out
+   something else.

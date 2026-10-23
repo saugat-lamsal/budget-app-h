@@ -1,7 +1,19 @@
-# Budget App Rulebook (draft 30)
+# Budget App Rulebook, her setup (draft H1)
 
 This is how the app treats every kind of money movement. Each rule has a
-number so a test can point at it. Nothing gets coded until you approve this.
+number so a test can point at it. Nothing gets coded until he approves it.
+
+How this rulebook is built (draft H1, Oct 23, 2026). It starts from
+upstream's rulebook, draft 30, kept word for word in sections 0 to 42,
+with every number, because the code is upstream's and its tests are named
+after those numbers. Today the code does exactly what sections 0 to 42 say,
+for upstream's setup (one bank, the old card, the mom reserve). Her setup is
+in section "H. Approved for her setup, not built yet" at the end: the texts
+he approved on Oct 23, 2026 (docs/her-plan.txt). A text there is not in
+force until the pull request named above it moves it into its place here,
+with its tests. Until then, the rule it replaces is the one in force. "You"
+is the owner. New rules are numbered from 50, and her answers will be
+sections from 60.
 
 
 ## 0. Ground rules
@@ -1071,3 +1083,283 @@ a.  Future and Habits on the Trends tab, as 40.10 to 40.17: Needs and Wants
     within 10%, and only the ones still going are listed; the Wants streak
     counts pay periods that ended with Wants not overspent; the fixed
     numbers are not settings (QUESTIONS.md A59).
+
+
+## H. Approved for her setup, not built yet
+
+His OK, Oct 23, 2026 (docs/her-plan.txt, with his answers to its Q1, Q3
+and Q8). None of this is in force yet. Each part names the pull request
+that moves it into its place above, with its tests; until then the rule it
+replaces stands. The texts are indented here only so they are not yet
+counted as rules (test/every-rule-has-a-test.test.ts); in place they are
+written like every other rule. A sentence marked "(waits on HAn)" is the
+recommended reading of an open question in docs/her-questions.txt, and may
+change with the answer.
+
+### PR 3. No mom reserve, no old card
+
+  Off in this setup. These rules are part of the app and keep their tests,
+  but this setup has no mom reserve and no old card, and they never apply:
+  3.2, 5.2, 5.4, 5.5, 7.6 (the "for mom" choice), 8.1 to 8.4, 9.2, 9.5,
+  12.4, 40.13, and the old card's share in 10.14. Being off is fixed on
+  setup day and is not a setting on the Settings screen. Off is not zero:
+  nothing about them is shown or offered anywhere. (This becomes a section
+  of its own, after section 1.)
+
+  Section 2 loses the mom reserve, the mom monthly target, the mom rule,
+  the old card promo end date and the old card's closing day.
+
+  12.2  App side: savings + needs + wants + held for others + unsorted
+        money in - unsorted spending. (Unsorted money in as now.)
+
+  40.2 and 40.4 never show "Old card payment".
+
+### PR 4. Ask before splitting a paycheck
+
+  Section 2, a new line: Ask before splitting a paycheck: on. While on,
+  every paycheck waits for your yes before it is split (3.1). Off: a
+  deposit the paycheck rule matches is split by itself, as soon as it
+  posts.
+
+  3.1   A deposit that matches the paycheck rule is a paycheck. With "Ask
+        before splitting a paycheck" on, it first waits in review: it
+        shows the amount and what each bucket would get (3.3, with the
+        split the next paycheck uses, 13.1), and nothing moves until you
+        say yes. Yes splits it and starts the new pay period on the day it
+        arrived, not the day you answer, exactly as "This is my paycheck"
+        does (6.1). "Not a paycheck" gives it the other choices of 6.1
+        (other income, payback, not mine). With the setting off, a
+        matching deposit is split by itself and starts a new pay period.
+
+  51.1  A paycheck waiting for your yes is money in waiting in review: it
+        counts in the self-check (12.2) and not in safe to spend (11.3).
+        Home says "Paycheck waiting for your yes" with its amount and a way
+        to Review. If the split it would get changes while it waits (a
+        split change, 13.1), Review shows the new parts. A yes about parts
+        that are no longer what it would get is refused, and nothing
+        changes (13.7).
+  51.2  Two paychecks waiting: the older one is answered first. A yes to
+        the newer one is refused while the older one waits, and says so.
+        (waits on HA4)
+  51.3  The early paycheck check (3.7) still applies: a paycheck less than
+        10 days after the last one says so on its card.
+
+  10.15 A paycheck is waiting for your yes: you are told once, when it
+        posts. Quiet hours apply (10.8), a tap opens Review, and the amount
+        is shown only if the lock screen setting allows it (10.10). The
+        payday alert (10.14) comes at your yes, not before.
+
+  13.2, a sentence added: Setting the paycheck rule while "Ask before
+  splitting a paycheck" is on marks matching deposits as paychecks waiting
+  for your yes; it splits none of them.
+
+### PR 5. The second card
+
+  Section 1 becomes "1. Accounts (two banks, two connections)":
+  - Capital One: checking (debit card), savings, and the Capital One card.
+  - American Express: the Amex card.
+  Both cards are used day to day and work the same way.
+
+  1.2   Which account is which. After connecting, before setup day, you say
+        which of the banks' accounts is checking, savings, the Capital One
+        card, and the Amex card, each once, from either connection. Nothing
+        is read from either bank until all four are picked. If one is
+        missing, log in to its bank again to add it (1.3). Once tracking
+        starts they cannot change. An account that is none of the four is
+        never read.
+  4.1   A purchase on the debit card or on either card comes out of a
+        bucket on the day of the purchase.
+  4.8   Fees and interest on either card go to review. Suggested bucket:
+        needs.
+  5.1   Checking or savings to either card: not spending. The purchases
+        were already counted under 4.1.
+  9.1   Each card: reminders show the statement balance, the minimum, and
+        the due date.
+  9.3   Each card: reminders continue until the payments the app sees
+        since the statement add up to the full statement balance. Paying
+        less usually means interest on the rest. (The rest of 9.3 as now:
+        which statement a payment counts toward, B28, B47.)
+  9.8   As now, for each card, with each card's own closing day (section
+        2), and the words name the card: "Card reminders are off for the
+        Amex card: the bank did not send its statement date."
+  12.1  Bank side: checking + savings - the Capital One card - the Amex
+        card. For checking and savings, as now. For each card, what it
+        owes, including pending charges (they already count in the buckets
+        under 4.6).
+  12.6  As now, with lines for each card as for the everyday card.
+  14.2  You assign the starting money (checking + savings - both cards'
+        balances) across savings, needs, wants, Wishlist and held for
+        others. (The rest of 14.2 as now.)
+
+### PR 6. Two bank connections
+
+  1.1   Connecting the banks. This setup has two connections: Capital One,
+        then American Express. "Connect a bank" is offered while fewer than
+        two are connected. It asks first: each connection uses 1 of the 10
+        Plaid allows, and one that is removed never comes back. Each bank's
+        own login opens (through Plaid). The app keeps each connection the
+        moment it gets it, sealed, on the server only. The app never makes
+        a third, never connects the same bank twice, and never removes one.
+  1.3   Logging in to a bank again. For each connection: when that bank
+        needs it (10.5), when its permission is running out (10.13), or to
+        add an account that is missing, Settings offers "Log in to Capital
+        One again" (or American Express). It keeps the same connection: it
+        never uses another of the 10, and nothing already read changes.
+  0.5   If the app's totals do not match the banks, it says so instead of
+        showing a number it cannot back up. If either bank cannot be read,
+        Home shows the last safe to spend that both banks backed up,
+        greyed, with the day and time it was checked, and says which bank
+        could not be read.
+  0.7   As now, with each connection's last read and last sync.
+  12.3, a sentence added: The check uses each bank's latest good read. When
+  one bank was read and the other could not be, the check waits, as when
+  the bank is still catching up (10.4).
+  10.5, 10.7 and 10.13: for each connection, and each alert names the bank.
+
+  Section 2, the sync line: each sync reads both banks. Plaid's webhook for
+  one bank syncs that bank. A sync where one bank fails keeps what the
+  other read, and the failed one is tried again at the next time.
+
+### PR 7. Both cards on Home, set aside, reminders per card
+
+  52.1  Home shows each card: its statement balance and due date, what the
+        payments since the statement have paid toward it (9.3), what it
+        owes now in all (the statement plus purchases since), and how much
+        of that is set aside (52.2). From the first reminder day it says
+        due, and after the due date, overdue, in words, not only color
+        (9.6). With the card's reminders off (9.8), it says so instead.
+        Tapping a card opens its statement (52.4).
+  52.2  Set aside. Every purchase on a card already came out of its bucket
+        on the day you made it (4.1), so the money to pay the card is not
+        in any bucket: it stays in your bank accounts until you pay. So
+        what is set aside for a card is all of what it owes now as the app
+        counts it (its balance on setup day, plus purchases, fees and
+        interest since, less refunds and the payments that reached it),
+        pending charges included. When the totals match the bank (12.3),
+        that is exactly what the bank says the card owes. Purchases still
+        waiting to be sorted count too: they are held back from safe to
+        spend until you sort them (4.3). If the savings account holds more
+        than the buckets that live there (3.8, "extra"), Home says how much
+        of the set-aside money is in savings rather than checking.
+  52.3  Reminder days, for each card: 7 days and 2 days before the due date
+        (section 2). Each card's reminders, due line and overdue alert are
+        its own.
+
+  In plain words, for the card's sheet in the app (made-up numbers):
+
+    Why paying your card isn't spending. When you buy $30 of groceries on
+    a card, the app takes the $30 out of Needs that same day. Your checking
+    account still has the $30, because you haven't paid the card yet. So
+    the $30 isn't in any bucket any more, but it's still in your account,
+    waiting for the card bill. That's what "set aside" means. When you pay
+    the card $30 from checking, checking goes down $30 and the card goes
+    down $30, and no bucket changes, because the $30 was already counted
+    on the day you bought the groceries. You don't have to work out the
+    bill or save for it separately. If every purchase is sorted, the money
+    for each card is already there.
+
+### PR 8. The statement, per card
+
+  52.4  Statement. For each card, its last statement: from the day after
+        the statement before closed to its own closing day (9.8). It lists
+        what is on it in lines that add up to the statement balance
+        exactly, to the cent:
+        - what was carried in from the statement before, less the payments
+          and credits that reached the card in this statement's days;
+        - each purchase, fee and interest charge, less refunds, by the
+          bucket it is sorted to now (needs, wants, Wishlist, or still
+          unsorted), and again by the pay period (paycheck) it was counted
+          in, each with its total;
+        - purchases from before setup day, read by today's rules and marked
+          "Before setup day", as Trends reads them (40.1);
+        - anything the app's lines do not account for is one more line,
+          "Not matched to a purchase", with its amount. It is never hidden,
+          and the lines still add up exactly.
+        The carried-in line needs the statement before. For the first
+        statement the app sees, it is "From before the app saw this card"
+        instead. Tapping a bucket or a paycheck lists its purchases. It
+        only reads: it never changes a bucket, a rule or the history.
+  52.5  Each statement the bank sends is kept, so the statement before is
+        known from the second one on.
+
+### PR 9. The Wishlist bucket
+
+  Section 2, the split: savings, needs, wants, Wishlist (whole percents
+  that add up to 100; you pick on setup day).
+
+  3.3   The paycheck is split by the percentages. Needs, wants and Wishlist
+        are each rounded down to the cent, and savings gets the rest, so
+        the parts always add up to the paycheck exactly. (No reserve comes
+        off first in this setup.)
+  3.4, a sentence added: Wishlist is never asked about: it always rolls
+  over. (3.5 applies to Wishlist too.)
+  3.8   On payday the app tells you how much should be sitting in the
+        savings account (savings plus Wishlist) and how much you still need
+        to move. If the account already holds more than it should, the
+        amount to move is $0 and the extra is shown separately.
+  4.2, the second sentence: Spending goes to needs, wants or Wishlist.
+  4.4, a sentence added: A purchase can be split across needs, wants and
+  Wishlist.
+  11.3  Savings, Wishlist, held for others, and unsorted money in are never
+        part of it. (11.1 is unchanged: safe to spend is wants only.
+        Wishlist money is kept for the things on your list; counting it in
+        safe to spend would let it go on everyday wants, and the list would
+        never fill.)
+  12.2  App side: savings + needs + wants + Wishlist + held for others
+        + unsorted money in - unsorted spending.
+  13.1, a sentence added: a change to Wishlist's share waits for the next
+  paycheck, like the rest of the split.
+  13.4  Moving money out of savings or Wishlist asks you to confirm first.
+        So does any move that would leave the bucket it comes out of below
+        zero, since that is usually a typo.
+  10.1 and 10.2 are unchanged: the low and empty alerts are for needs and
+  wants only.
+  40.2 and 40.4: Wishlist spending is its own part of each pay period's
+  bar. 40.5: Wishlist over time beside savings, its own amount. 40.11: no
+  estimate for Wishlist.
+
+  50.4  Moving Wishlist money for a purchase. Wishlist money is kept in the
+        savings account (3.8), and purchases are paid from checking or a
+        card. So when a purchase is sorted to Wishlist, the app tells you
+        to move that amount from savings to checking. Home says "Move $X
+        from savings to checking" with when: "before the Amex card is due,
+        Nov 3" for a purchase on a card whose statement has its due date,
+        "before the Amex card's next due date" while the statement it is on
+        has not closed yet, and "now" for a debit card purchase, which has
+        already left checking. With purchases on both cards, it names the
+        earliest due date. $X is the smaller of two amounts. One is the
+        extra in savings (3.8), so money still to move into savings is
+        netted in and one move covers both. The other is everything sorted
+        to Wishlist since tracking started, less Wishlist refunds and less
+        every move from savings to checking since tracking started. The
+        card's reminders (9.1, 9.7) say it too while it is not moved. It
+        goes away once $X is $0.00. A move from savings to checking is not
+        spending (5.3).
+
+### PR 10. Wishlist items
+
+  50.1  Wishlist items: up to 20, each a name and a price, in the order you
+        choose. Adding, changing, removing and moving one is logged (13.5).
+        The names stay in the app's database on the server, like your
+        sorting rules.
+  50.2  The Wishlist bucket fills the items in order. Going down the list,
+        each item gets the smaller of its price and what is left of the
+        bucket after the items above it. An item that has its whole price
+        says "Ready". With the bucket at zero or below, none has anything.
+        What is more than all the prices together is shown as "More than
+        the list needs". Each item shows what it has, its price, and how
+        far along it is, in words and amount, not only a bar. The items
+        only read the bucket: they never move money.
+  50.3  When you sort a purchase to Wishlist, review also asks which item
+        it was, or "None of them". The item you pick is marked bought, with
+        the day and what was paid, and leaves the list. The bucket goes
+        down by what the purchase cost, not the item's price. A purchase
+        marked bought can be changed back from its row on Wishlist's list.
+        A refund goes back to the Wishlist bucket (4.5). The item does not
+        come back by itself; you can add it again. (waits on HA1)
+
+### Unchanged for her setup
+
+  The pay schedule (section 2), sorting rules (4.2, 6.2, 13.2, 13.6, 13.8)
+  and bank rules (section 2) stay exactly as they are. Bank rules are per
+  account, so they cover both banks without a change.
