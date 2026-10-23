@@ -1,5 +1,5 @@
 import { formatDollars, parseDollars, type Cents, type Pot } from '@budget-app/money';
-import type { HalfLine, SetupReadyView, SetupResponse, SetupStep, SetupView, SuggestionLine } from '@budget-app/server/views';
+import type { HalfLine, SetupReadyShown as SetupReadyView, SetupResponse, SetupStep, SetupShown as SetupView, SuggestionLine } from '@budget-app/server/views';
 import { useRef, useState, type ReactNode } from 'react';
 import { newDecisionId, sendChoice, type Load, type Reload } from '../app/api.js';
 import { SETUP_STEPS, SETUP_STEP_TITLES, pathOf, setupPath, type SetupStepName } from '../app/routes.js';
@@ -188,6 +188,8 @@ function BankStep({ view }: { readonly view: SetupReadyView }) {
         )}
         <p className="card__note">They count now, from the day of the purchase. Money still pending into your accounts counts once it posts.</p>
       </Card>
+      {/* "Off in this setup": with no old card, nothing about one. */}
+      {view.oldCard !== undefined && (
       <Card title="Old card" testId="old-card">
         <dl className="figures">
           <dt>Owes, as the bank shows it</dt>
@@ -210,6 +212,7 @@ function BankStep({ view }: { readonly view: SetupReadyView }) {
           ))}
         <p className="card__note">Tracked apart as debt. It is not part of the starting money.</p>
       </Card>
+      )}
     </>
   );
 }
@@ -299,6 +302,7 @@ function RulesStep({ view, sender, reload }: { readonly view: SetupReadyView; re
           key={opened}
           editing={editing.editing}
           rules={view.bankRules}
+          {...(view.accounts === undefined ? {} : { accounts: view.accounts })}
           send={send}
           onClose={() => setEditing(null)}
           onDone={() => {
@@ -533,8 +537,8 @@ function AssignStep({ view, sender }: { readonly view: SetupReadyView; readonly 
         <Money cents={view.leftToAssign} hero testId="left-to-assign" />
       </Hero>
       <Card title="Where it goes" testId="assignment">
-        {POTS.map((pot) => (
-          <ListRow key={pot} title={POT_NAMES[pot]} trailing={<Money cents={view.assignment[pot]} testId={`assigned-${pot}`} />} onClick={() => setEditing(pot)} testId={`assign-${pot}`} />
+        {potsOf(view).map(([pot, cents]) => (
+          <ListRow key={pot} title={POT_NAMES[pot]} trailing={<Money cents={cents} testId={`assigned-${pot}`} />} onClick={() => setEditing(pot)} testId={`assign-${pot}`} />
         ))}
         <dl className="figures">
           <dt>Assigned</dt>
@@ -553,6 +557,15 @@ function AssignStep({ view, sender }: { readonly view: SetupReadyView; readonly 
   );
 }
 
+// The buckets the starting money goes to, in order, with what each has: the
+// mom reserve only when this setup has one ("Off in this setup").
+function potsOf(view: SetupReadyView): (readonly [Pot, Cents])[] {
+  return POTS.flatMap((pot) => {
+    const cents = view.assignment[pot];
+    return cents === undefined ? [] : [[pot, cents] as const];
+  });
+}
+
 function LeftWords({ view }: { readonly view: SetupReadyView }): ReactNode {
   if (view.leftToAssign === 0) return 'All of it is handed out, to the cent.';
   if (view.leftToAssign > 0) return 'Still to hand out.';
@@ -560,7 +573,7 @@ function LeftWords({ view }: { readonly view: SetupReadyView }): ReactNode {
 }
 
 function AmountSheet({ pot, view, sender, onClose }: { readonly pot: Pot; readonly view: SetupReadyView; readonly sender: Sender; readonly onClose: () => void }) {
-  const [text, setText] = useState(() => typed(view.assignment[pot]));
+  const [text, setText] = useState(() => typed(view.assignment[pot] ?? 0));
   const [problem, setProblem] = useState<string | null>(null);
   const amount = readAmount(text);
   const finish = (answer: SetupResponse | 'failed' | null): void => {
@@ -709,9 +722,9 @@ function CheckStep({ view, sender, reload, onStarted }: { readonly view: SetupRe
       </Card>
       <Card title="Where it goes" testId="check-assignment">
         <dl className="figures">
-          {POTS.map((pot) => (
+          {potsOf(view).map(([pot, cents]) => (
             <Fragmented key={pot} label={POT_NAMES[pot]}>
-              <Money cents={view.assignment[pot]} testId={`check-${pot}`} />
+              <Money cents={cents} testId={`check-${pot}`} />
             </Fragmented>
           ))}
           <dt className="figures__total">Left to assign</dt>
@@ -720,9 +733,9 @@ function CheckStep({ view, sender, reload, onStarted }: { readonly view: SetupRe
           </dd>
         </dl>
       </Card>
-      <Card title="Paydays and the old card" testId="check-other">
+      <Card title={view.oldCard === undefined ? 'Paydays' : 'Paydays and the old card'} testId="check-other">
         <ListRow title="Last paycheck" detail={view.lastPaycheck === null ? 'Not entered yet' : `${dayWithYear(view.lastPaycheck.date)}. Next payday ${shortDate(view.lastPaycheck.nextPayday)}.`} testId="check-paycheck" />
-        <ListRow title="Old card debt" detail="Tracked apart, not part of the starting money." trailing={<Money cents={view.oldCard.debt} testId="check-old-debt" />} testId="check-old" />
+        {view.oldCard !== undefined && <ListRow title="Old card debt" detail="Tracked apart, not part of the starting money." trailing={<Money cents={view.oldCard.debt} testId="check-old-debt" />} testId="check-old" />}
       </Card>
       <Card title="Bank rules" testId="bank-rules">
         <p className="card__note">How the app tells your transfers, payments to people, and card fees from purchases. Set on the Bank rules step; Settings can change them later.</p>

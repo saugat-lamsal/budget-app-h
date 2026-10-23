@@ -283,7 +283,9 @@ export const NOTIFICATION_LINES: Readonly<Record<'notifications-on' | 'notificat
   'notifications-stopped': 'Notifications stopped',
 };
 
-// 1.2: the four accounts picked, as the change log shows them (13.5).
-export function bankAccountsText(accounts: Readonly<Record<'checking' | 'savings' | 'everyday-card' | 'old-card', string>>): string {
-  return `Checking: ${accounts.checking}; savings: ${accounts.savings}; everyday card: ${accounts['everyday-card']}; old card: ${accounts['old-card']}`;
+// 1.2: the four accounts picked, as the change log shows them (13.5); the
+// old card only when this setup has one ("Off in this setup").
+export function bankAccountsText(accounts: Readonly<Partial<Record<'checking' | 'savings' | 'everyday-card' | 'old-card', string>>>): string {
+  const three = `Checking: ${accounts.checking ?? ''}; savings: ${accounts.savings ?? ''}; everyday card: ${accounts['everyday-card'] ?? ''}`;
+  return accounts['old-card'] === undefined ? three : `${three}; old card: ${accounts['old-card']}`;
 }

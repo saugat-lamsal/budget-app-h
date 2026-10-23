@@ -75,6 +75,7 @@ export function BankRuleSheet({
   onClose,
   onDone,
   canRemove = true,
+  accounts = ['checking', 'savings', 'everyday-card', 'old-card'],
 }: {
   readonly editing: Editing;
   readonly rules: readonly BankRule[];
@@ -82,6 +83,8 @@ export function BankRuleSheet({
   readonly onClose: () => void;
   readonly onDone: (change: BankRuleChange) => void;
   readonly canRemove?: boolean;
+  // The accounts this setup has ("Off in this setup": no old card).
+  readonly accounts?: readonly AccountId[];
 }) {
   const first: BankRuleSpec | null = 'rule' in editing ? editing.rule : editing.start;
   const [account, setAccount] = useState<AccountId>(first?.account ?? 'checking');
@@ -122,7 +125,7 @@ export function BankRuleSheet({
     setAccount(a);
     // What the new account cannot have starts over at its first choice.
     if (!meaningsOn(a).includes(means)) setMeans(meaningsOn(a)[0] ?? 'transfer');
-    if (other !== '' && !othersOf(a).includes(other)) setOther('');
+    if (other !== '' && !othersOf(a, accounts).includes(other)) setOther('');
   };
   const missing = contains.trim() === '' ? 'Enter the text the bank’s description contains.' : means === 'transfer' && other === '' ? 'Pick the other account.' : null;
   const change: BankRuleChange = 'rule' in editing ? { change: { id: editing.rule.id, ...spec } } : { add: spec };
@@ -139,7 +142,7 @@ export function BankRuleSheet({
             </Notice>
           )}
           <div className="card" style={{ display: 'grid', gap: 'var(--space-3)', padding: 'var(--space-4)' }}>
-            <SelectField label="Account" value={account} onChange={pickAccount} options={(['checking', 'savings', 'everyday-card', 'old-card'] as const).map((a) => ({ value: a, label: ACCOUNT_NAMES[a] }))} testId="field-bank-account" />
+            <SelectField label="Account" value={account} onChange={pickAccount} options={accounts.map((a) => ({ value: a, label: ACCOUNT_NAMES[a] }))} testId="field-bank-account" />
             <TextField label="The bank’s description contains" value={contains} onChange={setContains} testId="field-bank-text" />
             <SelectField label="It is" value={means} onChange={(v) => setMeans(v as BankMeaning)} options={meaningsOn(account).map((m) => ({ value: m, label: MEANING_NAMES[m] }))} testId="field-bank-means" />
             {means === 'transfer' && (
@@ -147,7 +150,7 @@ export function BankRuleSheet({
                 label="With"
                 value={other}
                 onChange={(v) => setOther(v as AccountId | '')}
-                options={[{ value: '', label: 'Pick the account' }, ...othersOf(account).map((a) => ({ value: a, label: ACCOUNT_NAMES[a] }))]}
+                options={[{ value: '', label: 'Pick the account' }, ...othersOf(account, accounts).map((a) => ({ value: a, label: ACCOUNT_NAMES[a] }))]}
                 testId="field-bank-other"
               />
             )}

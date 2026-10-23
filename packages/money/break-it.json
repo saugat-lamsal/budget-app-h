@@ -4009,5 +4009,243 @@
     "find": "opening: this.#potTotals(), openingDebt: this.#totals.oldCardDebt, split: this.#periodSplit, leftoverSetting: { needs, wants }",
     "replace": "opening: this.#potTotals(), openingDebt: this.#opening.oldCardDebt, split: this.#periodSplit, leftoverSetting: { needs, wants }",
     "why": "[a59] 40.13 each pay period opens with what was owed on setup day"
+  },
+  {
+    "section": "13",
+    "file": "packages/money/src/switches.ts",
+    "find": "...(switches.momReserve === 'off' ? MOM_SETTINGS : {})",
+    "replace": "...({})",
+    "why": "[her-switches] Off in this setup: the mom settings stay when the mom reserve is off"
+  },
+  {
+    "section": "13",
+    "file": "packages/money/src/switches.ts",
+    "find": "...(switches.oldCard === 'off' ? OLD_CARD_SETTINGS : {})",
+    "replace": "...({})",
+    "why": "[her-switches] Off in this setup: the old card settings stay when the old card is off"
+  },
+  {
+    "section": "1",
+    "file": "packages/money/src/switches.ts",
+    "find": "return switches.oldCard === 'off' ? ACCOUNTS.filter((account) => account !== 'old-card') : ACCOUNTS;",
+    "replace": "return switches.oldCard === 'off' ? ACCOUNTS : ACCOUNTS;",
+    "why": "[her-switches] Off in this setup: 1.2 her setup asks for the old card too"
+  },
+  {
+    "section": "1",
+    "file": "packages/money/src/switches.ts",
+    "find": "|| !isSwitch(switches.oldCard)) {",
+    "replace": ") {",
+    "why": "[her-switches] Off in this setup: a switch that is neither on nor off is let through"
+  },
+  {
+    "section": "14",
+    "file": "packages/money/src/switches.ts",
+    "find": "if (switches.momReserve === 'off' && opening.momReserve !== 0) refuse(",
+    "replace": "if (false && opening.momReserve !== 0) refuse(",
+    "why": "[her-switches] Off in this setup: 14 money assigned to a mom reserve that is off"
+  },
+  {
+    "section": "14",
+    "file": "packages/money/src/switches.ts",
+    "find": "opening.oldCardDebt !== 0 || opening.oldCardActivity",
+    "replace": "opening.oldCardDebt !== 0",
+    "why": "[her-switches] Off in this setup: 14 old card activity on its way at setup with the old card off"
+  },
+  {
+    "section": "14",
+    "file": "packages/money/src/switches.ts",
+    "find": "opening.oldCardDebt !== 0 || opening.oldCardActivity",
+    "replace": "opening.oldCardActivity",
+    "why": "[her-switches] Off in this setup: 14 an old card debt at setup with the old card off"
+  },
+  {
+    "section": "14",
+    "file": "packages/money/src/switches.ts",
+    "find": "!== JSON.stringify(value)) refuse(",
+    "replace": "=== JSON.stringify(value) + 'x') refuse(",
+    "why": "[her-switches] Off in this setup: 14 a setting about what is off, not empty at setup"
+  },
+  {
+    "section": "13",
+    "file": "packages/money/src/switches.ts",
+    "find": "if (key in off) refuse(",
+    "replace": "if (key in off && key === 'momRule') refuse(",
+    "why": "[her-switches] Off in this setup: 13.1 a setting about what is off can be changed"
+  },
+  {
+    "section": "5",
+    "file": "packages/money/src/switches.ts",
+    "find": "('account' in txn && txn.account === 'old-card') || ",
+    "replace": "",
+    "why": "[her-switches] Off in this setup: 5 a purchase on the old card is read"
+  },
+  {
+    "section": "5",
+    "file": "packages/money/src/switches.ts",
+    "find": " || ('to' in txn && txn.to === 'old-card')",
+    "replace": "",
+    "why": "[her-switches] Off in this setup: 5 a payment to the old card is read"
+  },
+  {
+    "section": "6",
+    "file": "packages/money/src/switches.ts",
+    "find": "(choice.to === 'mom' || choice.to === 'momReserve')",
+    "replace": "choice.to === 'mom'",
+    "why": "[her-switches] Off in this setup: 6.1 payback into a mom reserve that is off"
+  },
+  {
+    "section": "7",
+    "file": "packages/money/src/switches.ts",
+    "find": "(choice.to === 'mom' || choice.to === 'momReserve')",
+    "replace": "choice.to === 'momReserve'",
+    "why": "[her-switches] Off in this setup: 7.6 a payment marked for mom"
+  },
+  {
+    "section": "5",
+    "file": "packages/money/src/switches.ts",
+    "find": "if (switches.oldCard === 'off' && 'transfer' in choice && choice.transfer === 'old-card') refuse(",
+    "replace": "if (switches.oldCard === 'on' && 'transfer' in choice && choice.transfer === 'old-card') refuse(",
+    "why": "[her-switches] Off in this setup: 5.6 a transfer with the old card"
+  },
+  {
+    "section": "12",
+    "file": "packages/money/src/switches.ts",
+    "find": "if (rule.for !== 'purchase') refuseOffChoice(switches, rule.choice);",
+    "replace": "if (rule.for === 'purchase') refuseOffChoice(switches, rule.choice);",
+    "why": "[her-switches] Off in this setup: 12.2 a rule for mom"
+  },
+  {
+    "section": "8",
+    "file": "packages/money/src/switches.ts",
+    "find": "(move.from === 'momReserve' || move.to === 'momReserve')",
+    "replace": "move.to === 'momReserve'",
+    "why": "[her-switches] Off in this setup: 8.1 a move out of a mom reserve that is off"
+  },
+  {
+    "section": "8",
+    "file": "packages/money/src/switches.ts",
+    "find": "(move.from === 'momReserve' || move.to === 'momReserve')",
+    "replace": "move.from === 'momReserve'",
+    "why": "[her-switches] Off in this setup: 8.1 a move into a mom reserve that is off"
+  },
+  {
+    "section": "5",
+    "file": "packages/money/src/switches.ts",
+    "find": "picks: options.picks.filter((p) => keep(p.to)),",
+    "replace": "picks: options.picks,",
+    "why": "[her-switches] Off in this setup: 5.2 review offers mom and the mom reserve"
+  },
+  {
+    "section": "12",
+    "file": "packages/money/src/switches.ts",
+    "find": "always: options.always.filter(keep),",
+    "replace": "always: options.always,",
+    "why": "[her-switches] Off in this setup: 12.4 \"always\" offers mom"
+  },
+  {
+    "section": "5",
+    "file": "packages/money/src/switches.ts",
+    "find": "transfer: options.transfer.filter(keepAccount),",
+    "replace": "transfer: options.transfer,",
+    "why": "[her-switches] Off in this setup: 5.6 review offers a transfer with the old card"
+  },
+  {
+    "section": "5",
+    "file": "packages/money/src/switches.ts",
+    "find": "transferOutcome: Object.fromEntries(Object.entries(options.transferOutcome).filter(([account]) => keepAccount(account as AccountId))),",
+    "replace": "transferOutcome: options.transferOutcome,",
+    "why": "[her-switches] Off in this setup: 5.6 review says what a transfer with the old card would do"
+  },
+  {
+    "section": "12",
+    "file": "packages/money/src/book.ts",
+    "find": "    for (const rule of this.#rules) refuseOffRule(this.#switches, rule);\n",
+    "replace": "",
+    "why": "[her-switches] Off in this setup: 12.2 a setup-day rule for mom"
+  },
+  {
+    "section": "14",
+    "file": "packages/money/src/book.ts",
+    "find": "checkOpening(this.#switches, { momReserve, oldCardDebt",
+    "replace": "checkOpening(this.#switches, { momReserve: 0, oldCardDebt",
+    "why": "[her-switches] Off in this setup: 14 a book opened with money in a mom reserve that is off"
+  },
+  {
+    "section": "5",
+    "file": "packages/money/src/book.ts",
+    "find": "return { ...detail, options: offOptionsRemoved(this.#switches, detail.options) };",
+    "replace": "return detail;",
+    "why": "[her-switches] Off in this setup: 5.2 review items offer what is off"
+  },
+  {
+    "section": "12",
+    "file": "packages/money/src/book.ts",
+    "find": "return detail.resortable ? Object.freeze({ ...detail, options: offOptionsRemoved(this.#switches, detail.options) }) : detail;",
+    "replace": "return detail;",
+    "why": "[her-switches] Off in this setup: 12.4 sorting again offers what is off"
+  },
+  {
+    "section": "5",
+    "file": "packages/money/src/book.ts",
+    "find": "    refuseOffTransaction(this.#switches, txn);\n",
+    "replace": "",
+    "why": "[her-switches] Off in this setup: 5 the bank activity on the old card is taken in"
+  },
+  {
+    "section": "5",
+    "file": "packages/money/src/book.ts",
+    "find": "  sort(id: string, choice: SortChoice, date: IsoDate): void {\n    refuseOffChoice(this.#switches, choice);\n",
+    "replace": "  sort(id: string, choice: SortChoice, date: IsoDate): void {\n",
+    "why": "[her-switches] Off in this setup: 7.6 a choice for mom is taken"
+  },
+  {
+    "section": "13",
+    "file": "packages/money/src/book.ts",
+    "find": "    refuseOffSettings(this.#switches, patch);\n",
+    "replace": "",
+    "why": "[her-switches] Off in this setup: 13.1 a setting about what is off is changed"
+  },
+  {
+    "section": "12",
+    "file": "packages/money/src/book.ts",
+    "find": "    refuseOffRule(this.#switches, rule);\n    return this.#atomically(() => {\n      this.#rules = checkRules([...this.#rules, rule]);",
+    "replace": "    return this.#atomically(() => {\n      this.#rules = checkRules([...this.#rules, rule]);",
+    "why": "[her-switches] Off in this setup: 12.2 a new rule for mom"
+  },
+  {
+    "section": "12",
+    "file": "packages/money/src/book.ts",
+    "find": "    refuseOffRule(this.#switches, rule);\n    const before = this.#ruleById(rule.id);",
+    "replace": "    const before = this.#ruleById(rule.id);",
+    "why": "[her-switches] Off in this setup: 12.2 a rule changed to be for mom"
+  },
+  {
+    "section": "12",
+    "file": "packages/money/src/book.ts",
+    "find": "readonly stillWaiting: readonly string[] } {\n    assertIsoDate(date);\n    refuseOffChoice(this.#switches, choice);\n",
+    "replace": "readonly stillWaiting: readonly string[] } {\n    assertIsoDate(date);\n",
+    "why": "[her-switches] Off in this setup: 12.4 \"always\" for mom"
+  },
+  {
+    "section": "8",
+    "file": "packages/money/src/book.ts",
+    "find": "    refuseOffMove(this.#switches, move);\n",
+    "replace": "",
+    "why": "[her-switches] Off in this setup: 8.1 a move with a mom reserve that is off"
+  },
+  {
+    "section": "1",
+    "file": "packages/money/src/her-setup.ts",
+    "find": "checkSwitches({ momReserve: 'off', oldCard: 'off' })",
+    "replace": "checkSwitches({ momReserve: 'off', oldCard: 'on' })",
+    "why": "[her-switches] Off in this setup: her setup has the old card"
+  },
+  {
+    "section": "1",
+    "file": "packages/money/src/her-setup.ts",
+    "find": "checkSwitches({ momReserve: 'off', oldCard: 'off' })",
+    "replace": "checkSwitches({ momReserve: 'on', oldCard: 'off' })",
+    "why": "[her-switches] Off in this setup: her setup has the mom reserve"
   }
 ]

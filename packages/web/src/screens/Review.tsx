@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { PickTo, ReviewDetail } from '@budget-app/money';
-import type { KeyedDetail, ReviewView } from '@budget-app/server/views';
+import type { ReviewItemShown as KeyedDetail, ReviewShown as ReviewView } from '@budget-app/server/views';
 import { newDecisionId, type Load, type Reload } from '../app/api.js';
 import { Button, ButtonRow, Card, Decision, Hero, HeroCount, LinkButton, MadeUpPill, Money, Skeleton, StateMessage, SwipeSort } from '../ui/blocks.js';
 import { longDate, shortDate } from '../ui/dates.js';
@@ -135,7 +135,7 @@ function ReviewReady({ view, reload, onChanged }: { readonly view: Tracking; rea
 // the usual ones in order. The rest are under "More choices".
 const USUAL: readonly PickTo[] = ['paycheck', 'other-income', 'needs', 'wants', 'savings'];
 
-function quickPicks(detail: ReviewDetail): { readonly to: PickTo; readonly final: boolean }[] {
+function quickPicks(detail: Pick<ReviewDetail, 'options' | 'item'>): { readonly to: PickTo; readonly final: boolean }[] {
   const o = detail.options;
   if (o.type !== 'sort') return [];
   const suggestion = detail.item.type === 'spending' ? detail.item.suggestion : null;

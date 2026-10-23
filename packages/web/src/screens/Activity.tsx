@@ -1,5 +1,5 @@
-import type { ActivityRow, ActivityWhat, Pot } from '@budget-app/money';
-import type { ActivityView } from '@budget-app/server/views';
+import type { ActivityWhat, Pot } from '@budget-app/money';
+import type { ActivityShown as ActivityView } from '@budget-app/server/views';
 import { useState } from 'react';
 import type { Load, Reload } from '../app/api.js';
 import { BackLink, Button, Card, Hero, ListRow, MadeUpPill, Money, Notice, Skeleton, StateMessage, StatusLabel } from '../ui/blocks.js';
@@ -10,6 +10,7 @@ import { POT_NAMES } from '../ui/names.js';
 import { ChoiceSheet, RuleOfferSheet, SaidNotice, subjectOfRow, useChoiceFlow, type Said } from './choose.js';
 import { MoveMoney } from './Move.js';
 import { ACCOUNT_NAMES } from './review-text.js';
+import type { ActivityRowShown as ActivityRow } from '@budget-app/server/views';
 
 // What went in and out of one bucket this pay period (QUESTIONS.md B97 to
 // B102): what it held when the pay period began, each thing that changed it,
@@ -25,7 +26,9 @@ export interface Back {
 }
 
 export function ActivityScreen({ pot, load, onRetry, onChanged, back }: { readonly pot: Pot; readonly load: Load<ActivityView>; readonly onRetry: Reload; readonly onChanged: Reload; readonly back: Back }) {
-  const name = POT_NAMES[pot];
+  // "Off in this setup": a bucket this setup does not have is not named.
+  const off = load.status === 'ready' && load.value.state === 'off';
+  const name = off ? 'Not in your setup' : POT_NAMES[pot];
   return (
     <main className="screen" aria-busy={load.status === 'loading'} data-testid="activity">
       <h1 className="sr-only">{name}</h1>
@@ -42,6 +45,12 @@ export function ActivityScreen({ pot, load, onRetry, onChanged, back }: { readon
         <>
           {load.value.madeUpData && <MadeUpPill />}
           <StateMessage icon="bank" title="Nothing here yet" detail="Setup day reads your bank balances and lets you hand out your starting money. What goes in and out of each bucket shows here after that." testId="activity-not-set-up" />
+        </>
+      )}
+      {load.status === 'ready' && load.value.state === 'off' && (
+        <>
+          {load.value.madeUpData && <MadeUpPill />}
+          <StateMessage icon="bank" title="Not in your setup" detail="Your setup has no such bucket. Your buckets are on the Buckets tab." testId="activity-off" />
         </>
       )}
       {load.status === 'ready' && load.value.state === 'tracking' && <ActivityReady view={load.value} reload={onRetry} onChanged={onChanged} />}

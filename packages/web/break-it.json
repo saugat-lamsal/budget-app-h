@@ -1542,8 +1542,8 @@
   {
     "section": "settings",
     "file": "packages/web/src/screens/bank-rules-text.ts",
-    "find": "return ACCOUNTS.filter((a) => a !== account && (!isCard(account) || !isCard(a)));",
-    "replace": "return ACCOUNTS.filter((a) => a !== account);",
+    "find": "return accounts.filter((a) => a !== account && (!isCard(account) || !isCard(a)));",
+    "replace": "return accounts.filter((a) => a !== account);",
     "why": "[bank-rules] section 2 offer a card as the other side of a card's transfer"
   },
   {
@@ -3026,8 +3026,8 @@
   {
     "section": "words",
     "file": "packages/web/src/screens/trends-text.ts",
-    "find": "`${PART_NAMES[part].toLowerCase()} ${moneyWords(p.spent[part])}`",
-    "replace": "`${PART_NAMES[part].toLowerCase()}`",
+    "find": "[`${PART_NAMES[part].toLowerCase()} ${moneyWords(cents)}`]",
+    "replace": "[`${PART_NAMES[part].toLowerCase()}`]",
     "why": "[trends] 40.4 a bar says its parts without amounts"
   },
   {
@@ -3330,5 +3330,82 @@
     "find": ".roll__col > span {\n  height: 1.2em;\n  text-align: center;\n}",
     "replace": ".roll__col > span {\n  height: 1.2em;\n}",
     "why": "[finishing] a drawn digit at the left of its cell, a gap after a \"1\" in WebKit"
+  },
+  {
+    "section": "words",
+    "file": "packages/web/src/screens/bank-text.ts",
+    "find": "return roles.length === ROLE_ORDER.length ? text : text.replaceAll('four', 'three');",
+    "replace": "return roles.length > 0 ? text : text.replaceAll('four', 'three');",
+    "why": "[her-switches] Off in this setup: 1.2 her Bank screen says four"
+  },
+  {
+    "section": "words",
+    "file": "packages/web/src/screens/bank-rules-text.ts",
+    "find": "return accounts.filter((a) => a !== account",
+    "replace": "return [...accounts, ...ACCOUNTS].filter((a, i, all) => all.indexOf(a) === i && a !== account",
+    "why": "[her-switches] Off in this setup: 5.6 a bank rule with the old card"
+  },
+  {
+    "section": "words",
+    "file": "packages/web/src/screens/settings-text.ts",
+    "find": "return accounts['old-card'] === undefined ? three : `${three}; old card: ${accounts['old-card']}`;",
+    "replace": "return `${three}; old card: ${accounts['old-card'] ?? ''}`;",
+    "why": "[her-switches] Off in this setup: 13.5 the change log names an old card"
+  },
+  {
+    "section": "words",
+    "file": "packages/web/src/screens/trends-text.ts",
+    "find": "oldCard ? `${which} Old card payments are left out.` : which",
+    "replace": "`${which} Old card payments are left out.${oldCard ? '' : ''}`",
+    "why": "[her-switches] Off in this setup: 40.8 her usual leaves out old card payments"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/app/api.ts",
+    "find": "url === ACTIVITY_URL.momReserve ? ['tracking', 'not-set-up', 'off'] : ",
+    "replace": "",
+    "why": "[her-switches] Off in this setup: the mom reserve's screen cannot load"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Buckets.tsx",
+    "find": "detail={momReserve === undefined ? 'Needs, wants, savings, or money held for others' : 'Needs, wants, savings, the mom reserve, or money held for others'}",
+    "replace": "detail={momReserve === null ? 'Needs, wants, savings, or money held for others' : 'Needs, wants, savings, the mom reserve, or money held for others'}",
+    "why": "[her-switches] Off in this setup: Buckets: moving money names the mom reserve"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Bank.tsx",
+    "find": "(view.roles ?? ROLE_ORDER).map((role) => {",
+    "replace": "ROLE_ORDER.map((role) => {",
+    "why": "[her-switches] Off in this setup: 1.2 the Bank screen lists an old card"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Bank.tsx",
+    "find": "const roles = view.roles ?? ROLE_ORDER;",
+    "replace": "const roles = ROLE_ORDER.length > 0 ? ROLE_ORDER : (view.roles ?? ROLE_ORDER);",
+    "why": "[her-switches] Off in this setup: 1.2 her Bank screen asks for an old card"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/bank-rules.tsx",
+    "find": "options={accounts.map((a) => ({ value: a, label: ACCOUNT_NAMES[a] }))}",
+    "replace": "options={[...accounts, 'old-card' as const].filter((a, i, all) => all.indexOf(a) === i).map((a) => ({ value: a, label: ACCOUNT_NAMES[a] }))}",
+    "why": "[her-switches] Off in this setup: 5.6 a bank rule on the old card is offered"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Settings.tsx",
+    "find": "{...(view.accounts === undefined ? {} : { accounts: view.accounts })}",
+    "replace": "",
+    "why": "[her-switches] Off in this setup: Settings: a bank rule on the old card is offered"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Setup.tsx",
+    "find": "{...(view.accounts === undefined ? {} : { accounts: view.accounts })}",
+    "replace": "",
+    "why": "[her-switches] Off in this setup: setup day: a bank rule on the old card is offered"
   }
 ]

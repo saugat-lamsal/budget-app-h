@@ -1,4 +1,4 @@
-import type { IsoDate } from '@budget-app/money';
+import type { IsoDate, Switches } from '@budget-app/money';
 import type { Db } from './db/database.js';
 import { loadBook, logChange, nextSyncNumber, readAccounts, readBankRules, readConnection, readItems, saveItem } from './db/store.js';
 import { totalsOf } from './history/history.js';
@@ -13,7 +13,8 @@ export type { BankHistory, HalfInTransit, SetupChoices, SetupOutcome, SetupPrevi
 
 // The history in the database. Whether setup day is done is only looked at
 // once the history is all there, the order the checks have always had.
-export function bankHistoryOf(db: Db): BankHistory {
+// switches: what setup day starts with ("Off in this setup"); none is upstream's.
+export function bankHistoryOf(db: Db, switches?: Switches): BankHistory {
   const connection = readConnection(db);
   return {
     connection,
@@ -21,6 +22,7 @@ export function bankHistoryOf(db: Db): BankHistory {
     accounts: readAccounts(db),
     items: readItems(db),
     rules: readBankRules(db),
+    ...(switches === undefined ? {} : { switches }),
   };
 }
 
@@ -30,12 +32,12 @@ export function halvesInTransit(db: Db, today: IsoDate, withinDays: number): Hal
   return halvesInTransitIn(bankHistoryOf(db), today, withinDays);
 }
 
-export function setupPreview(db: Db, inTransitIds: readonly string[]): SetupPreview {
-  return setupPreviewOf(bankHistoryOf(db), inTransitIds);
+export function setupPreview(db: Db, inTransitIds: readonly string[], switches?: Switches): SetupPreview {
+  return setupPreviewOf(bankHistoryOf(db, switches), inTransitIds);
 }
 
-export function setUpTracking(db: Db, choices: SetupChoices): SetupOutcome {
-  const plan = planSetup(bankHistoryOf(db), choices);
+export function setUpTracking(db: Db, choices: SetupChoices, switches?: Switches): SetupOutcome {
+  const plan = planSetup(bankHistoryOf(db, switches), choices);
   if (!plan.ok) return { ok: false, startingMoney: plan.startingMoney, assigned: plan.assigned, difference: plan.difference };
   db.transaction(() => {
     appendEvent(db, { event: { kind: 'setup', input: plan.input }, date: choices.today, sync: Math.max(1, nextSyncNumber(db) - 1), totals: totalsOf(plan.book) });

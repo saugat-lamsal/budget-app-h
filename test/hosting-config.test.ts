@@ -74,7 +74,11 @@ describe('Phase 6 fly.toml', () => {
   it("her plan PR 2 Plaid's test bank until her connection day, and no key in the file", () => {
     expect(value('PLAID_ENV', 'env')).toBe('sandbox');
     const env = settings.slice(settings.indexOf('[env]') + 1, settings.findIndex((l, i) => i > settings.indexOf('[env]') && l.startsWith('[')));
-    expect(env.map((l) => l.split('=')[0]?.trim()).sort()).toEqual(['APP_ORIGIN', 'BUDGET_DB', 'PLAID_ENV', 'PORT']);
+    expect(env.map((l) => l.split('=')[0]?.trim()).sort()).toEqual(['APP_ORIGIN', 'BUDGET_DB', 'BUDGET_SETUP', 'PLAID_ENV', 'PORT']);
+  });
+
+  it('her plan PR 3 her app starts her setup: no mom reserve and no old card', () => {
+    expect(value('BUDGET_SETUP', 'env')).toBe('her');
   });
 });
 

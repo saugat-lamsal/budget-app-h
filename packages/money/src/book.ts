@@ -25,6 +25,7 @@ import {
   type SortingRule,
 } from './rules.js';
 import { changeSettings as applySettingsChange, matchesTextRule, validateSettings, type LeftoverChoice, type Settings } from './settings.js';
+import { checkOpening, checkSwitches, offOptionsRemoved, refuseOffChoice, refuseOffMove, refuseOffRule, refuseOffSettings, refuseOffTransaction, type Switches } from './switches.js';
 import {
   checkTransaction,
   sameTransaction,
@@ -90,6 +91,9 @@ export interface OpenBookInput {
   // left and not arrived, or arrived before it was seen leaving. The
   // starting money allows for them.
   readonly inTransitAtSetup?: readonly (TransferSent | TransferArrived)[];
+  // Her rulebook, "Off in this setup": the mom reserve and the old card, on or
+  // off, fixed for good on setup day. None given is upstream's: both on.
+  readonly switches?: Switches;
 }
 
 export type ReceiveOutcome = 'paycheck' | 'sorted' | 'posted' | 'dropped' | 'changed' | 'taken-back' | 'review' | 'duplicate';
@@ -670,6 +674,7 @@ export class Book {
   // then moved to savings. Before the first paycheck, what setup day gave.
   readonly #periodStart: Record<SplitBucket, Cents>;
   #settings: Settings;
+  readonly #switches: Switches;
   // The split and mom reserve settings in force for this pay period. A
   // change to them waits for the next paycheck (13.1).
   #periodSplit: SplitSettings;
@@ -694,8 +699,12 @@ export class Book {
     this.#totals = { ...this.#opening, unsortedIn: 0, unsortedOut: 0, inTransit: 0 };
     addCents(savings, needs, wants, momReserve, heldForOthers);
     this.#settings = validateSettings(input.settings);
+    this.#switches = checkSwitches(input.switches);
+    const setupActivity = [...(input.countedAtSetup ?? []), ...(input.inTransitAtSetup ?? [])];
+    checkOpening(this.#switches, { momReserve, oldCardDebt: input.oldCardDebt, settings: this.#settings, oldCardActivity: setupActivity.some((t) => ('account' in t && t.account === 'old-card') || ('to' in t && t.to === 'old-card')) });
     this.#periodSplit = splitSettingsOf(this.#settings);
     this.#rules = checkRules(input.rules ?? []);
+    for (const rule of this.#rules) refuseOffRule(this.#switches, rule);
     this.#lastPaycheckDate = input.lastPaycheckDate;
     this.#period = { number: 0, startDate: input.date };
     this.#periods.push({ number: 0, startDate: input.date, opening: this.#potTotals(), openingDebt: this.#totals.oldCardDebt, split: this.#periodSplit, leftoverSetting: null, paycheckId: null });
@@ -783,6 +792,11 @@ export class Book {
     return this.#settings;
   }
 
+  // Off in this setup: fixed on setup day.
+  switches(): Switches {
+    return this.#switches;
+  }
+
   rules(): readonly SortingRule[] {
     return this.#rules;
   }
@@ -838,7 +852,10 @@ export class Book {
 
   // The same items, with what review needs to show each one. Changes nothing.
   reviewDetails(): ReviewDetail[] {
-    return [...this.#review].map((id) => this.#reviewDetail(this.#entry(id)));
+    return [...this.#review].map((id) => {
+      const detail = this.#reviewDetail(this.#entry(id));
+      return { ...detail, options: offOptionsRemoved(this.#switches, detail.options) };
+    });
   }
 
   // Rules 11.1 to 11.3: wants left, minus unsorted spending. Savings, the
@@ -1190,7 +1207,9 @@ export class Book {
   // the book has no such item.
   resortDetail(id: string): ResortDetail | null {
     const entry = this.#entries.get(this.#aliases.get(id) ?? id);
-    return entry === undefined ? null : this.#resortOf(entry.id, entry);
+    if (entry === undefined) return null;
+    const detail = this.#resortOf(entry.id, entry);
+    return detail.resortable ? Object.freeze({ ...detail, options: offOptionsRemoved(this.#switches, detail.options) }) : detail;
   }
 
   #resortOf(id: string, entry: Entry | undefined): ResortDetail {
@@ -1484,6 +1503,7 @@ export class Book {
       if (sameTransaction(known, txn)) return { id: txn.id, outcome: 'duplicate' };
       throw new MoneyError('conflicting-id', `a different transaction already has id ${txn.id}`);
     }
+    refuseOffTransaction(this.#switches, txn);
     return this.#dispatch(Object.freeze({ ...txn }));
   }
 
@@ -2120,6 +2140,7 @@ export class Book {
   // way it is sorted by hand (13.8), unless it was made a transfer, matched
   // to its purchase, or unmarked: then it is no longer one he sorted.
   sort(id: string, choice: SortChoice, date: IsoDate): void {
+    refuseOffChoice(this.#switches, choice);
     this.#sortAnswer(id, choice, date);
     if (typeof choice === 'object' && choice !== null && ('to' in choice || 'split' in choice)) {
       const entry = this.#entries.get(this.#aliases.get(id) ?? id);
@@ -2449,6 +2470,7 @@ export class Book {
   // worked out is redone.
   changeSettings(patch: Partial<Settings>, date: IsoDate): { readonly rechecked: readonly RecheckedItem[] } {
     assertIsoDate(date);
+    refuseOffSettings(this.#switches, patch);
     const next = applySettingsChange(this.#settings, patch);
     const before = this.#settings;
     try {
@@ -2557,6 +2579,7 @@ export class Book {
   // what it says (QUESTIONS.md A19); they wait for you.
   addRule(rule: SortingRule, date: IsoDate): { readonly stillWaiting: readonly string[] } {
     assertIsoDate(date);
+    refuseOffRule(this.#switches, rule);
     return this.#atomically(() => {
       this.#rules = checkRules([...this.#rules, rule]);
       this.#log.push(Object.freeze({ date, kind: 'rule-added', rule: this.#ruleById(rule.id) }));
@@ -2573,6 +2596,7 @@ export class Book {
   // the way this one did will now go where you sorted this one.
   sortAlways(id: string, choice: SortChoice, rule: { readonly id: string; readonly contains: string }, date: IsoDate): { readonly sticks: boolean; readonly stillWaiting: readonly string[] } {
     assertIsoDate(date);
+    refuseOffChoice(this.#switches, choice);
     const entry = this.#entries.get(this.#aliases.get(id) ?? id);
     if (entry === undefined) throw new MoneyError('unknown-item', `no item ${id}`);
     let newRule: SortingRule;
@@ -2620,6 +2644,7 @@ export class Book {
 
   changeRule(rule: SortingRule, date: IsoDate): { readonly stillWaiting: readonly string[] } {
     assertIsoDate(date);
+    refuseOffRule(this.#switches, rule);
     const before = this.#ruleById(rule.id);
     return this.#atomically(() => {
       this.#rules = checkRules(this.#rules.map((r) => (r.id === rule.id ? rule : r)));
@@ -2739,6 +2764,7 @@ export class Book {
       throw new MoneyError('bad-move', `cannot move money from ${String(from)} to ${String(to)}`);
     }
     assertPositiveCents(amount, 'amount to move');
+    refuseOffMove(this.#switches, move);
     const reasons: ConfirmReason[] = [];
     if (from === 'savings') reasons.push('out-of-savings');
     if (from === 'momReserve') reasons.push('out-of-mom-reserve');

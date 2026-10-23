@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
-import type { LeftoverReport, PaycheckReport, PeriodSummary } from '@budget-app/money';
-import type { PaydayView } from '@budget-app/server/views';
+import type { LeftoverReport } from '@budget-app/money';
+import type { PaydayShown as PaydayView } from '@budget-app/server/views';
 import type { Load, Reload } from '../app/api.js';
 import { BackLink, Banner, Button, Card, Hero, ListRow, MadeUpPill, Money, Notice, Skeleton, StateMessage } from '../ui/blocks.js';
 import { longDate, shortDate } from '../ui/dates.js';
@@ -9,6 +9,7 @@ import type { Back } from './Activity.js';
 import { ChoiceSheet, LeftoverDecision, SaidNotice, useChoiceFlow } from './choose.js';
 import { paydayText } from './home-text.js';
 import { lessSincePaydayWords, titleOf } from './review-text.js';
+import type { PaycheckShown as PaycheckReport, PeriodSummaryShown as PeriodSummary } from '@budget-app/server/views';
 
 // Payday (QUESTIONS.md B104 to B107): what the last paycheck did, the mom
 // reserve first and then the split (rules 3.2, 3.3); how much is still to
@@ -130,8 +131,9 @@ const SPARKS = ['12%', '32%', '50%', '70%', '88%'];
 
 function PaydayMoment({ paycheck }: { readonly paycheck: PaycheckReport }) {
   const { split } = paycheck;
+  // "Off in this setup": with no mom reserve, no part for one.
   const parts = [
-    { key: 'mom', name: 'Mom reserve', cents: split.momReserve },
+    ...(split.momReserve === undefined ? [] : [{ key: 'mom', name: 'Mom reserve', cents: split.momReserve } as const]),
     { key: 'savings', name: 'Savings', cents: split.savings },
     { key: 'needs', name: 'Needs', cents: split.needs },
     { key: 'wants', name: 'Wants', cents: split.wants },
@@ -170,40 +172,47 @@ function PaydayMoment({ paycheck }: { readonly paycheck: PaycheckReport }) {
   );
 }
 
-// 3.2, 3.3: the mom reserve first, then the split, step by step.
+// 3.2, 3.3: the mom reserve first, then the split, step by step. With no
+// mom reserve ("Off in this setup"), the split alone.
 function WhatItDid({ paycheck }: { readonly paycheck: PaycheckReport }) {
   const { split, percent } = paycheck;
   const d = split.detail;
+  const { momReserve } = split;
+  const { reserveTaken, overflowToSavings } = d;
+  const { reserveCap, reserveBefore } = paycheck;
+  const reserve = momReserve !== undefined && reserveTaken !== undefined && overflowToSavings !== undefined && reserveCap !== undefined && reserveBefore !== undefined;
   return (
     <>
-      <Card title="1. The mom reserve comes off first" testId="payday-reserve">
-        <dl className="figures">
-          <dt>Taken off the top</dt>
-          <dd>
-            <Money cents={d.reserveTaken} testId="reserve-taken" />
-          </dd>
-          <dt>Went into the reserve</dt>
-          <dd>
-            <Money cents={split.momReserve} testId="reserve-in" />
-          </dd>
-          {d.overflowToSavings > 0 && (
-            <>
-              <dt>
-                Did not fit under the <Money cents={paycheck.reserveCap} /> cap, so it went to Savings
-              </dt>
-              <dd>
-                <Money cents={d.overflowToSavings} testId="reserve-overflow" />
-              </dd>
-            </>
-          )}
-          <dt>The reserve held before</dt>
-          <dd>
-            <Money cents={paycheck.reserveBefore} testId="reserve-before" />
-          </dd>
-        </dl>
-      </Card>
+      {reserve && (
+        <Card title="1. The mom reserve comes off first" testId="payday-reserve">
+          <dl className="figures">
+            <dt>Taken off the top</dt>
+            <dd>
+              <Money cents={reserveTaken} testId="reserve-taken" />
+            </dd>
+            <dt>Went into the reserve</dt>
+            <dd>
+              <Money cents={momReserve} testId="reserve-in" />
+            </dd>
+            {overflowToSavings > 0 && (
+              <>
+                <dt>
+                  Did not fit under the <Money cents={reserveCap} /> cap, so it went to Savings
+                </dt>
+                <dd>
+                  <Money cents={overflowToSavings} testId="reserve-overflow" />
+                </dd>
+              </>
+            )}
+            <dt>The reserve held before</dt>
+            <dd>
+              <Money cents={reserveBefore} testId="reserve-before" />
+            </dd>
+          </dl>
+        </Card>
+      )}
 
-      <Card title="2. The rest, split by the percentages" testId="payday-split">
+      <Card title={reserve ? '2. The rest, split by the percentages' : 'The paycheck, split by the percentages'} testId="payday-split">
         <dl className="figures">
           <dt>Left to split</dt>
           <dd>
@@ -231,14 +240,18 @@ function WhatItDid({ paycheck }: { readonly paycheck: PaycheckReport }) {
           )}
         </dl>
       </Card>
-      <p className="sheet__note">These are the percentages and reserve this paycheck was worked out with. A change in settings applies from the next one.</p>
+      <p className="sheet__note">These are the percentages {reserve ? 'and reserve ' : ''}this paycheck was worked out with. A change in settings applies from the next one.</p>
 
       <Card title="What each bucket got" testId="payday-got">
         <dl className="figures">
-          <dt>Mom reserve</dt>
-          <dd>
-            <Money cents={split.momReserve} signed testId="got-mom" />
-          </dd>
+          {momReserve !== undefined && (
+            <>
+              <dt>Mom reserve</dt>
+              <dd>
+                <Money cents={momReserve} signed testId="got-mom" />
+              </dd>
+            </>
+          )}
           <dt>Savings</dt>
           <dd>
             <Money cents={split.savings} signed testId="got-savings" />
@@ -271,7 +284,7 @@ function MoveToSavings({ view }: { readonly view: Tracking }) {
       ) : (
         <>
           <dl className="figures">
-            <dt>Savings plus mom reserve</dt>
+            <dt>{view.savingsAlone === true ? 'Savings' : 'Savings plus mom reserve'}</dt>
             <dd>
               <Money cents={t.transfer.shouldBeInSavings} testId="savings-should" />
             </dd>
@@ -392,10 +405,14 @@ function EndedPeriod({ summary }: { readonly summary: PeriodSummary }) {
         <dd>
           <Money cents={summary.byKind.wants.spending} testId="ended-wants-spent" />
         </dd>
-        <dt>Sent to mom</dt>
-        <dd>
-          <Money cents={summary.byKind.momReserve.mom} testId="ended-mom" />
-        </dd>
+        {summary.byKind.momReserve !== undefined && (
+          <>
+            <dt>Sent to mom</dt>
+            <dd>
+              <Money cents={summary.byKind.momReserve.mom ?? 0} testId="ended-mom" />
+            </dd>
+          </>
+        )}
         <dt className="figures__total">Left in Needs at payday</dt>
         <dd className="figures__total">
           <Money cents={summary.closing.needs} testId="ended-needs-left" />

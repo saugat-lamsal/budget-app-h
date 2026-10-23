@@ -3,32 +3,34 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
   AlertsView,
   StatusView,
-  ActivityView,
+  ActivityShown as ActivityView,
   AuthState,
   BankAnswer,
   BankConnectionView,
   BankLinkAnswer,
   BankRuleRequest,
   BankRuleResponse,
-  BucketsView,
-  TrendsView,
+  BucketsShown as BucketsView,
+  TrendsShown as TrendsView,
   ChoiceRequest,
   ChoiceResponse,
   HomeView,
   MoveRequest,
   MoveResponse,
-  PaydayView,
+  PaydayShown as PaydayView,
   PushAnswer,
-  ReviewView,
+  ReviewShown as ReviewView,
   RuleRequest,
   RuleResponse,
   SettingsRequest,
   SettingsResponse,
-  SettingsView,
+  SettingsShown as SettingsView,
   SetupRequest,
   SetupResponse,
-  SetupView,
+  SetupShown as SetupView,
 } from '@budget-app/server/views';
+// "Off in this setup" (her rulebook): the views as the phone gets them,
+// which leave out the mom reserve and the old card when they are off.
 
 // The screens' numbers, from the server. The screens never work money out
 // themselves: every amount comes from the money math on the server.
@@ -75,7 +77,8 @@ async function fetchView<T extends { readonly state: string }>(url: ViewUrl): Pr
   toLogin(response);
   if (!response.ok) throw new Error(`${url} answered ${response.status}`);
   const view = (await response.json()) as T;
-  const states = url === '/api/bank' ? ['none', 'connected'] : ['tracking', 'not-set-up'];
+  // "Off in this setup": a bucket this setup does not have is 'off'.
+  const states = url === '/api/bank' ? ['none', 'connected'] : url === ACTIVITY_URL.momReserve ? ['tracking', 'not-set-up', 'off'] : ['tracking', 'not-set-up'];
   if (!states.includes(view.state)) throw new Error(`${url} sent something unexpected`);
   return view;
 }

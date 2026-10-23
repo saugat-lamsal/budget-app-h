@@ -1,11 +1,12 @@
-import { parseDollars, type AccountId, type ActivityRow, type Cents, type IsoDate, type LikelyPurchase, type PaycheckSplit, type PickTo, type ReviewDetail, type ReviewOptions, type RuleOffer, type SortedNow } from '@budget-app/money';
-import type { ChoiceOf, ChoicePart, ChoiceRequest, KeyedDetail } from '@budget-app/server/views';
+import { parseDollars, type AccountId, type Cents, type IsoDate, type LikelyPurchase, type PickTo, type ReviewDetail, type ReviewOptions, type RuleOffer, type SortedNow } from '@budget-app/money';
+import type { ChoiceOf, ChoicePart, ChoiceRequest, PaycheckSplitShown, ReviewItemShown as KeyedDetail } from '@budget-app/server/views';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { newDecisionId, sendChoice, type Reload } from '../app/api.js';
 import { BottomSheet, Button, ButtonRow, Card, Decision, ListRow, Money, Notice, TextField, ToggleRow } from '../ui/blocks.js';
 import { shortDate } from '../ui/dates.js';
 import { moneyText } from '../ui/money-format.js';
 import { ACCOUNT_NAMES, BUCKET_NAMES, RULE_WHAT, changedWords, doneText, lessSincePaydayWords, markedWords, nowWords, offerText, pickLabel, reasonText, ruleSentenceText, sortedWords, titleOf, transferWords } from './review-text.js';
+import type { ActivityRowShown as ActivityRow } from '@budget-app/server/views';
 
 // Choosing what happens to an item: the same for an item waiting in Review
 // and for one sorted already, from the list of what went in and out of a
@@ -39,7 +40,8 @@ export interface Subject {
   readonly heading: string;
   readonly options: SortOptions;
   readonly likely: readonly LikelyPurchase[];
-  readonly paycheckPreview: PaycheckSplit | null;
+  // "Off in this setup": with no mom reserve, no reserve part.
+  readonly paycheckPreview: PaycheckSplitShown | null;
   // Where it is sorted now; null while it waits in review.
   readonly now: SortedNow | null;
   // The account he marked it a transfer with (5.6, A20), when he did.
@@ -525,7 +527,7 @@ export function ChoiceSheet({
 }
 
 // What "are you sure" says for a final pick: for my paycheck, the split it would get.
-export function askFor(preview: PaycheckSplit | null, date: IsoDate, to: PickTo): ReactNode {
+export function askFor(preview: PaycheckSplitShown | null, date: IsoDate, to: PickTo): ReactNode {
   if (to !== 'paycheck' || preview === null) return undefined;
   const p = preview;
   return (
@@ -535,10 +537,14 @@ export function askFor(preview: PaycheckSplit | null, date: IsoDate, to: PickTo)
       </p>
       <div className="card">
         <dl className="figures" data-testid="paycheck-preview">
-          <dt>Mom reserve</dt>
-          <dd>
-            <Money cents={p.momReserve} testId="preview-mom" />
-          </dd>
+          {p.momReserve !== undefined && (
+            <>
+              <dt>Mom reserve</dt>
+              <dd>
+                <Money cents={p.momReserve} testId="preview-mom" />
+              </dd>
+            </>
+          )}
           <dt>Savings</dt>
           <dd>
             <Money cents={p.savings} testId="preview-savings" />

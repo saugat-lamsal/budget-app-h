@@ -208,6 +208,8 @@ export class SetupDesk {
     // 14.2: an amount in one bucket, or the rest of the starting money.
     if ('assign' in step) {
       const { pot } = step.assign;
+      // "Off in this setup": nothing can be given to the mom reserve, not even a cent.
+      if (pot === 'momReserve' && this.#input.bank?.switches?.momReserve === 'off') return refuse('refused', 'This setup has no mom reserve.');
       let amount: number;
       try {
         if ('rest' in step.assign) {
@@ -261,7 +263,8 @@ export class SetupDesk {
     if (!plan.ok) return refuse('refused', 'It does not add up to the starting money');
     this.#started = { book: plan.book, bank: plan.bank, input: plan.input, items: plan.items, startingMoney: plan.startingMoney };
     const settings = plan.book.settings();
-    const stillToSet = (['paycheckRule', 'momRule'] as const).filter((key) => settings[key] === null);
+    // With the mom reserve off there is no mom rule to set ("Off in this setup").
+    const stillToSet = (['paycheckRule', 'momRule'] as const).filter((key) => settings[key] === null && !(key === 'momRule' && plan.book.switches().momReserve === 'off'));
     return { step: 'started', startingMoney: plan.startingMoney, stillToSet };
   }
 

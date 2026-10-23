@@ -25,6 +25,12 @@ export function accountLabel(a: Pick<BankAccountLine, 'name' | 'mask'>): string 
   return a.mask === null ? a.name : `${a.name} ••${a.mask}`;
 }
 
+// "Off in this setup": her setup picks three accounts, not four, and the
+// words count what is asked.
+export function counted(text: string, roles: readonly AccountId[]): string {
+  return roles.length === ROLE_ORDER.length ? text : text.replaceAll('four', 'three');
+}
+
 export const BANK_WORDS = {
   noneTitle: 'Connect the bank',
   noneTest: "Plaid's test bank, with made-up accounts. Nothing here is real money.",

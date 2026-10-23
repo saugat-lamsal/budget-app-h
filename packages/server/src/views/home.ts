@@ -257,7 +257,8 @@ export function homeView(input: HomeInput): HomeView {
   }
   const waitingInReview = book.reviewItems().length;
   if (waitingInReview > 0) attention.push({ kind: 'review', waiting: waitingInReview, heldBack: pots.unsortedOut });
-  const stillToSet = (['paycheckRule', 'momRule'] as const).filter((key) => settings[key] === null);
+  // With the mom reserve off there is no mom rule to set ("Off in this setup").
+  const stillToSet = (['paycheckRule', 'momRule'] as const).filter((key) => settings[key] === null && !(key === 'momRule' && book.switches().momReserve === 'off'));
   if (stillToSet.length > 0) attention.push({ kind: 'still-to-set', settings: stillToSet });
   if (bank !== null) {
     const move = book.savingsTransfer(bank.savings);

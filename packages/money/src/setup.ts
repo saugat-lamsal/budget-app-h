@@ -5,6 +5,7 @@ import { MoneyError } from './errors.js';
 import type { SortingRule } from './rules.js';
 import { bankSide, withPendingCharges, type BankBalances } from './self-check.js';
 import type { Settings } from './settings.js';
+import type { Switches } from './switches.js';
 import { checkTransaction, type Purchase, type SavingsWithdrawal, type TransferArrived, type TransferSent } from './transactions.js';
 
 // Rulebook section 14: setup day.
@@ -27,6 +28,8 @@ export interface SetupInput {
   readonly lastPaycheckDate: IsoDate;
   readonly settings: Settings;
   readonly rules?: readonly SortingRule[];
+  // Off in this setup (her rulebook): fixed for good from today. None is upstream's.
+  readonly switches?: Switches;
 }
 
 export type SetupResult =
@@ -115,6 +118,7 @@ export function startTracking(input: SetupInput): SetupResult {
     rules: input.rules ?? [],
     countedAtSetup: input.pendingCharges,
     inTransitAtSetup: inTransit,
+    ...(input.switches === undefined ? {} : { switches: input.switches }),
   });
   if (!book.selfCheck(withPendingCharges(input.bankBalances, input.pendingCharges)).ok) {
     throw new MoneyError('broken-book', 'the self-check failed right after setup');

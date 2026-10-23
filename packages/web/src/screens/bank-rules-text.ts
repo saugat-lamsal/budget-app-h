@@ -24,9 +24,10 @@ export function meaningsOn(account: AccountId): readonly BankMeaning[] {
 }
 
 // The accounts a transfer on this account can be with: money reaches a card
-// from checking or savings.
-export function othersOf(account: AccountId): readonly AccountId[] {
-  return ACCOUNTS.filter((a) => a !== account && (!isCard(account) || !isCard(a)));
+// from checking or savings. accounts: the ones this setup has ("Off in this
+// setup": no old card).
+export function othersOf(account: AccountId, accounts: readonly AccountId[] = ACCOUNTS): readonly AccountId[] {
+  return accounts.filter((a) => a !== account && (!isCard(account) || !isCard(a)));
 }
 
 // A suggestion in a sentence. One whose other account is not known says so.

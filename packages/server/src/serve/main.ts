@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { rolesFor } from '@budget-app/money';
 import { BackupWatch } from '../backup/backup-watch.js';
 import { tokenBoxFromEnv, type TokenBox } from '../crypto/token-box.js';
 import { openDatabase } from '../db/database.js';
@@ -11,6 +12,7 @@ import { consoleLog } from '../log.js';
 import { PlaidClient } from '../plaid/client.js';
 import { plaidKeysFromEnv, type PlaidKeys } from '../plaid/sandbox-lock.js';
 import { pushKeysFromEnv, type PushKeys } from '../push/push-keys.js';
+import { setupStartOf, type SetupStart } from '../setup-start.js';
 import { serveOptions, testBankOnStart, type ServeOptions } from './options.js';
 import { logSender, type AlertSender } from './alert-timer.js';
 import { EXIT } from './exit-codes.js';
@@ -41,16 +43,18 @@ const root = fileURLToPath(new URL('../../../../', import.meta.url));
 const envFile = `${root}.env`;
 if (existsSync(envFile)) process.loadEnvFile(envFile);
 
-let started: { options: ServeOptions; keys: PlaidKeys; box: TokenBox; push: PushKeys | null };
+let started: { options: ServeOptions; keys: PlaidKeys; box: TokenBox; push: PushKeys | null; start: SetupStart };
 try {
   // The lock: Plaid's test bank, or (Phase 7, hosted, PLAID_ENV production)
   // the real one; anything else stops it here.
-  started = { options: serveOptions(process.argv.slice(2), process.env, root), keys: plaidKeysFromEnv(process.env), box: tokenBoxFromEnv(process.env), push: pushKeysFromEnv(process.env) };
+  started = { options: serveOptions(process.argv.slice(2), process.env, root), keys: plaidKeysFromEnv(process.env), box: tokenBoxFromEnv(process.env), push: pushKeysFromEnv(process.env), start: setupStartOf(process.env['BUDGET_SETUP']) };
 } catch (error) {
   console.error(`The server did not start: ${error instanceof Error ? error.message : String(error)}`);
   process.exit(EXIT.didNotStart);
 }
-const { options, keys, box, push } = started;
+// BUDGET_SETUP=her (her fly.toml): her setup day, with no mom reserve and no
+// old card ("Off in this setup"). Unset, upstream's.
+const { options, keys, box, push, start } = started;
 // The app's own address: passkeys are made for its host name, localhost on
 // this computer, or (hosted) its fly.dev name.
 let origin = options.hosted ?? `http://localhost:${options.port}`;
@@ -60,7 +64,7 @@ mkdirSync(dirname(options.db), { recursive: true });
 const db = openDatabase(options.db);
 let keeper: Keeper;
 try {
-  keeper = Keeper.open({ db, now: () => new Date(), log, origin: () => origin, push: { keys: push } });
+  keeper = Keeper.open({ db, now: () => new Date(), log, origin: () => origin, push: { keys: push }, start });
 } catch (error) {
   db.close();
   if (error instanceof HistoryDoesNotReplay) {
@@ -88,7 +92,7 @@ try {
 const bankName = keys.environment === 'production' ? 'the bank' : 'the test bank';
 if (testBank === 'connect') {
   console.log("Connecting Plaid's test bank, with made-up accounts like yours. This takes a minute.");
-  await connectLikeHis({ db, plaid, box, log, today: keeper.today() });
+  await connectLikeHis({ db, plaid, box, log, today: keeper.today(), roles: rolesFor(start.switches) });
   keeper.reload();
 }
 if (options.sync) {
@@ -143,7 +147,7 @@ async function connectIfNone(): Promise<void> {
   if (testBank !== 'connect-once' || readConnection(db) !== null) return;
   log.info('connecting the test bank, with made-up accounts like his (first start)');
   try {
-    await connectLikeHis({ db, plaid, box, log, today: keeper.today() });
+    await connectLikeHis({ db, plaid, box, log, today: keeper.today(), roles: rolesFor(start.switches) });
     keeper.reload();
     log.info('the test bank is connected');
   } catch (error) {

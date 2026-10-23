@@ -1,0 +1,78 @@
+WORKED EXAMPLES, HER SETUP
+
+Made-up numbers, worked out step by step, so you can check the money math
+of her setup by hand. Every amount is in dollars and cents. Upstream's
+examples are in worked-examples.txt, unchanged.
+
+Each example is also a test (packages/money/test/worked-examples-h.test.ts).
+The test reads the "Check:" line of every example straight from this file
+and compares it with what the app works out. If a number here is wrong, or
+the app disagrees with it, the test fails.
+
+Her setup has no mom reserve and no old card (rulebook, "Off in this
+setup"). Unless an example says otherwise, the settings are her starting
+ones: split 50% savings / 30% needs / 20% wants.
+
+Rounding: each share is rounded DOWN to the cent. Any cents left over from
+rounding go to savings (rule 3.3).
+
+
+========================================================================
+EXAMPLE 1. Her paycheck: nothing comes off first (3.3; 3.2 is off)
+========================================================================
+
+Before payday: every bucket is at $0.00.
+
+Paycheck                                         2,345.67
+
+Step 1. No mom reserve in this setup: nothing comes off the top.
+        Rest to split                            2,345.67
+
+Step 2. Split it.
+        Savings 50% of 2,345.67 = 1,172.835  ->  1,172.83
+        Needs   30% of 2,345.67 =   703.701  ->    703.70
+        Wants   20% of 2,345.67 =   469.134  ->    469.13
+        Rounded shares add to 2,345.66, so 0.01 is left over.
+        The leftover 0.01 goes to savings: 1,172.83 + 0.01 = 1,172.84
+
+Step 3. Add it back up: 1,172.84 + 703.70 + 469.13 = 2,345.67
+        That is the paycheck exactly.
+
+Check: savings 1,172.84 | needs 703.70 | wants 469.13 | mom reserve 0.00
+
+
+========================================================================
+EXAMPLE 2. A paycheck of one cent (3.3; 3.2 is off)
+========================================================================
+
+Before payday: every bucket is at $0.00.
+
+Paycheck                                             0.01
+
+Step 1. Split it.
+        Savings 50% of 0.01 = 0.005  ->  0.00
+        Needs   30% of 0.01 = 0.003  ->  0.00
+        Wants   20% of 0.01 = 0.002  ->  0.00
+        Rounded shares add to 0.00, so 0.01 is left over.
+        The leftover 0.01 goes to savings.
+
+Check: savings 0.01 | needs 0.00 | wants 0.00 | mom reserve 0.00
+
+
+========================================================================
+EXAMPLE 3. The app side of the self-check, with no mom reserve (12.2)
+========================================================================
+
+Setup day: savings $4,000.00, needs $1,000.00, wants $200.00, held for
+others $0.00.
+
+Then, both still waiting in review:
+        Money in from a friend (a deposit)          60.00
+        A purchase on the everyday card             12.50
+
+App side = savings + needs + wants + held for others
+           + unsorted money in - unsorted spending
+         = 4,000.00 + 1,000.00 + 200.00 + 0.00 + 60.00 - 12.50
+         = 5,247.50
+
+Check: app side 5,247.50 | unsorted money in 60.00 | unsorted spending 12.50 | mom reserve 0.00

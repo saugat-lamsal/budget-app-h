@@ -1,4 +1,4 @@
-import type { EvenPace, Landing, OldCardPlan, PaydayEffect, PlaceGroup, RepeatCharge, SavingsYearOut, TrendsPart, TrendsPeriod, Usual, Weekdays, WantsStreak } from '@budget-app/server/views';
+import type { EvenPace, Landing, OldCardPlan, PaydayEffect, PlaceGroup, RepeatCharge, SavingsYearOut, TrendsPart, TrendsPeriodShown as TrendsPeriod, Usual, Weekdays, WantsStreak } from '@budget-app/server/views';
 import type { IsoDate } from '@budget-app/money';
 import type { IconName } from '../ui/Icon.js';
 import { dayWithYear, monthDay } from '../ui/dates.js';
@@ -35,8 +35,12 @@ export function periodNote(p: TrendsPeriod): string | null {
 // 40.4: everything a bar shows, in words, for a screen reader.
 export function barWords(p: TrendsPeriod): string {
   const head = [`${periodRange(p)}${p.current ? ', so far' : ''}`, p.cutOff ? 'Part of a pay period' : null, p.beforeSetup === 'none' ? null : BEFORE[p.beforeSetup]].filter((n): n is string => n !== null).join('. ');
-  const parts = (['needs', 'wants', 'old-card', 'unsorted'] as const).map((part) => `${PART_NAMES[part].toLowerCase()} ${moneyWords(p.spent[part])}`).join(', ');
-  return `${head}. Spent ${moneyWords(p.total)}: ${parts}.`;
+  // "Off in this setup": only the parts it has (no old card part with the old card off).
+  const parts = (['needs', 'wants', 'old-card', 'unsorted'] as const).flatMap((part) => {
+    const cents = p.spent[part];
+    return cents === undefined ? [] : [`${PART_NAMES[part].toLowerCase()} ${moneyWords(cents)}`];
+  });
+  return `${head}. Spent ${moneyWords(p.total)}: ${parts.join(', ')}.`;
 }
 
 // 40.1: how far back it goes.
@@ -50,10 +54,11 @@ export function placeGroupName(g: PlaceGroup): string {
 }
 
 // 40.7
-export function usualLines(usual: Usual, day: number): readonly string[] {
+// oldCard: false when the old card is off, and so nothing is left out ("Off in this setup").
+export function usualLines(usual: Usual, day: number, oldCard = true): readonly string[] {
   if (usual.state === 'not-enough') return ['Not enough pay periods yet to know your usual.', `It takes 3 full pay periods; there ${usual.fullPeriods === 1 ? 'is 1' : `are ${usual.fullPeriods}`} so far.`];
   const which = usual.periods % 2 === 1 ? `The middle one of your last ${usual.periods} full pay periods.` : `The middle of your last ${usual.periods} full pay periods.`;
-  return [`Usual by day ${day}: ${moneyText(usual.byToday)}`, `A whole pay period usually: ${moneyText(usual.whole)}`, `${which} Old card payments are left out.`];
+  return [`Usual by day ${day}: ${moneyText(usual.byToday)}`, `A whole pay period usually: ${moneyText(usual.whole)}`, oldCard ? `${which} Old card payments are left out.` : which];
 }
 
 // 40.8: always the amount in words, with an icon, never color alone.

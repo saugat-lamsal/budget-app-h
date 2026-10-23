@@ -1255,8 +1255,8 @@
   {
     "section": "setup",
     "file": "packages/server/src/views/home.ts",
-    "find": "const stillToSet = (['paycheckRule', 'momRule'] as const).filter((key) => settings[key] === null);",
-    "replace": "const stillToSet = (['paycheckRule', 'momRule'] as const).filter((key) => settings[key] !== null);",
+    "find": "const stillToSet = (['paycheckRule', 'momRule'] as const).filter((key) => settings[key] === null && !(key === 'momRule' && book.switches().momReserve === 'off'));",
+    "replace": "const stillToSet = (['paycheckRule', 'momRule'] as const).filter((key) => settings[key] !== null && !(key === 'momRule' && book.switches().momReserve === 'off'));",
     "why": "[setup] 14 Home says the rules that are set are still to set"
   },
   {
@@ -1675,8 +1675,8 @@
   {
     "section": "history",
     "file": "packages/server/src/history/keeper.ts",
-    "find": "return (this.book()?.settings() ?? DEFAULT_SETTINGS).homeTimeZone;",
-    "replace": "return DEFAULT_SETTINGS.homeTimeZone;",
+    "find": "return (this.book()?.settings() ?? this.#start.settings).homeTimeZone;",
+    "replace": "return this.#start.settings.homeTimeZone;",
     "why": "[zone] a changed home time zone changes nothing"
   },
   {
@@ -2123,8 +2123,8 @@
   {
     "section": "sync",
     "file": "packages/server/src/history/keeper.ts",
-    "find": "    if (readConnection(this.#db) === null || !rolesComplete(readAccounts(this.#db))) return null;\n",
-    "replace": "    if (readConnection(this.#db) !== null && !rolesComplete(readAccounts(this.#db))) return null;\n",
+    "find": "    if (readConnection(this.#db) === null || !rolesComplete(readAccounts(this.#db), this.#roles())) return null;\n",
+    "replace": "    if (readConnection(this.#db) !== null && !rolesComplete(readAccounts(this.#db), this.#roles())) return null;\n",
     "why": "[sync] B168 with no bank connection it tries to sync anyway"
   },
   {
@@ -2802,8 +2802,8 @@
   {
     "section": "outbox",
     "file": "packages/server/src/history/keeper.ts",
-    "find": "return quietUntil(this.timeZone(), (this.book()?.settings() ?? DEFAULT_SETTINGS).quietHours, now);",
-    "replace": "return quietUntil(this.timeZone(), DEFAULT_SETTINGS.quietHours, now);",
+    "find": "return quietUntil(this.timeZone(), (this.book()?.settings() ?? this.#start.settings).quietHours, now);",
+    "replace": "return quietUntil(this.timeZone(), this.#start.settings.quietHours, now);",
     "why": "[a35] section 2 10.8 a change to quiet hours is not used"
   },
   {
@@ -3880,14 +3880,14 @@
   {
     "section": "bank",
     "file": "packages/server/src/bank-desk.ts",
-    "find": "    if (named.join() !== [...ROLES].sort().join()) return refuse(",
+    "find": "    if (named.join() !== [...roles].sort().join()) return refuse(",
     "replace": "    if (named.length < 2) return refuse(",
     "why": "[bank-connect] 1.2 a pick that leaves one out taken"
   },
   {
     "section": "bank",
     "file": "packages/server/src/bank-desk.ts",
-    "find": "    if (new Set(picked).size !== ROLES.length) return refuse(",
+    "find": "    if (new Set(picked).size !== roles.length) return refuse(",
     "replace": "    if (new Set(picked).size < 2) return refuse(",
     "why": "[bank-connect] 1.2 one account picked for two of the four"
   },
@@ -3908,8 +3908,8 @@
   {
     "section": "bank",
     "file": "packages/server/src/bank-desk.ts",
-    "find": "  return ROLES.every((role) => roles.includes(role));",
-    "replace": "  return ROLES.some((role) => roles.includes(role));",
+    "find": "  return asked.every((role) => roles.includes(role));",
+    "replace": "  return asked.some((role) => roles.includes(role));",
     "why": "[bank-connect] 1.2 the bank read with one account picked"
   },
   {
@@ -3922,7 +3922,7 @@
   {
     "section": "bank",
     "file": "packages/server/src/bank-desk.ts",
-    "find": "    if (rolesComplete(readAccounts(db))) {\n      try {\n        await this.#input.sync();",
+    "find": "    if (rolesComplete(readAccounts(db), this.#roles)) {\n      try {\n        await this.#input.sync();",
     "replace": "    if (false) {\n      try {\n        await this.#input.sync();",
     "why": "[bank-connect] 1.2 1.3 the bank not read after the picks or a new login"
   },
@@ -3936,14 +3936,14 @@
   {
     "section": "bank",
     "file": "packages/server/src/history/keeper.ts",
-    "find": "    if (readConnection(this.#db) !== null && !rolesComplete(readAccounts(this.#db))) return Promise.reject(",
+    "find": "    if (readConnection(this.#db) !== null && !rolesComplete(readAccounts(this.#db), this.#roles())) return Promise.reject(",
     "replace": "    if (false) return Promise.reject(",
     "why": "[bank-connect] 1.2 a sync before the four are picked"
   },
   {
     "section": "bank",
     "file": "packages/server/src/history/keeper.ts",
-    "find": "    if (readConnection(this.#db) === null || !rolesComplete(readAccounts(this.#db))) return null;\n",
+    "find": "    if (readConnection(this.#db) === null || !rolesComplete(readAccounts(this.#db), this.#roles())) return null;\n",
     "replace": "    if (readConnection(this.#db) === null) return null;\n",
     "why": "[bank-connect] 1.2 a sync due before the four are picked"
   },
@@ -6067,5 +6067,334 @@
     "find": "const lastOver = ended > 0 && book.periodSummary(ended - 1).closing.wants < 0;",
     "replace": "const lastOver = false;",
     "why": "[a59] 40.17 never says Wants went over"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/views/off.ts",
+    "find": "const allOn = (s: Switches): boolean => s.momReserve === 'on' && s.oldCard === 'on';",
+    "replace": "const allOn = (s: Switches): boolean => s !== null;",
+    "why": "[her-switches] Off in this setup: every view is sent whole"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/views/off.ts",
+    "find": "...(switches.momReserve === 'off' ? {} : { momReserve }), ...(switches.oldCard === 'off' ? {} : { oldCard })",
+    "replace": "...{ momReserve }, ...(switches.oldCard === 'off' ? {} : { oldCard })",
+    "why": "[her-switches] Off in this setup: Buckets shows the mom reserve"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/views/off.ts",
+    "find": "...(switches.momReserve === 'off' ? {} : { momReserve }), ...(switches.oldCard === 'off' ? {} : { oldCard })",
+    "replace": "...(switches.momReserve === 'off' ? {} : { momReserve }), ...{ oldCard }",
+    "why": "[her-switches] Off in this setup: Buckets shows the old card debt"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/views/off.ts",
+    "find": "const ended = report.ended === null ? null : summaryWithoutMom(report.ended);",
+    "replace": "const ended = report.ended;",
+    "why": "[her-switches] Off in this setup: Payday: the pay period before has a mom reserve"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/views/off.ts",
+    "find": "paycheck: { ...paycheck, split: splitWithoutReserve(split) }",
+    "replace": "paycheck: { ...paycheck, split }",
+    "why": "[her-switches] Off in this setup: Payday: the paycheck has a reserve part"
+  },
+  {
+    "section": "home",
+    "file": "packages/server/src/views/off.ts",
+    "find": "}, ended }, savingsAlone: true };",
+    "replace": "}, ended } };",
+    "why": "[her-switches] Off in this setup: Payday: what savings should hold is called savings and reserve"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/views/off.ts",
+    "find": "return { ...view, items: view.items.map(previewWithoutReserve) };",
+    "replace": "return { ...view, items: view.items };",
+    "why": "[her-switches] Off in this setup: 3.2 off: review says what a paycheck gives the reserve"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/views/off.ts",
+    "find": "settings: without(view.settings, off),",
+    "replace": "settings: view.settings,",
+    "why": "[her-switches] Off in this setup: Settings shows the settings about what is off"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/views/off.ts",
+    "find": "thisPayPeriod: without(view.split.thisPayPeriod, off)",
+    "replace": "thisPayPeriod: view.split.thisPayPeriod",
+    "why": "[her-switches] Off in this setup: Settings: the split has a reserve"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/views/off.ts",
+    "find": "deposit: choices.deposit.filter((to) => to !== 'momReserve')",
+    "replace": "deposit: choices.deposit",
+    "why": "[her-switches] Off in this setup: 12.2 a deposit rule can go to the mom reserve"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/views/off.ts",
+    "find": "person: choices.person.filter((to) => to !== 'mom')",
+    "replace": "person: choices.person",
+    "why": "[her-switches] Off in this setup: 12.2 a payment rule can be for mom"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/views/off.ts",
+    "find": "...(switches.oldCard === 'off' ? { accounts: rolesFor(switches) } : { payoff }),\n  };",
+    "replace": "...{ accounts: rolesFor(switches), payoff },\n  };",
+    "why": "[her-switches] Off in this setup: Settings shows the payoff countdown"
+  },
+  {
+    "section": "home",
+    "file": "packages/server/src/views/off.ts",
+    "find": "...(switches.oldCard === 'off' ? { accounts: rolesFor(switches) } : { payoff }),\n  };",
+    "replace": "...(switches.oldCard === 'off' ? {} : { payoff }),\n  };",
+    "why": "[her-switches] Off in this setup: a bank rule can be on the old card"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/views/off.ts",
+    "find": "return { ...p, spent: oldCardOff ? spent : { ...spent, 'old-card': oldCardPart } };",
+    "replace": "return { ...p, spent: { ...spent, 'old-card': oldCardPart } };",
+    "why": "[her-switches] Off in this setup: 40.2 an old card part in each pay period"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/views/off.ts",
+    "find": "(switches.momReserve === 'off' ? point : { ...point, momReserve })",
+    "replace": "({ ...point, momReserve })",
+    "why": "[her-switches] Off in this setup: 40.5 the mom reserve beside savings"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/views/off.ts",
+    "find": "future: oldCardOff ? future : { ...future, oldCard },",
+    "replace": "future: { ...future, oldCard },",
+    "why": "[her-switches] Off in this setup: 40.13 the old card in the future"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/views/off.ts",
+    "find": "...(switches.oldCard === 'off' ? { accounts: rolesFor(switches) } : { oldCard }),",
+    "replace": "...{ accounts: rolesFor(switches), oldCard },",
+    "why": "[her-switches] Off in this setup: setup day shows the old card"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/views/off.ts",
+    "find": "assignment: switches.momReserve === 'off' ? pots : { ...pots, momReserve },",
+    "replace": "assignment: { ...pots, momReserve },",
+    "why": "[her-switches] Off in this setup: setup day hands money to the mom reserve"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/views/off.ts",
+    "find": "if (pot === 'momReserve') return { state: 'off', madeUpData: view.madeUpData };",
+    "replace": "",
+    "why": "[her-switches] Off in this setup: the mom reserve's own screen"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/views/off.ts",
+    "find": "const { momReserve: _momReserve, ...balances } = view.balances;",
+    "replace": "const balances = view.balances;",
+    "why": "[her-switches] Off in this setup: a bucket screen moves money to the mom reserve"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/views/off.ts",
+    "find": "const rows = view.activity.rows.map((row) => (row.resort.resortable ? { ...row, resort: previewWithoutReserve(row.resort) } : row));",
+    "replace": "const rows = view.activity.rows;",
+    "why": "[her-switches] Off in this setup: 3.2 off: sorting again says what a paycheck gives the reserve"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/http/off-options.ts",
+    "find": "shownBuckets(await buckets(request), switches())",
+    "replace": "shownBuckets(await buckets(request), { momReserve: 'on', oldCard: 'on' })",
+    "why": "[her-switches] Off in this setup: Buckets sent whole"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/http/off-options.ts",
+    "find": "shownTrends(await trends(request), switches())",
+    "replace": "shownTrends(await trends(request), { momReserve: 'on', oldCard: 'on' })",
+    "why": "[her-switches] Off in this setup: Trends sent whole"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/http/off-options.ts",
+    "find": "shownReview(await review(request), switches())",
+    "replace": "shownReview(await review(request), { momReserve: 'on', oldCard: 'on' })",
+    "why": "[her-switches] Off in this setup: Review sent whole"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/http/off-options.ts",
+    "find": "shownActivity(await activity(request, pot), pot, switches())",
+    "replace": "shownActivity(await activity(request, pot), pot, { momReserve: 'on', oldCard: 'on' })",
+    "why": "[her-switches] Off in this setup: bucket screens sent whole"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/http/off-options.ts",
+    "find": "shownPayday(await payday(request), switches())",
+    "replace": "shownPayday(await payday(request), { momReserve: 'on', oldCard: 'on' })",
+    "why": "[her-switches] Off in this setup: Payday sent whole"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/http/off-options.ts",
+    "find": "shownSettings(await settings(request), switches())",
+    "replace": "shownSettings(await settings(request), { momReserve: 'on', oldCard: 'on' })",
+    "why": "[her-switches] Off in this setup: Settings sent whole"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/http/off-options.ts",
+    "find": "shownSetup(await setupView(request), switches())",
+    "replace": "shownSetup(await setupView(request), { momReserve: 'on', oldCard: 'on' })",
+    "why": "[her-switches] Off in this setup: setup day sent whole"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "return createAppServer(offTakenOut(() => this.#switches(), {",
+    "replace": "return createAppServer(offTakenOut(() => ({ momReserve: 'on', oldCard: 'on' }), {",
+    "why": "[her-switches] Off in this setup: the server sends every view whole"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "return this.book()?.switches() ?? this.#start.switches;",
+    "replace": "return this.#start.switches;",
+    "why": "[her-switches] Off in this setup: a book of her setup served as upstream after a start of upstream"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "oldCardOff: () => this.#switches().oldCard ===",
+    "replace": "oldCardOff: () => this.#switches().momReserve ===",
+    "why": "[her-switches] Off in this setup: bank rules: the old card is off when the mom reserve is"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank-desk.ts",
+    "find": "return asked.every((role) => roles.includes(role));",
+    "replace": "return asked.length > 0 && ROLES.every((role) => roles.includes(role));",
+    "why": "[her-switches] Off in this setup: 1.2 her setup waits for the old card to be picked"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank-desk.ts",
+    "find": "return this.#input.roles?.() ?? ROLES;",
+    "replace": "return this.#input.roles === undefined ? ROLES : ROLES;",
+    "why": "[her-switches] Off in this setup: 1.2 her setup is asked for four accounts"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank-desk.ts",
+    "find": "...(this.#roles.includes('old-card') ? {} : { roles: this.#roles }),",
+    "replace": "",
+    "why": "[her-switches] Off in this setup: 1.2 the Bank screen is not told her three"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank-desk.ts",
+    "find": "(roles.length === 3 ? 'three' : 'four')",
+    "replace": "(roles.length === 3 ? 'four' : 'four')",
+    "why": "[her-switches] Off in this setup: 1.2 her setup is told to pick four"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/setup-desk.ts",
+    "find": "      if (pot === 'momReserve' && this.#input.bank?.switches?.momReserve === 'off') return refuse('refused', 'This setup has no mom reserve.');\n",
+    "replace": "",
+    "why": "[her-switches] Off in this setup: 14 setup day hands money to a mom reserve that is off"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/setup-desk.ts",
+    "find": " && !(key === 'momRule' && plan.book.switches().momReserve === 'off')",
+    "replace": "",
+    "why": "[her-switches] Off in this setup: 13.1 her setup day says the mom rule is still to set"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/views/home.ts",
+    "find": " && !(key === 'momRule' && book.switches().momReserve === 'off')",
+    "replace": "",
+    "why": "[her-switches] Off in this setup: 13.1 Home says the mom rule is still to set"
+  },
+  {
+    "section": "bank-rules",
+    "file": "packages/server/src/bank-rules-desk.ts",
+    "find": "return rule.account === 'old-card' || (rule.means === 'transfer' && rule.other === 'old-card') ? 'This setup has no old card.' : null;",
+    "replace": "return rule.account === 'old-card' ? 'This setup has no old card.' : null;",
+    "why": "[her-switches] Off in this setup: 5.6 a bank rule for a transfer with the old card"
+  },
+  {
+    "section": "bank-rules",
+    "file": "packages/server/src/bank-rules-desk.ts",
+    "find": "return rule.account === 'old-card' || (rule.means === 'transfer' && rule.other === 'old-card') ? 'This setup has no old card.' : null;",
+    "replace": "return rule.means === 'transfer' && rule.other === 'old-card' ? 'This setup has no old card.' : null;",
+    "why": "[her-switches] Off in this setup: 5.6 a bank rule on the old card"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank/balances.ts",
+    "find": "const oldCardPosted = accounts.some((a) => a.role === 'old-card') ? posted('old-card') : 0;",
+    "replace": "const oldCardPosted = posted('old-card');",
+    "why": "[her-switches] Off in this setup: 9.5 the balances need an old card"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/setup-history.ts",
+    "find": ": rolesFor(bank.switches);",
+    "replace": ": rolesFor({ ...bank.switches, oldCard: 'on' });",
+    "why": "[her-switches] Off in this setup: 14 her setup day waits for an old card"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/setup-history.ts",
+    "find": "    ...(bank.switches === undefined ? {} : { switches: bank.switches }),\n",
+    "replace": "",
+    "why": "[her-switches] Off in this setup: 14 her setup day starts an upstream book"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/setup-start.ts",
+    "find": "if (value === 'her') return HER_START;",
+    "replace": "if (value === 'her') return UPSTREAM_START;",
+    "why": "[her-switches] Off in this setup: BUDGET_SETUP=her starts upstream"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/serve/test-bank.ts",
+    "find": ".filter(([, role]) => role !== null && asked.includes(role))",
+    "replace": ".filter(([, role]) => role !== null && asked.length > 0)",
+    "why": "[her-switches] Off in this setup: 1.2 her app's first start picks the old card"
+  },
+  {
+    "section": "hosting",
+    "file": "packages/server/src/serve/main.ts",
+    "find": "push: { keys: push }, start });",
+    "replace": "push: { keys: push } });",
+    "why": "[her-switches] Off in this setup: the real server starts upstream whatever BUDGET_SETUP says"
+  },
+  {
+    "section": "hosting",
+    "file": "fly.toml",
+    "find": "BUDGET_SETUP = \"her\"",
+    "replace": "BUDGET_SETUP = \"upstream\"",
+    "why": "[her-switches] Off in this setup: her app starts upstream"
   }
 ]

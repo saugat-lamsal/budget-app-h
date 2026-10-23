@@ -32,6 +32,8 @@ export interface BankRulesDeskInput {
   readonly today: () => IsoDate;
   // How many lines the book's change log has now; 0 before setup day.
   readonly bookLines: () => number;
+  // "Off in this setup": no bank rule can be about the old card. Upstream's when not given.
+  readonly oldCardOff?: () => boolean;
 }
 
 export class BankRulesDesk {
@@ -64,6 +66,8 @@ export class BankRulesDesk {
 
   // What a change would do, or why it cannot be.
   preview(change: BankRuleChange): BankRulePreview | { readonly why: string } {
+    const off = this.#offWhy(change);
+    if (off !== null) return { why: off };
     const tried = changeBankRules(this.#rules, change, this.#nextId());
     if (!tried.ok) return { why: tried.why };
     const shown: BankRuleSpec = tried.rule;
@@ -109,6 +113,8 @@ export class BankRulesDesk {
   // Makes a change, without asking: for a suggestion he takes as it is, on
   // Setup day (its matches were on the card). Logged like any change.
   apply(change: BankRuleChange): { readonly ok: true; readonly done: BankRuleDone } | { readonly ok: false; readonly why: string } {
+    const off = this.#offWhy(change);
+    if (off !== null) return { ok: false, why: off };
     const tried = changeBankRules(this.#rules, change, this.#nextId());
     if (!tried.ok) return tried;
     if (tried.action === 'added') this.#issued += 1;
@@ -122,6 +128,12 @@ export class BankRulesDesk {
     }
     this.#log.push(Object.freeze({ date, action: tried.action, rule: tried.rule, before: tried.before, afterBookLines }));
     return { ok: true, done: { action: tried.action, rule: tried.rule } };
+  }
+
+  #offWhy(change: BankRuleChange): string | null {
+    const rule = 'add' in change ? change.add : 'change' in change ? change.change : null;
+    if (rule === null || this.#input.oldCardOff?.() !== true) return null;
+    return rule.account === 'old-card' || (rule.means === 'transfer' && rule.other === 'old-card') ? 'This setup has no old card.' : null;
   }
 
   #nextId(): string {

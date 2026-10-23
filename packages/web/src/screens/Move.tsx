@@ -22,8 +22,9 @@ export function MoveMoney({
 }: {
   readonly open: boolean;
   readonly onClose: () => void;
-  // What every bucket holds now.
-  readonly balances: Readonly<Record<Pot, Cents>>;
+  // What every bucket holds now. A bucket that is not there ("Off in this
+  // setup": the mom reserve) is not offered.
+  readonly balances: Readonly<Partial<Record<Pot, Cents>>>;
   // Where it comes from and goes to, to begin with.
   readonly start: { readonly from: Pot; readonly to: Pot };
   // He moved it: what to say.
@@ -102,7 +103,10 @@ export function MoveMoney({
     );
   };
 
-  const options = MOVABLE_POTS.map((pot) => ({ value: pot, label: `${POT_NAMES[pot]} · ${moneyText(balances[pot])}` }));
+  const options = MOVABLE_POTS.flatMap((pot) => {
+    const held = balances[pot];
+    return held === undefined ? [] : [{ value: pot, label: `${POT_NAMES[pot]} · ${moneyText(held)}` }];
+  });
   const reading = typed.trim() !== '' && 'problem' in amount ? amount.problem : null;
 
   return (

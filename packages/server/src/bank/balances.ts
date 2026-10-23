@@ -117,7 +117,9 @@ export function bankView(accounts: readonly StoredAccount[], items: ReadonlyMap<
     };
     const balances: BankBalances = { checking: posted('checking'), savings: posted('savings'), everydayCard: posted('everyday-card') };
     const countedBalances: BankBalances = { checking: counted('checking'), savings: counted('savings'), everydayCard: balances.everydayCard };
-    const oldCardPosted = posted('old-card');
+    // "Off in this setup": with no old card, no account is picked as it, and it owes nothing.
+    // (Upstream picks all four at once, 1.2, so it always has one here.)
+    const oldCardPosted = accounts.some((a) => a.role === 'old-card') ? posted('old-card') : 0;
     const oldCardPending = pendingCharges.filter((c) => c.account === 'old-card').map((c) => c.amount);
     return {
       ok: true,

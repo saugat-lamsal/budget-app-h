@@ -63,7 +63,8 @@ export const POSTED_AT_START = { checking: 300_000, savings: 500_000, everyday: 
 // Connected, with the first sync done and his accounts and bank rules set.
 export async function connected(
   // path: a database file, for tests that open it again (a restart); in memory otherwise.
-  options: { posted?: typeof POSTED_AT_START; history?: (fake: FakePlaid) => void; rules?: readonly BankRule[]; today?: IsoDate; path?: string } = {},
+  // herSetup: her setup's picks (1.2, "Off in this setup"): the old card is never picked, so its account is never read.
+  options: { posted?: typeof POSTED_AT_START; history?: (fake: FakePlaid) => void; rules?: readonly BankRule[]; today?: IsoDate; path?: string; herSetup?: boolean } = {},
 ): Promise<Harness> {
   const today = options.today ?? SETUP_DAY;
   const fake = new FakePlaid(fourAccounts(options.posted ?? POSTED_AT_START));
@@ -80,7 +81,7 @@ export async function connected(
     [ACCOUNT_IDS.checking]: 'checking',
     [ACCOUNT_IDS.savings]: 'savings',
     [ACCOUNT_IDS.everyday]: 'everyday-card',
-    [ACCOUNT_IDS.old]: 'old-card',
+    ...(options.herSetup === true ? {} : { [ACCOUNT_IDS.old]: 'old-card' as const }),
   });
   setBankRules(db, options.rules ?? BANK_RULES, today);
   return { fake, db, lines, plaid, box, sync };

@@ -39,6 +39,9 @@ swap_size_mb = 512
   # Plaid's test bank until her connection day (her roadmap, Phase 3), when
   # the switch PR makes it production, with her own Plaid team's key.
   PLAID_ENV = "sandbox"
+  # Her setup (her rulebook, "Off in this setup"): no mom reserve and no old
+  # card, fixed on her setup day.
+  BUDGET_SETUP = "her"
 
 # The volume: the books, and Litestream's own notes beside them. The test
 # bank's books are on budget_h_data. On connection day her real books get a

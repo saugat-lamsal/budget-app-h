@@ -6,7 +6,7 @@ import { runLink } from '../app/plaid-link.js';
 import { BackLink, BottomSheet, Button, ButtonRow, Card, ListRow, Notice, Skeleton, StateMessage } from '../ui/blocks.js';
 import { longDate } from '../ui/dates.js';
 import type { Back } from './Activity.js';
-import { BANK_WORDS as W, ROLE_HINTS, ROLE_NAMES, ROLE_ORDER, accountLabel } from './bank-text.js';
+import { BANK_WORDS as W, ROLE_HINTS, ROLE_NAMES, ROLE_ORDER, accountLabel, counted } from './bank-text.js';
 import type { Said } from './choose.js';
 
 // The Bank connection screen (rules 1.1 to 1.3), on the real server only,
@@ -168,7 +168,7 @@ function ConnectedCards({ view, onSaid, reload }: { readonly view: Connected; re
         <ListRow icon="bank" title={view.bank === 'test' ? W.testBank : W.realBank} detail={W.connectedOn(longDate(view.connectedOn))} testId="bank-state" />
         {view.permissionEnds !== null && <ListRow icon="clock" title="The bank's permission runs out" detail={longDate(view.permissionEnds)} testId="bank-permission" />}
         {view.rolesSet &&
-          ROLE_ORDER.map((role) => {
+          (view.roles ?? ROLE_ORDER).map((role) => {
             const account = view.accounts.find((a) => a.role === role);
             return <ListRow key={role} icon="card" title={ROLE_NAMES[role]} detail={account === undefined ? W.pickOne : accountLabel(account)} testId={`bank-role-${role}`} />;
           })}
@@ -219,7 +219,9 @@ function PickCard({
   const [open, setOpen] = useState<AccountId | null>(null);
   const [asking, setAsking] = useState<string | null>(null);
   const [busy, guard] = useBusy();
-  const complete = ROLE_ORDER.every((role) => picks[role] !== undefined);
+  // The accounts this setup asks for ("Off in this setup": no old card).
+  const roles = view.roles ?? ROLE_ORDER;
+  const complete = roles.every((role) => picks[role] !== undefined);
 
   const save = (yes: boolean): Promise<void> =>
     guard(async () => {
@@ -257,8 +259,8 @@ function PickCard({
   return (
     <>
       <Card title={W.pickTitle} testId="bank-pick">
-        <p className="card__note">{W.pickDetail}</p>
-        {ROLE_ORDER.map((role) => {
+        <p className="card__note">{counted(W.pickDetail, roles)}</p>
+        {roles.map((role) => {
           const account = view.accounts.find((a) => a.id === picks[role]);
           return (
             <ListRow
@@ -272,7 +274,7 @@ function PickCard({
             />
           );
         })}
-        <p className="card__note">{W.missing}</p>
+        <p className="card__note">{counted(W.missing, roles)}</p>
         <ButtonRow>
           <Button wide disabled={busy || !complete} onClick={() => void save(false)} testId="bank-pick-save">
             {busy ? W.saving : W.save}
@@ -300,7 +302,7 @@ function PickCard({
         </BottomSheet>
       )}
       {asking !== null && (
-        <BottomSheet open title={W.keepTitle} onClose={() => setAsking(null)} testId="bank-keep">
+        <BottomSheet open title={counted(W.keepTitle, roles)} onClose={() => setAsking(null)} testId="bank-keep">
           <p className="card__note">{asking}</p>
           <ButtonRow>
             <Button wide disabled={busy} onClick={() => void save(true)} testId="bank-keep-yes">

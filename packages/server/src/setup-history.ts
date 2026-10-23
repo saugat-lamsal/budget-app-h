@@ -13,7 +13,9 @@ import {
   type Settings,
   type SetupInput,
   type SortingRule,
+  rolesFor,
   type StartingPots,
+  type Switches,
   type TransferArrived,
   type TransferSent,
 } from '@budget-app/money';
@@ -45,6 +47,8 @@ export interface BankHistory {
   readonly accounts: readonly StoredAccount[];
   readonly items: ReadonlyMap<string, StoredItem>;
   readonly rules: readonly BankRule[];
+  // What setup day starts with ("Off in this setup"); none is upstream's.
+  readonly switches?: Switches;
 }
 
 interface History {
@@ -77,7 +81,8 @@ function readHistory(bank: BankHistory): History {
   if (!connection.historyComplete) throw new SetupNotReady('Plaid has not sent all of the history yet; sync again in a little while');
   if (bank.setUp) throw new SetupNotReady('setup day is done already');
   const roles = rolesOf(bank.accounts);
-  const missing = (['checking', 'savings', 'everyday-card', 'old-card'] as const).filter((role) => ![...roles.values()].includes(role));
+  const asked = bank.switches === undefined ? (['checking', 'savings', 'everyday-card', 'old-card'] as const) : rolesFor(bank.switches);
+  const missing = asked.filter((role) => ![...roles.values()].includes(role));
   if (missing.length > 0) throw new SetupNotReady(`these accounts are not set yet: ${missing.join(', ')}`);
   const rules = bank.rules;
   const reread = new Map<string, StoredItem>();
@@ -209,6 +214,7 @@ export function planSetup(bank: BankHistory, choices: SetupChoices): SetupPlan {
     lastPaycheckDate: choices.lastPaycheckDate,
     settings: choices.settings,
     rules: choices.rules ?? [],
+    ...(bank.switches === undefined ? {} : { switches: bank.switches }),
   };
   const result = startTracking(input);
   if (!result.ok) return { ok: false, startingMoney: result.startingMoney, assigned: result.assigned, difference: result.difference };

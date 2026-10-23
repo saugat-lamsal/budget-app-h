@@ -27,6 +27,8 @@ export type BankConnectionView =
       readonly needsLogin: boolean;
       // 1.2: every account the bank sent, and which of his four each is.
       readonly accounts: readonly BankAccountLine[];
+      // Which to pick, in order, when not his four: her three ("Off in this setup").
+      readonly roles?: readonly AccountId[];
       // All four are picked: the bank is read.
       readonly rolesSet: boolean;
       // Tracking has started: they cannot change (1.2).
@@ -45,7 +47,8 @@ export interface BankConnectedRequest {
 }
 // 1.2: each of his four accounts, by the bank's account id. Asks first.
 export interface BankRolesRequest {
-  readonly roles: Readonly<Record<AccountId, string>>;
+  // His four, or her three ("Off in this setup": no old card).
+  readonly roles: Readonly<Partial<Record<AccountId, string>>>;
   readonly yes: boolean;
 }
 
