@@ -7,6 +7,7 @@ import { addCents, assertCents, assertPositiveCents, subtractCents, type Cents }
 import { assertIsoDate, daysBetween, monthOf, type IsoDate } from './dates.js';
 import { MoneyError } from './errors.js';
 import { nextPayday, splitPaycheck, type PaycheckSplit, type SplitSettings } from './payday.js';
+import { olderPaycheckWaiting, refuseYesWhileOlderWaits, type WaitingPaycheck } from './paycheck-ask.js';
 import { COMMON_WORD_DAYS, likelyPurchases, type LikelyPurchase, type PurchaseCandidate } from './likely-purchases.js';
 import { reviewOptions, type PickTo, type ReviewFacts, type ReviewOptions } from './review-options.js';
 import { commonPlaceWords, placeName, type RuleOffer } from './rule-offers.js';
@@ -193,7 +194,9 @@ export type ReviewItem =
       readonly lessSincePayday: Cents;
     };
 
-export type MoneyInReason = 'deposit' | 'early-paycheck' | 'refund';
+// paycheck: a deposit the paycheck rule matched, waiting for your yes while
+// "Ask before splitting a paycheck" is on (her rulebook, 3.1).
+export type MoneyInReason = 'deposit' | 'early-paycheck' | 'refund' | 'paycheck';
 
 // Everything review shows about one waiting item, worked out by the money
 // math so the screens never decide anything themselves.
@@ -372,6 +375,9 @@ export type ChangeLogEntry =
 export type RecheckedItem =
   | { readonly kind: 'paycheck'; readonly id: string; readonly date: IsoDate; readonly amount: Cents; readonly description: string; readonly split: PaycheckSplit }
   | { readonly kind: 'early-paycheck'; readonly id: string; readonly date: IsoDate; readonly amount: Cents; readonly description: string }
+  // Her rulebook, 13.2: with "Ask before splitting a paycheck" on, it becomes
+  // a paycheck waiting for your yes, and is not split.
+  | { readonly kind: 'paycheck-waiting'; readonly id: string; readonly date: IsoDate; readonly amount: Cents; readonly description: string; readonly wouldGet: PaycheckSplit | null }
   | {
       readonly kind: 'mom';
       readonly id: string;
@@ -826,6 +832,27 @@ export class Book {
     return [...this.#paychecks];
   }
 
+  // Her rulebook, 51.1: the paychecks waiting for your yes, oldest first: the
+  // ones the paycheck rule matched while "Ask before splitting a paycheck"
+  // was on (3.1), and, while it is on, the early ones (3.7, 51.3).
+  paychecksWaiting(): readonly WaitingPaycheck[] {
+    const ask = this.#settings.askBeforeSplittingPaycheck === true;
+    const found: WaitingPaycheck[] = [];
+    for (const id of this.#review) {
+      const entry = this.#entry(id);
+      if (entry.kind !== 'money-in' || entry.txn.kind !== 'deposit' || !(entry.reason === 'paycheck' || (ask && entry.reason === 'early-paycheck'))) continue;
+      const { date, amount, description } = entry.txn;
+      const older = daysBetween(this.#lastPaycheckDate, date) < 0;
+      found.push(Object.freeze({ id, date, amount, description, early: entry.reason === 'early-paycheck', wouldGet: older ? null : this.#splitIfPaycheck(amount) }));
+    }
+    return Object.freeze(found.sort((a, b) => daysBetween(b.date, a.date)));
+  }
+
+  // 51.2: whether a yes on a deposit of this day waits for an older paycheck.
+  #olderWaitingFor(date: IsoDate): boolean {
+    return this.#settings.askBeforeSplittingPaycheck === true && olderPaycheckWaiting(this.paychecksWaiting(), this.#lastPaycheckDate, date) !== null;
+  }
+
   purchases(): PurchaseView[] {
     const views: PurchaseView[] = [];
     for (const e of this.#entries.values()) {
@@ -1268,7 +1295,7 @@ export class Book {
         // 3.7, B54: a deposit older than the last paycheck cannot start a pay period.
         const older = txn.kind === 'deposit' && daysBetween(this.#lastPaycheckDate, txn.date) < 0;
         const likely = this.#likelyFor(txn);
-        const options = reviewOptions({ type: 'money-in', reason: entry.reason, account: txn.account, olderThanLastPaycheck: older, likely: likely.map((p) => p.id) });
+        const options = reviewOptions({ type: 'money-in', reason: entry.reason, account: txn.account, olderThanLastPaycheck: older, likely: likely.map((p) => p.id), ...(txn.kind === 'deposit' && this.#olderWaitingFor(txn.date) ? { olderPaycheckWaiting: true } : {}) });
         if (options.type !== 'sort') throw new MoneyError('broken-book', 'money in has no choices');
         return Object.freeze({
           resortable: true,
@@ -1902,6 +1929,8 @@ export class Book {
     }
     // Rule 3.7: too soon after the last paycheck to split automatically.
     if (daysBetween(this.#lastPaycheckDate, txn.date) < s.earlyPaycheckDays) return this.#holdMoneyIn(txn, 'early-paycheck');
+    // Her rulebook, 3.1: with "Ask before splitting a paycheck" on, it waits for your yes.
+    if (s.askBeforeSplittingPaycheck === true) return this.#holdMoneyIn(txn, 'paycheck');
     this.#payday(txn);
     return { id: txn.id, outcome: 'paycheck' };
   }
@@ -2456,6 +2485,11 @@ export class Book {
     if (daysBetween(this.#lastPaycheckDate, txn.date) < 0) {
       throw new MoneyError('bad-choice', `${txn.id} is older than the last paycheck, so it cannot start a new pay period; it can be other income`);
     }
+    // Her rulebook, 51.2: while asking, the older paycheck is answered first.
+    if (this.#settings.askBeforeSplittingPaycheck === true) {
+      const older = olderPaycheckWaiting(this.paychecksWaiting(), this.#lastPaycheckDate, txn.date);
+      if (older !== null) refuseYesWhileOlderWaits(older);
+    }
     this.#atomically(() => {
       this.#remove(entry);
       this.#payday(txn);
@@ -2537,6 +2571,10 @@ export class Book {
       if (daysBetween(this.#lastPaycheckDate, date) < this.#settings.earlyPaycheckDays) {
         entry.reason = 'early-paycheck';
         handled.push(Object.freeze({ kind: 'early-paycheck', id, date, amount, description }));
+      } else if (this.#settings.askBeforeSplittingPaycheck === true) {
+        // Her rulebook, 13.2: it waits for your yes; none is split.
+        entry.reason = 'paycheck';
+        handled.push(Object.freeze({ kind: 'paycheck-waiting', id, date, amount, description, wouldGet: this.#splitIfPaycheck(amount) }));
       } else {
         this.#makePaycheck(entry, entry.txn);
         const record = this.#paychecks[this.#paychecks.length - 1];
@@ -2928,7 +2966,7 @@ export class Book {
         // 3.7, B54: a deposit older than the last paycheck cannot start a pay period.
         const older = txn.kind === 'deposit' && daysBetween(this.#lastPaycheckDate, txn.date) < 0;
         const likely = this.#likelyFor(txn);
-        const facts: ReviewFacts = { type: 'money-in', reason: entry.reason, account: txn.account, olderThanLastPaycheck: older, likely: likely.map((p) => p.id) };
+        const facts: ReviewFacts = { type: 'money-in', reason: entry.reason, account: txn.account, olderThanLastPaycheck: older, likely: likely.map((p) => p.id), ...(txn.kind === 'deposit' && this.#olderWaitingFor(txn.date) ? { olderPaycheckWaiting: true } : {}) };
         return {
           item,
           account: txn.account,

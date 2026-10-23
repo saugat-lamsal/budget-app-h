@@ -58,20 +58,43 @@ function buckets(book: Book): Record<string, Cents> {
 
 // Each example, set up in code exactly as the text describes it.
 const examples: Record<number, () => Record<string, Cents>> = {
+  // PR 4: her paycheck waits for her yes (3.1).
   1: () => {
     const book = herBook();
     book.receive(paycheck('pay', '2026-10-09', parseDollars('2,345.67')));
+    book.sort('pay', { to: 'paycheck' }, '2026-10-09');
     return buckets(book);
   },
   2: () => {
     const book = herBook();
     book.receive(paycheck('pay', '2026-10-09', parseDollars('0.01')));
+    book.sort('pay', { to: 'paycheck' }, '2026-10-09');
     return buckets(book);
   },
   3: () => {
     const book = herBook({ savings: parseDollars('4,000.00'), needs: parseDollars('1,000.00'), wants: parseDollars('200.00') });
     book.receive(deposit('friend', '2026-10-02', parseDollars('60.00'), 'MADE UP FRIEND'));
     book.receive(purchase('shop', '2026-10-02', parseDollars('12.50')));
+    return buckets(book);
+  },
+  4: () => {
+    const book = herBook({ savings: parseDollars('3,000.00'), needs: parseDollars('400.00'), wants: parseDollars('150.00') });
+    book.receive(paycheck('pay', '2026-10-09', parseDollars('1,987.65')));
+    return { ...buckets(book), 'safe to spend': book.safeToSpend('2026-10-09').amount };
+  },
+  5: () => {
+    const book = herBook({ savings: parseDollars('3,000.00'), needs: parseDollars('400.00'), wants: parseDollars('150.00') });
+    book.receive(paycheck('pay', '2026-10-09', parseDollars('1,987.65')));
+    book.receive(purchase('gas', '2026-10-10', parseDollars('41.20'), 'MADE UP GAS'));
+    book.sort('gas', { to: 'needs' }, '2026-10-10');
+    book.sort('pay', { to: 'paycheck' }, '2026-10-12');
+    const asked = book.reviewItems().find((i) => i.type === 'leftover' && i.bucket === 'needs');
+    return { ...buckets(book), 'needs question': asked?.type === 'leftover' ? asked.amount : -1, 'days to the next payday': book.safeToSpend('2026-10-12').daysToPayday * 100 };
+  },
+  6: () => {
+    const book = herBook({ savings: parseDollars('3,000.00'), needs: parseDollars('400.00'), wants: parseDollars('150.00') });
+    book.receive(paycheck('pay', '2026-10-09', parseDollars('1,987.65')));
+    book.sort('pay', { to: 'other-income' }, '2026-10-10');
     return buckets(book);
   },
 };
@@ -84,7 +107,7 @@ describe('worked examples, her setup (worked-examples-h.txt)', () => {
   });
 
   for (const example of all) {
-    it(`Off in this setup: Example ${example.number}: ${example.title}`, () => {
+    it(`Example ${example.number}: ${example.title}`, () => {
       const run = examples[example.number];
       expect(run, `no test for example ${example.number}`).toBeDefined();
       const actual = run?.() ?? {};

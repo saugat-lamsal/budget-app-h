@@ -4,7 +4,7 @@ import type { ReviewItemShown as KeyedDetail, ReviewShown as ReviewView } from '
 import { newDecisionId, type Load, type Reload } from '../app/api.js';
 import { Button, ButtonRow, Card, Decision, Hero, HeroCount, LinkButton, MadeUpPill, Money, Skeleton, StateMessage, SwipeSort } from '../ui/blocks.js';
 import { longDate, shortDate } from '../ui/dates.js';
-import { ChoiceSheet, LeftoverDecision, LikelyPurchases, RuleOfferSheet, SaidNotice, askFor, subjectOfReview, useChoiceFlow, type Choose, type Kind, type Pending, type Target } from './choose.js';
+import { ChoiceSheet, LeftoverDecision, LikelyPurchases, PaycheckParts, RuleOfferSheet, SaidNotice, askFor, subjectOfReview, useChoiceFlow, type Choose, type Kind, type Pending, type Target } from './choose.js';
 import { ACCOUNT_NAMES, changedWords, groupTitle, labeledText, pickLabel, reasonText, titleOf } from './review-text.js';
 
 // Review: everything waiting for him to decide, one tap each. Every choice
@@ -118,7 +118,17 @@ function ReviewReady({ view, reload, onChanged }: { readonly view: Tracking; rea
       {groups.map((group, i) => (
         <Card key={`${group.type}-${i}`} title={groupTitle(group.type)} testId={`group-${group.type}`}>
           {group.items.map((d) => (
-            <ItemCard key={d.item.id} detail={d} busy={sending || flow.holding(d.item.id)} changed={flow.changed(d.item.id)} onChoose={choose} onSend={submit} onLater={putOff} onMore={() => openSheet(d.item.id)} />
+            <ItemCard
+              key={d.item.id}
+              detail={d}
+              busy={sending || flow.holding(d.item.id)}
+              changed={flow.changed(d.item.id)}
+              onChoose={choose}
+              onSend={submit}
+              onLater={putOff}
+              onMore={() => openSheet(d.item.id)}
+              onNotAPaycheck={() => openSheet(d.item.id, { notAPaycheck: true })}
+            />
           ))}
         </Card>
       ))}
@@ -156,6 +166,7 @@ function ItemCard({
   onSend,
   onLater,
   onMore,
+  onNotAPaycheck,
 }: {
   readonly detail: KeyedDetail;
   readonly busy: boolean;
@@ -165,6 +176,8 @@ function ItemCard({
   readonly onSend: (pending: Pending) => void;
   readonly onLater: ((id: string) => void) | undefined;
   readonly onMore: () => void;
+  // Her rulebook, 3.1: "Not a paycheck" opens the other choices.
+  readonly onNotAPaycheck: () => void;
 }) {
   const { item, options } = detail;
   const testId = `item-${item.id}`;
@@ -209,6 +222,12 @@ function ItemCard({
     const askedFirst = suggested === undefined || suggested.final || askFor(detail.paycheckPreview, item.date, suggested.to) !== undefined;
     const accept = suggested === undefined || askedFirst ? undefined : suggested;
     const later = onLater === undefined ? undefined : () => onLater(item.id);
+    // Her rulebook, 3.1 and 51.1: a paycheck waiting for her yes shows what
+    // each bucket would get; yes asks first, and "Not a paycheck" opens the
+    // other choices of 6.1. While an older one waits, it says so (51.2).
+    const asking = subject?.paycheckAsk === true;
+    const yes = options.picks.find((p) => p.to === 'paycheck');
+    const notYet = options.unavailable.find((u) => u.what === 'paycheck');
     return (
       <SwipeSort
         busy={busy}
@@ -225,19 +244,32 @@ function ItemCard({
         changed={changedNote}
         actions={
           <>
-            <ButtonRow>
-              {picks.map((pick, i) => (
-                <Button
-                  key={pick.to}
-                  variant={i === 0 ? 'primary' : 'secondary'}
-                  disabled={busy}
-                  testId={`pick-${pick.to}`}
-                  onClick={() => onChoose(targetOf(detail), { to: pick.to }, { final: pick.final, ask: askFor(detail.paycheckPreview, item.date, pick.to) })}
-                >
-                  {pickLabel(kind, pick.to, true)}
+            {asking ? (
+              <ButtonRow>
+                {yes !== undefined && (
+                  <Button disabled={busy} testId="pick-paycheck" onClick={() => onChoose(targetOf(detail), { to: 'paycheck' }, { final: true, ask: askFor(detail.paycheckPreview, item.date, 'paycheck') })}>
+                    Yes, split it
+                  </Button>
+                )}
+                <Button variant="secondary" disabled={busy} testId="pick-not-a-paycheck" onClick={onNotAPaycheck}>
+                  Not a paycheck
                 </Button>
-              ))}
-            </ButtonRow>
+              </ButtonRow>
+            ) : (
+              <ButtonRow>
+                {picks.map((pick, i) => (
+                  <Button
+                    key={pick.to}
+                    variant={i === 0 ? 'primary' : 'secondary'}
+                    disabled={busy}
+                    testId={`pick-${pick.to}`}
+                    onClick={() => onChoose(targetOf(detail), { to: pick.to }, { final: pick.final, ask: askFor(detail.paycheckPreview, item.date, pick.to) })}
+                  >
+                    {pickLabel(kind, pick.to, true)}
+                  </Button>
+                ))}
+              </ButtonRow>
+            )}
             <ButtonRow>
               <Button variant="plain" onClick={onMore} disabled={busy} testId="more">
                 More choices
@@ -251,6 +283,16 @@ function ItemCard({
           </>
         }
       >
+        {asking && detail.paycheckPreview !== null && (
+          <div className="card" data-testid="item-paycheck-parts">
+            <PaycheckParts preview={detail.paycheckPreview} prefix="item" testId="item-paycheck-preview" />
+          </div>
+        )}
+        {asking && (
+          <p className="decision__detail" data-testid="item-paycheck-ask">
+            {notYet !== undefined ? notYet.why : 'Nothing is split until you say yes.'}
+          </p>
+        )}
         {item.type === 'money-in' && subject !== null && (subject.refund || subject.likely.length > 0) && <LikelyPurchases subject={subject} busy={busy} onChoose={onChoose} />}
         {detail.labeled !== undefined && (
           <>

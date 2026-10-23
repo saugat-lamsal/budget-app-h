@@ -63,6 +63,8 @@ describe('Off in this setup: her setup day starts with both switched off', () =>
       momRule: null,
       oldCardPromoEndDate: null,
       oldCardClosingDay: null,
+      // PR 4: her paychecks wait for her yes (3.1).
+      askBeforeSplittingPaycheck: true,
     });
     // Upstream's defaults stay upstream's.
     expect(DEFAULT_SETTINGS.momReservePerPaycheck).toBe(150_000);
@@ -131,7 +133,9 @@ describe('Off in this setup: 3.2, 8.1 to 8.4 no mom reserve', () => {
   it('3.2 off: a paycheck takes no reserve; the parts are 3.3\'s, for every size of paycheck', () => {
     for (const amount of [1, 2, 149_999, 150_000, 150_001, 300_000, 400_000, 1_000_000_000_000]) {
       const book = herBook();
-      expect(book.receive(paycheck('p', '2026-10-09', amount)).outcome).toBe('paycheck');
+      // PR 4: her paycheck waits for her yes (3.1).
+      expect(book.receive(paycheck('p', '2026-10-09', amount)).outcome).toBe('review');
+      book.sort('p', { to: 'paycheck' }, '2026-10-09');
       const split = book.paychecks()[0]?.split;
       expect(split?.momReserve).toBe(0);
       expect(split?.detail.reserveTaken).toBe(0);
@@ -362,7 +366,9 @@ function sameOffers(off: ReviewDetail[], on: ReviewDetail[]): void {
 }
 
 function liveTwins(steps: Step[]): void {
-  const twinSettings = changeSettings(DEFAULT_SETTINGS, { paycheckRule: { contains: PAYROLL }, momReservePerPaycheck: 0, momReserveCap: 0 });
+  // Her settings but with mom on at $0.00: upstream's, with no reserve, and
+  // (PR 4) asking before splitting a paycheck, as hers does.
+  const twinSettings = changeSettings(DEFAULT_SETTINGS, { paycheckRule: { contains: PAYROLL }, momReservePerPaycheck: 0, momReserveCap: 0, askBeforeSplittingPaycheck: true });
   const on = openBook({ date: START_DATE, lastPaycheckDate: LAST_PAYCHECK, oldCardDebt: 0, pots: POTS, settings: twinSettings });
   const off = herBook();
   const both = (run: (book: Book) => void): void => {

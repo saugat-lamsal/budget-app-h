@@ -304,6 +304,8 @@ const SETTING_READERS: { readonly [K in keyof Settings]: (value: unknown) => Set
   // 9.8: whole days, or none (not set); the range is the money math's to say.
   everydayCardClosingDay: (v) => (v === null ? null : whole(v)),
   oldCardClosingDay: (v) => (v === null ? null : whole(v)),
+  // Her rulebook, section 2: on or off.
+  askBeforeSplittingPaycheck: (v) => (typeof v === 'boolean' ? v : undefined),
 };
 
 // A change to one or more settings, exactly as the money math keeps them; otherwise null.
@@ -315,7 +317,7 @@ export function parseSettingsRequest(value: unknown): SettingsRequest | null {
   const patch: Record<string, unknown> = {};
   for (const [key, sent] of Object.entries(settings)) {
     if (!Object.hasOwn(SETTING_READERS, key)) return null;
-    const read = SETTING_READERS[key as keyof Settings](sent);
+    const read = SETTING_READERS[key as keyof Settings]?.(sent);
     if (read === undefined) return null;
     patch[key] = read;
   }

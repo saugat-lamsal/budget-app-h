@@ -100,3 +100,4 @@ export { bankSide, withPendingCharges, type BankBalances, type PendingCharge } f
 export { checkAssignment, inTransitEffect, startTracking, startingDebt, startingMoney, type SetupInput, type SetupResult } from './setup.js';
 export { UPSTREAM_SWITCHES, checkSwitches, rolesFor, settingsWhenOff, type Switch, type Switches } from './switches.js';
 export { HER_SETTINGS, HER_SWITCHES } from './her-setup.js';
+export { OLDER_PAYCHECK_FIRST, type WaitingPaycheck } from './paycheck-ask.js';

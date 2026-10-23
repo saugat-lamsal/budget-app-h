@@ -79,6 +79,9 @@ export function sendKindOf(key: string, f: AlertFacts | null): string {
       return `${f.kind} ${f.bucket}`;
     case 'bank-took-back':
       return `bank-took-back ${f.id}`;
+    // Her rulebook, 10.15: each paycheck waiting is its own.
+    case 'paycheck-waiting':
+      return `paycheck-waiting ${f.id}`;
     default:
       return f.kind;
   }

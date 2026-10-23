@@ -77,7 +77,7 @@ export interface SyncView {
 export type RuleRow = RuleView & { readonly position: number };
 
 // One setting changed: its name, what it was, and what it became.
-export type SettingChange = { readonly [K in keyof Settings]: { readonly key: K; readonly before: Settings[K]; readonly after: Settings[K] } }[keyof Settings];
+export type SettingChange = { readonly [K in keyof Settings]-?: { readonly key: K; readonly before: Settings[K]; readonly after: Settings[K] } }[keyof Settings];
 
 // One line of the change log (13.5). key names the line, for the screen.
 export type LogRow =

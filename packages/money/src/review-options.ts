@@ -1,6 +1,7 @@
 import { ACCOUNTS, type AccountId } from './accounts.js';
 import type { LeftoverAnswer, MoneyInReason, SpendingKind } from './book.js';
 import type { Cents } from './cents.js';
+import { OLDER_PAYCHECK_FIRST } from './paycheck-ask.js';
 
 // What can be done with an item waiting in review: the choices the rulebook
 // gives for that kind of item. The screens show exactly these and never
@@ -64,6 +65,8 @@ export type ReviewFacts =
       readonly account: 'checking' | 'savings' | 'everyday-card' | 'old-card';
       // B54: older than the last paycheck, so it cannot start a pay period.
       readonly olderThanLastPaycheck: boolean;
+      // Her rulebook, 51.2: an older paycheck waits for a yes first.
+      readonly olderPaycheckWaiting?: boolean;
       // 20d: for a refund, or money in to checking (A29), the purchases it
       // likely belongs to.
       readonly likely: readonly string[];
@@ -112,6 +115,8 @@ function moneyInOptions(f: Extract<ReviewFacts, { type: 'money-in' }>): ReviewOp
   if (f.reason !== 'refund') {
     if (f.olderThanLastPaycheck) {
       unavailable.push({ what: 'paycheck', why: 'This deposit is older than your last paycheck, so it cannot start a new pay period. It can still be other income.' });
+    } else if (f.olderPaycheckWaiting === true) {
+      unavailable.push({ what: 'paycheck', why: OLDER_PAYCHECK_FIRST });
     } else {
       picks.push({ to: 'paycheck', final: true });
     }

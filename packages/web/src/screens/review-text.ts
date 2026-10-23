@@ -48,7 +48,13 @@ export function reasonText(item: Item): string {
     case 'old-card-purchase':
       return 'New purchase on the old card';
     case 'money-in':
-      return item.reason === 'refund' ? 'Refund the bank did not match to a purchase' : item.reason === 'early-paycheck' ? 'Looks like a paycheck, but it came early' : 'Deposit';
+      return item.reason === 'refund'
+        ? 'Refund the bank did not match to a purchase'
+        : item.reason === 'early-paycheck'
+          ? 'Looks like a paycheck, but it came early'
+          : item.reason === 'paycheck'
+            ? 'Paycheck waiting for your yes'
+            : 'Deposit';
     case 'spending':
       switch (item.reason) {
         case 'no-rule':
