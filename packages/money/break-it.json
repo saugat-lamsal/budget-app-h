@@ -4221,13 +4221,6 @@
     "why": "[her-switches] Off in this setup: 12.2 a rule changed to be for mom"
   },
   {
-    "section": "12",
-    "file": "packages/money/src/book.ts",
-    "find": "readonly stillWaiting: readonly string[] } {\n    assertIsoDate(date);\n    refuseOffChoice(this.#switches, choice);\n",
-    "replace": "readonly stillWaiting: readonly string[] } {\n    assertIsoDate(date);\n",
-    "why": "[her-switches] Off in this setup: 12.4 \"always\" for mom"
-  },
-  {
     "section": "8",
     "file": "packages/money/src/book.ts",
     "find": "    refuseOffMove(this.#switches, move);\n",
@@ -4247,5 +4240,12 @@
     "find": "checkSwitches({ momReserve: 'off', oldCard: 'off' })",
     "replace": "checkSwitches({ momReserve: 'on', oldCard: 'off' })",
     "why": "[her-switches] Off in this setup: her setup has the mom reserve"
+  },
+  {
+    "section": "12",
+    "file": "packages/money/src/book.ts",
+    "find": "    const resort = this.#resortShown(id, entry);",
+    "replace": "    const resort = this.#resortOf(id, entry);",
+    "why": "[her-switches] Off in this setup: 12.4 a bucket's list offers what is off when sorting again"
   }
 ]

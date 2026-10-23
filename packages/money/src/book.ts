@@ -1172,7 +1172,7 @@ export class Book {
       const startDate = this.#period.startDate;
       return Object.freeze({ ...base, what: 'removed', description: '', date: startDate, account: null, other: null, pending: false, refunded: 0, partOfSplit: false, resort: this.#resortOf(id, undefined) });
     }
-    const resort = this.#resortOf(id, entry);
+    const resort = this.#resortShown(id, entry);
     switch (entry.kind) {
       case 'paycheck':
         return Object.freeze({ ...base, what: 'paycheck', description: entry.txn.description, date: entry.txn.date, account: entry.txn.account, other: null, pending: false, refunded: 0, partOfSplit: false, resort });
@@ -1208,7 +1208,12 @@ export class Book {
   resortDetail(id: string): ResortDetail | null {
     const entry = this.#entries.get(this.#aliases.get(id) ?? id);
     if (entry === undefined) return null;
-    const detail = this.#resortOf(entry.id, entry);
+    return this.#resortShown(entry.id, entry);
+  }
+
+  // Off in this setup: sorting again never offers what is off.
+  #resortShown(id: string, entry: Entry): ResortDetail {
+    const detail = this.#resortOf(id, entry);
     return detail.resortable ? Object.freeze({ ...detail, options: offOptionsRemoved(this.#switches, detail.options) }) : detail;
   }
 
@@ -2596,7 +2601,6 @@ export class Book {
   // the way this one did will now go where you sorted this one.
   sortAlways(id: string, choice: SortChoice, rule: { readonly id: string; readonly contains: string }, date: IsoDate): { readonly sticks: boolean; readonly stillWaiting: readonly string[] } {
     assertIsoDate(date);
-    refuseOffChoice(this.#switches, choice);
     const entry = this.#entries.get(this.#aliases.get(id) ?? id);
     if (entry === undefined) throw new MoneyError('unknown-item', `no item ${id}`);
     let newRule: SortingRule;

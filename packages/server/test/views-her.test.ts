@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { HER_SWITCHES } from '@budget-app/money';
 import { afterEach, describe, expect, it } from 'vitest';
 import { herLife, herWeeks } from './her-harness.js';
-import { decision, lifeInAFile, setUpThroughTheDesk, type Life } from './keeper-harness.js';
+import { choose, decision, lifeInAFile, setUpThroughTheDesk, type Life } from './keeper-harness.js';
 import { loginForTests } from './login-for-tests.js';
 
 // Her rulebook, "Off in this setup": nothing about the mom reserve or the old
@@ -60,6 +60,18 @@ function read(r: Running, path: string): Promise<{ readonly status: number; read
 const SCREENS = ['/api/home', '/api/buckets', '/api/trends', '/api/review', '/api/payday', '/api/settings', '/api/setup', '/api/alerts', '/api/status', ...['needs', 'wants', 'savings', 'held-for-others'].map((slug) => `/api/activity/${slug}`)];
 
 describe('Off in this setup: no screen shows the mom reserve or the old card', () => {
+  it("3.2 off: money in sorted, and sorted again from its bucket's list: 'This is my paycheck' says what it would give, with no reserve", { timeout: 60_000 }, async () => {
+    const life = await herWeeks();
+    expect(choose(life.keeper, { item: 'friend-1', choice: { to: 'wants' } })).toMatchObject({ ok: true });
+    const r = await serve(life);
+    const { body } = await read(r, '/api/activity/wants');
+    const rows = (JSON.parse(body) as { activity: { rows: { resort: { resortable: boolean; paycheckPreview?: Record<string, unknown> | null } }[] } }).activity.rows;
+    const previews = rows.flatMap((row) => (row.resort.resortable && row.resort.paycheckPreview ? [row.resort.paycheckPreview] : []));
+    expect(previews.length).toBeGreaterThan(0);
+    for (const preview of previews) expect(Object.keys(preview).sort()).toEqual(['detail', 'needs', 'savings', 'wants']);
+    expect(body).not.toMatch(OFF_WORDS);
+  });
+
   it('Off in this setup: every screen of her books, as the phone reads it, says nothing about mom, a reserve, the old card, a promo date, a payoff or a debt', { timeout: 60_000 }, async () => {
     const life = await herWeeks();
     expect(life.keeper.book()?.switches()).toEqual(HER_SWITCHES);

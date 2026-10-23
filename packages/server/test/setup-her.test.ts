@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { HER_SETTINGS, HER_SWITCHES, UPSTREAM_SWITCHES, openBook, rolesFor } from '@budget-app/money';
+import { DEFAULT_SETTINGS, HER_SETTINGS, HER_SWITCHES, UPSTREAM_SWITCHES, openBook, rolesFor, settingsWhenOff, validateSettings } from '@budget-app/money';
 import { afterEach, describe, expect, it } from 'vitest';
 import { TokenBox } from '../src/crypto/token-box.js';
 import { openDatabase } from '../src/db/database.js';
@@ -13,7 +13,7 @@ import { HER_START, UPSTREAM_START, setupStartOf } from '../src/setup-start.js';
 import { ACCOUNT_IDS, FakePlaid, fourAccounts } from './fake-plaid.js';
 import { POSTED_AT_START, TOKEN_KEY } from './harness.js';
 import { herLife, setUpHer } from './her-harness.js';
-import { choose, decision, noonInNewYork, type Life } from './keeper-harness.js';
+import { choose, decision, lifeInAFile, noonInNewYork, type Life } from './keeper-harness.js';
 
 // Her setup on the server (her rulebook, "Off in this setup"): setup day
 // starts with the mom reserve and the old card switched off. Every name and
@@ -89,7 +89,8 @@ describe('Off in this setup: setup day and after, through the real server', () =
     const life = await her();
     const refused = life.keeper.setup({ id: decision(), setup: { assign: { pot: 'momReserve', amount: 1 } } });
     expect(refused).toMatchObject({ ok: false, code: 'refused', why: 'This setup has no mom reserve. Nothing was changed.' });
-    setUpHer(life);
+    // 13.1: what is still to set after setup day is the paycheck rule alone; she has no mom rule.
+    expect(setUpHer(life)).toMatchObject({ ok: true, done: { step: 'started', stillToSet: ['paycheckRule'] } });
     const book = life.keeper.book();
     expect(book?.switches()).toEqual(HER_SWITCHES);
     expect(book?.settings()).toEqual(HER_SETTINGS);
@@ -105,6 +106,21 @@ describe('Off in this setup: setup day and after, through the real server', () =
     // Even a server told to start upstream's way keeps the book's own switches.
     life.restart({ start: UPSTREAM_START });
     expect(life.keeper.book()?.switches()).toEqual(HER_SWITCHES);
+    // And it serves them: a bank rule on the old card is still refused.
+    const rule = { account: 'old-card' as const, contains: 'INTEREST CHARGE', means: 'card-interest' as const };
+    expect(life.keeper.bankRule({ id: decision(), bankRule: { add: rule }, confirmed: true })).toMatchObject({ ok: false, why: 'This setup has no old card. Nothing was changed.' });
+  });
+
+  it('Off in this setup: each switch is its own: with only the mom reserve off, a bank rule on the old card is taken', async () => {
+    const switches = { momReserve: 'off', oldCard: 'on' } as const;
+    const life = await lifeInAFile({ start: { settings: validateSettings({ ...DEFAULT_SETTINGS, ...settingsWhenOff(switches) }), switches } });
+    lives.push(life);
+    const rule = { account: 'old-card' as const, contains: 'MADE UP LATE FEE', means: 'card-fee' as const };
+    const id = decision();
+    const asked = life.keeper.bankRule({ id, bankRule: { add: rule } });
+    expect(asked).toMatchObject({ ok: false, code: 'needs-confirmation' });
+    const key = asked.ok ? '' : (asked.preview?.key ?? '');
+    expect(life.keeper.bankRule({ id, bankRule: { add: rule }, confirmed: true, seen: key })).toMatchObject({ ok: true });
   });
 
   it('1.2 her setup: activity on the account nobody picked is never read, and the self-check holds', async () => {

@@ -1,5 +1,6 @@
 import { checkBankRules } from '../src/bank/reading.js';
 import { HER_START } from '../src/setup-start.js';
+import type { SetupResponse } from '../src/views/choice.js';
 import { BANK_RULES } from './harness.js';
 import { ACCOUNT_IDS } from './fake-plaid.js';
 import { choose, decision, lifeInAFile, noonInNewYork, type Life } from './keeper-harness.js';
@@ -18,7 +19,8 @@ export function herLife(): Promise<Life> {
 
 // Setup day through the desk, as the screens send it, with no mom reserve:
 // the last paycheck, savings, wants, and the rest in needs, then her yes.
-export function setUpHer(life: Life): void {
+// Returns what her yes was answered.
+export function setUpHer(life: Life): SetupResponse {
   const k = life.keeper;
   for (const setup of [{ lastPaycheck: '2026-09-25' }, { assign: { pot: 'savings' as const, amount: 400_000 } }, { assign: { pot: 'wants' as const, amount: 20_000 } }, { assign: { pot: 'needs' as const, rest: true as const } }]) {
     const answer = k.setup({ id: decision(), setup });
@@ -28,6 +30,7 @@ export function setUpHer(life: Life): void {
   if (view.state !== 'not-set-up' || !view.ready) throw new Error('setup day is not ready');
   const started = k.setup({ id: decision(), setup: { start: true }, confirmed: true, seen: view.key });
   if (!started.ok) throw new Error(`tracking did not start: ${started.why}`);
+  return started;
 }
 
 const C = ACCOUNT_IDS.checking;
