@@ -40,10 +40,12 @@ export interface Life {
 
 // The made-up bank, connected, with his accounts and bank rules set, before
 // setup day; the books kept in a file.
-export async function lifeInAFile(options: Parameters<typeof connected>[0] & { readonly beforeCommit?: () => void; readonly push?: KeeperInput['push'] } = {}): Promise<Life> {
+export async function lifeInAFile(options: Parameters<typeof connected>[0] & { readonly beforeCommit?: () => void; readonly push?: KeeperInput['push']; readonly start?: KeeperInput['start'] } = {}): Promise<Life> {
   const dir = mkdtempSync(join(tmpdir(), 'budget-keeper-'));
   const path = join(dir, 'books.sqlite');
   const h = await connected({ rules: BANK_RULES, ...options, path });
+  // What setup day starts from, on every restart too (her setup's, or upstream's).
+  const start = options.start === undefined ? {} : { start: options.start };
   const life: Life = {
     h,
     path,
@@ -56,7 +58,7 @@ export async function lifeInAFile(options: Parameters<typeof connected>[0] & { r
     reopen: (input = {}) => {
       const db = openDatabase(path);
       try {
-        const keeper = Keeper.open({ db, now: () => life.now, ...input });
+        const keeper = Keeper.open({ db, now: () => life.now, ...start, ...input });
         return { keeper, db, close: () => db.close() };
       } catch (error) {
         db.close();
@@ -67,14 +69,14 @@ export async function lifeInAFile(options: Parameters<typeof connected>[0] & { r
       h.db.close();
       const db = openDatabase(path);
       (h as { db: Db }).db = db;
-      life.keeper = Keeper.open({ db, now: () => life.now, ...input });
+      life.keeper = Keeper.open({ db, now: () => life.now, ...start, ...input });
     },
     done: () => {
       h.db.close();
       rmSync(dir, { recursive: true, force: true });
     },
   };
-  life.keeper = Keeper.open({ db: h.db, now: () => life.now, ...(options.beforeCommit === undefined ? {} : { beforeCommit: options.beforeCommit }), ...(options.push === undefined ? {} : { push: options.push }) });
+  life.keeper = Keeper.open({ db: h.db, now: () => life.now, ...start, ...(options.beforeCommit === undefined ? {} : { beforeCommit: options.beforeCommit }), ...(options.push === undefined ? {} : { push: options.push }) });
   return life;
 }
 

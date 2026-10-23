@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SimBank } from './sim/bank.js';
-import { STAT_NAMES, describeFailure, liveALife, type LifeResult, type Stats } from './sim/life.js';
+import { HER_STAT_NAMES, OFF_IN_HER_LIFE, STAT_NAMES, describeFailure, liveALife, type LifeResult, type Stats } from './sim/life.js';
 import { Random } from './sim/random.js';
 
 // How many lives, and how long. npm test runs a few; scripts/simulate.mjs
@@ -14,6 +14,19 @@ let lives: LifeResult[] | undefined;
 function livedLives(): LifeResult[] {
   lives ??= SEEDS.map((seed) => liveALife({ seed, years: YEARS }));
   return lives;
+}
+
+// Lives shaped like hers (her rulebook, "Off in this setup"). npm test runs a
+// few; `node scripts/simulate.mjs --profile her` sets these to run thousands.
+const HER_FIRST_SEED = Number(process.env['SIM_HER_FIRST_SEED'] ?? 1);
+const HER_SEED_COUNT = Number(process.env['SIM_HER_SEEDS'] ?? 6);
+const HER_YEARS = Number(process.env['SIM_HER_YEARS'] ?? 2);
+const HER_SEEDS = Array.from({ length: HER_SEED_COUNT }, (_, i) => HER_FIRST_SEED + i);
+
+let herLives: LifeResult[] | undefined;
+function livedHerLives(): LifeResult[] {
+  herLives ??= HER_SEEDS.map((seed) => liveALife({ seed, years: HER_YEARS, profile: 'her' }));
+  return herLives;
 }
 
 // Phase 2, the simulated you. The simulator has its own bank, kept apart from
@@ -179,8 +192,34 @@ describe('simulator: a simulated life', () => {
   });
 });
 
-function totalsOf(results: readonly LifeResult[]): Stats {
-  const totals = Object.fromEntries(STAT_NAMES.map((name) => [name, 0])) as Stats;
-  for (const result of results) for (const name of STAT_NAMES) totals[name] += result.stats[name];
+describe('simulator: lives shaped like hers', () => {
+  it('Off in this setup: her life is not the upstream life: the same seed lives another life', () => {
+    expect(liveALife({ seed: 7, years: 0.5, profile: 'her' }).stats).not.toEqual(liveALife({ seed: 7, years: 0.5 }).stats);
+    expect(liveALife({ seed: 7, years: 0.5, profile: 'her' })).toEqual(liveALife({ seed: 7, years: 0.5, profile: 'her' }));
+  });
+
+  it(`Off in this setup: her setup: every check passes, every day, in lives shaped like hers (${HER_SEED_COUNT} lives of ${HER_YEARS} years)`, { timeout: 3_600_000 }, () => {
+    const failures = livedHerLives().filter((result) => !result.ok);
+    if (process.env['SIM_REPORT']) {
+      console.log(`SIM-TOTALS ${JSON.stringify(totalsOf(livedHerLives(), [...STAT_NAMES, ...HER_STAT_NAMES]))}`);
+      console.log(`SIM-FAILED ${JSON.stringify(failures.map((f) => f.seed))}`);
+      for (const f of failures) if (!f.ok) console.log(`SIM-REPORT-BEGIN\n${describeFailure(f, HER_YEARS, 'her')}\nSIM-REPORT-END`);
+    }
+    if (failures.length > 0) {
+      expect.fail(`${failures.length} of ${HER_SEED_COUNT} lives shaped like hers failed.\n\n${failures.map((f) => (f.ok ? '' : describeFailure(f, HER_YEARS, 'her'))).join('\n\n')}`);
+    }
+  });
+
+  it('Off in this setup: her lives cover everything but the mom reserve and the old card, which never happen', { timeout: 3_600_000 }, () => {
+    const totals = totalsOf(livedHerLives(), [...STAT_NAMES, ...HER_STAT_NAMES]);
+    const expected = [...STAT_NAMES.filter((name) => !OFF_IN_HER_LIFE.includes(name)), ...HER_STAT_NAMES];
+    expect(expected.filter((name) => totals[name] === 0), `never happened in ${HER_SEED_COUNT} lives of ${HER_YEARS} years`).toEqual([]);
+    expect(Object.fromEntries(OFF_IN_HER_LIFE.map((name) => [name, totals[name]]))).toEqual(Object.fromEntries(OFF_IN_HER_LIFE.map((name) => [name, 0])));
+  });
+});
+
+function totalsOf(results: readonly LifeResult[], names: readonly (keyof Stats)[] = STAT_NAMES): Stats {
+  const totals = Object.fromEntries(names.map((name) => [name, 0])) as Stats;
+  for (const result of results) for (const name of names) totals[name] += result.stats[name];
   return totals;
 }

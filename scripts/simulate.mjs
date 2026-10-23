@@ -6,6 +6,10 @@
 //   node scripts/simulate.mjs --lives 200 --years 10
 //   node scripts/simulate.mjs --first 5001             start at another seed
 //   node scripts/simulate.mjs --seed 1234 --years 5    play one life again
+//   node scripts/simulate.mjs --profile her            lives shaped like hers
+//                                                      (her rulebook, "Off in
+//                                                      this setup"); with any
+//                                                      of the above
 //
 // Prints each failure with its seed and day, and exits non-zero if any life
 // failed. A failure becomes a test before it gets fixed (CLAUDE.md).
@@ -16,18 +20,19 @@ import { fileURLToPath } from 'node:url';
 const root = new URL('../', import.meta.url);
 const vitest = fileURLToPath(new URL('node_modules/vitest/vitest.mjs', root));
 
-const options = { lives: 1_000, years: 5, first: 1 };
+const options = { lives: 1_000, years: 5, first: 1, profile: 'upstream' };
 const args = process.argv.slice(2);
 for (let i = 0; i < args.length; i += 2) {
   const name = args[i];
   const value = Number(args[i + 1]);
   const whole = Number.isInteger(value) && value >= 0;
-  if (name === '--lives' && whole && value > 0) options.lives = value;
+  if (name === '--profile' && (args[i + 1] === 'her' || args[i + 1] === 'upstream')) options.profile = args[i + 1];
+  else if (name === '--lives' && whole && value > 0) options.lives = value;
   else if (name === '--years' && value > 0) options.years = value;
   else if (name === '--first' && whole) options.first = value;
   else if (name === '--seed' && whole) Object.assign(options, { first: value, lives: 1 });
   else {
-    console.error(`Not understood: ${name} ${args[i + 1] ?? ''}. Use --lives, --years, --first, or --seed with a number.`);
+    console.error(`Not understood: ${name} ${args[i + 1] ?? ''}. Use --lives, --years, --first, or --seed with a number, or --profile her.`);
     process.exit(2);
   }
 }
@@ -41,11 +46,16 @@ for (let w = 0, next = options.first; w < workers; w++) {
   next += count;
 }
 
+// Her lives have their own test and their own seeds, years and count.
+const her = options.profile === 'her';
+const prefix = her ? 'SIM_HER_' : 'SIM_';
+const testName = her ? 'in lives shaped like hers' : 'on every simulated day';
+
 function live(slice) {
   return new Promise((resolve) => {
-    const child = spawn(process.execPath, [vitest, 'run', 'packages/money/test/simulator.test.ts', '-t', 'on every simulated day', '--silent=false'], {
+    const child = spawn(process.execPath, [vitest, 'run', 'packages/money/test/simulator.test.ts', '-t', testName, '--silent=false'], {
       cwd: root,
-      env: { ...process.env, SIM_FIRST_SEED: String(slice.first), SIM_SEEDS: String(slice.count), SIM_YEARS: String(options.years), SIM_REPORT: '1' },
+      env: { ...process.env, [`${prefix}FIRST_SEED`]: String(slice.first), [`${prefix}SEEDS`]: String(slice.count), [`${prefix}YEARS`]: String(options.years), SIM_REPORT: '1' },
     });
     let output = '';
     child.stdout.on('data', (chunk) => (output += chunk));
@@ -74,7 +84,7 @@ for (const { slice, output } of results) {
 
 const seconds = Math.round((Date.now() - started) / 1000);
 const last = options.first + options.lives - 1;
-console.log(`${options.lives} lives of ${options.years} years (seeds ${options.first} to ${last}): ${totals.days ?? 0} simulated days, in ${seconds}s on ${workers} cores.`);
+console.log(`${options.lives} lives${her ? ' shaped like hers' : ''} of ${options.years} years (seeds ${options.first} to ${last}): ${totals.days ?? 0} simulated days, in ${seconds}s on ${workers} cores.`);
 console.log(Object.entries(totals).map(([name, n]) => `${name} ${n}`).join(', '));
 if (failedSeeds.length > 0) console.log(`\n${failedSeeds.length} lives failed: seeds ${failedSeeds.sort((a, b) => a - b).join(', ')}.`);
 else if (notRun === 0) console.log('\nEvery check passed on every simulated day.');

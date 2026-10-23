@@ -1,4 +1,4 @@
-import type { BucketsView } from '@budget-app/server/views';
+import type { BucketsShown as BucketsView } from '@budget-app/server/views';
 import { useState } from 'react';
 import type { Load, Reload } from '../app/api.js';
 import { activityPath, pathOf } from '../app/routes.js';
@@ -108,16 +108,19 @@ function BucketsReady({ view, reload, onChanged }: { readonly view: Tracking; re
         <ListRow icon="bank" title="Payday" detail="What your last paycheck did, and how the pay period went" href="/payday" testId="row-payday" />
       </Card>
 
-      <Card title="Savings and reserves" testId="reserves">
+      {/* "Off in this setup": with no mom reserve, nothing about one. */}
+      <Card title={momReserve === undefined ? 'Savings' : 'Savings and reserves'} testId="reserves">
         <ListRow icon="bank" title="Savings" trailing={<Money cents={view.savings} roll testId="savings" />} href={activityPath('savings')} testId="row-savings" />
-        <ListRow
-          icon="heart"
-          title="Mom reserve"
-          detail="Set aside from each paycheck. What you send her comes out of it."
-          trailing={<Money cents={momReserve.amount} roll testId="mom-reserve" />}
-          href={activityPath('momReserve')}
-          testId="row-mom-reserve"
-        />
+        {momReserve !== undefined && (
+          <ListRow
+            icon="heart"
+            title="Mom reserve"
+            detail="Set aside from each paycheck. What you send her comes out of it."
+            trailing={<Money cents={momReserve.amount} roll testId="mom-reserve" />}
+            href={activityPath('momReserve')}
+            testId="row-mom-reserve"
+          />
+        )}
         <ListRow
           icon="people"
           title="Held for others"
@@ -129,26 +132,34 @@ function BucketsReady({ view, reload, onChanged }: { readonly view: Tracking; re
       </Card>
 
       <Card title="Move money" testId="move-money">
-        <ListRow icon="move" title="Move money between buckets" detail="Needs, wants, savings, the mom reserve, or money held for others" onClick={() => setMoving(true)} testId="move-open" />
+        <ListRow
+          icon="move"
+          title="Move money between buckets"
+          detail={momReserve === undefined ? 'Needs, wants, savings, or money held for others' : 'Needs, wants, savings, the mom reserve, or money held for others'}
+          onClick={() => setMoving(true)}
+          testId="move-open"
+        />
       </Card>
 
       {/* 8.2: what was sent this month, apart from what the reserve holds. */}
-      <Card title="Sent to mom" testId="mom-month">
-        <TargetBar
-          testId="mom"
-          name={`${monthName(momReserve.month)} so far`}
-          amount={<Money cents={momReserve.sent} testId="mom-sent" />}
-          caption={
-            <>
-              Target <Money cents={momReserve.target.low} testId="mom-target-low" /> to <Money cents={momReserve.target.high} testId="mom-target-high" /> a month.
-            </>
-          }
-          sent={momReserve.sent}
-          low={momReserve.target.low}
-          high={momReserve.target.high}
-          position={momReserve.position}
-        />
-      </Card>
+      {momReserve !== undefined && (
+        <Card title="Sent to mom" testId="mom-month">
+          <TargetBar
+            testId="mom"
+            name={`${monthName(momReserve.month)} so far`}
+            amount={<Money cents={momReserve.sent} testId="mom-sent" />}
+            caption={
+              <>
+                Target <Money cents={momReserve.target.low} testId="mom-target-low" /> to <Money cents={momReserve.target.high} testId="mom-target-high" /> a month.
+              </>
+            }
+            sent={momReserve.sent}
+            low={momReserve.target.low}
+            high={momReserve.target.high}
+            position={momReserve.position}
+          />
+        </Card>
+      )}
 
       {waiting.count > 0 && (
         <Card title="Not in a bucket yet" testId="waiting">
@@ -192,20 +203,22 @@ function BucketsReady({ view, reload, onChanged }: { readonly view: Tracking; re
         </Card>
       )}
 
-      <Card title="Old card" testId="old-card">
-        <ListRow
-          icon="card"
-          title="Debt on the old card"
-          detail={view.oldCard < 0 ? "You've paid more than it owed, so this is a credit. It is not part of your buckets." : 'Not part of your buckets.'}
-          trailing={<Money cents={view.oldCard} testId="old-card-debt" />}
-          testId="row-old-card"
-        />
-      </Card>
+      {view.oldCard !== undefined && (
+        <Card title="Old card" testId="old-card">
+          <ListRow
+            icon="card"
+            title="Debt on the old card"
+            detail={view.oldCard < 0 ? "You've paid more than it owed, so this is a credit. It is not part of your buckets." : 'Not part of your buckets.'}
+            trailing={<Money cents={view.oldCard} testId="old-card-debt" />}
+            testId="row-old-card"
+          />
+        </Card>
+      )}
 
       <MoveMoney
         open={moving}
         onClose={() => setMoving(false)}
-        balances={{ savings: view.savings, needs: view.needs.left, wants: view.wants.left, momReserve: momReserve.amount, heldForOthers: heldForOthers.heldForOthers }}
+        balances={{ savings: view.savings, needs: view.needs.left, wants: view.wants.left, ...(momReserve === undefined ? {} : { momReserve: momReserve.amount }), heldForOthers: heldForOthers.heldForOthers }}
         start={{ from: 'wants', to: 'needs' }}
         onMoved={(text) => {
           setMoved({ tone: 'ok', text });

@@ -1,5 +1,5 @@
 import type { Cents } from '@budget-app/money';
-import type { Landing, PlaceGroup, TrendsItem, TrendsPart, TrendsPeriod, TrendsView } from '@budget-app/server/views';
+import type { Landing, PlaceGroup, TrendsItem, TrendsPart, TrendsPeriodShown as TrendsPeriod, TrendsShown as TrendsView } from '@budget-app/server/views';
 import { useState, type CSSProperties } from 'react';
 import type { Load, Reload } from '../app/api.js';
 import { BottomSheet, Button, Card, Hero, ListRow, MadeUpPill, Money, Segmented, Skeleton, StateMessage, StatusLabel } from '../ui/blocks.js';
@@ -40,6 +40,11 @@ import {
 // spent so far this pay period.
 
 const PARTS: readonly TrendsPart[] = ['needs', 'wants', 'old-card', 'unsorted'];
+
+// "Off in this setup": with no old card there is no old card part (40.2, 40.4),
+// and nothing is said about leaving its payments out.
+const oldCardOn = (view: Tracking): boolean => view.future.oldCard !== undefined;
+const partsOf = (period: TrendsPeriod): readonly TrendsPart[] => PARTS.filter((part) => period.spent[part] !== undefined);
 type Segment = 'past' | 'now' | 'future' | 'habits';
 type Tracking = Extract<TrendsView, { state: 'tracking' }>;
 // What a tap on a habit opens: the items behind it, adding up to its total.
@@ -114,7 +119,7 @@ function TrendsReady({ view }: { readonly view: Tracking }) {
 
       <CheckBanner check={view.check} />
 
-      <Hero label="Spent this pay period" testId="trends-hero" sub={<span data-testid="trends-hero-sub">{periodRange(here)}, so far. Old card payments left out.</span>}>
+      <Hero label="Spent this pay period" testId="trends-hero" sub={<span data-testid="trends-hero-sub">{periodRange(here)}, so far.{oldCardOn(view) ? ' Old card payments left out.' : ''}</span>}>
         <Money cents={view.now.spentSoFar} hero roll testId="trends-spent-so-far" />
       </Hero>
 
@@ -189,15 +194,15 @@ function Past({ view, picked, onPick, onPlace }: { readonly view: Tracking; read
             key: String(i),
             label: periodShort(p),
             words: barWords(p),
-            parts: PARTS.map((part) => ({ tone: part, cents: p.spent[part] })),
+            parts: partsOf(p).map((part) => ({ tone: part, cents: p.spent[part] ?? 0 })),
             lighter: p.beforeSetup === 'all',
             selected: p === selected,
           }))}
         />
-        <ChartLegend items={PARTS.map((part) => ({ tone: part, label: partName(part) }))} />
+        <ChartLegend items={partsOf(selected).map((part) => ({ tone: part, label: partName(part) }))} />
         <div className="list" data-testid="period-parts">
-          {PARTS.map((part) => (
-            <ListRow key={part} title={partName(part)} trailing={<Money cents={selected.spent[part]} testId={`period-part-${part}`} />} testId={`period-part-row-${part}`} />
+          {partsOf(selected).map((part) => (
+            <ListRow key={part} title={partName(part)} trailing={<Money cents={selected.spent[part] ?? 0} testId={`period-part-${part}`} />} testId={`period-part-row-${part}`} />
           ))}
         </div>
         {anyBefore && <p className="trend-note">Pay periods before setup day ({monthDay(view.setupDay)}) are read from the bank&rsquo;s history by today&rsquo;s rules, drawn lighter. Your books do not change.</p>}
@@ -250,25 +255,27 @@ function Savings({ view }: { readonly view: Tracking }) {
   const now = view.savings[view.savings.length - 1];
   if (now === undefined) return null;
   const first = view.savings[0] ?? now;
+  // "Off in this setup": with no mom reserve, savings alone (40.5).
+  const reserveNow = now.momReserve;
   return (
     <Card title="Savings" padded testId="trends-savings">
       <div className="list">
         <ListRow title="Savings" trailing={<Money cents={now.savings} testId="savings-now" />} />
-        <ListRow title="Mom reserve" trailing={<Money cents={now.momReserve} testId="mom-now" />} />
+        {reserveNow !== undefined && <ListRow title="Mom reserve" trailing={<Money cents={reserveNow} testId="mom-now" />} />}
       </div>
       <LineChart
         testId="savings-chart"
         length={view.savings.length}
-        label={`Savings from ${moneyWords(first.savings)} on ${monthDay(first.date)} to ${moneyWords(now.savings)} now; the mom reserve from ${moneyWords(first.momReserve)} to ${moneyWords(now.momReserve)}.`}
+        label={`Savings from ${moneyWords(first.savings)} on ${monthDay(first.date)} to ${moneyWords(now.savings)} now${reserveNow === undefined ? '' : `; the mom reserve from ${moneyWords(first.momReserve ?? 0)} to ${moneyWords(reserveNow)}`}.`}
         lines={[
           { key: 'savings', tone: 'savings', values: view.savings.map((p) => p.savings), area: true },
-          { key: 'mom', tone: 'mom', values: view.savings.map((p) => p.momReserve), dashed: true },
+          ...(reserveNow === undefined ? [] : [{ key: 'mom', tone: 'mom' as const, values: view.savings.map((p) => p.momReserve ?? 0), dashed: true }]),
         ]}
       />
       <ChartLegend
         items={[
           { tone: 'savings', label: 'Savings' },
-          { tone: 'mom', label: 'Mom reserve', dashed: true },
+          ...(reserveNow === undefined ? [] : [{ tone: 'mom' as const, label: 'Mom reserve', dashed: true }]),
         ]}
       />
       <p className="trend-note">Since setup day ({monthDay(view.setupDay)}), at the end of each pay period. Nothing before: the buckets did not exist then.</p>
@@ -281,7 +288,7 @@ function Savings({ view }: { readonly view: Tracking }) {
 function Now({ view }: { readonly view: Tracking }) {
   const w = view.now.wants;
   const words = paceWords(w.pace);
-  const usual = usualLines(view.now.usual, view.now.day);
+  const usual = usualLines(view.now.usual, view.now.day, oldCardOn(view));
   const length = Math.max(w.line.length, w.pace.state === 'pace' ? w.pace.points.length : 0);
   return (
     <>
@@ -334,8 +341,6 @@ function Future({ view }: { readonly view: Tracking }) {
   const { landing, savings, oldCard } = view.future;
   const waiting = waitingWords(landing.waitingInReview);
   const [rangeTitle, rangeNote] = savingsWords(savings);
-  const owedNow = oldCard.owed[oldCard.owed.length - 1];
-  const plan = oldCard.plan;
   return (
     <>
       <Card title="By payday" padded testId="future-landing">
@@ -350,7 +355,7 @@ function Future({ view }: { readonly view: Tracking }) {
             {waiting}
           </p>
         )}
-        <p className="trend-note">At this pay period’s pace, old card payments left out. Never a promise.</p>
+        <p className="trend-note">At this pay period’s pace{oldCardOn(view) ? ', old card payments left out' : ''}. Never a promise.</p>
       </Card>
 
       <Card title="Savings a year out" padded testId="future-savings">
@@ -388,6 +393,17 @@ function Future({ view }: { readonly view: Tracking }) {
         </p>
       </Card>
 
+      {oldCard !== undefined && <OldCardFuture view={view} oldCard={oldCard} />}
+    </>
+  );
+}
+
+// 40.13; not there with the old card off ("Off in this setup").
+function OldCardFuture({ view, oldCard }: { readonly view: Tracking; readonly oldCard: NonNullable<Tracking['future']['oldCard']> }) {
+  const owedNow = oldCard.owed[oldCard.owed.length - 1];
+  const plan = oldCard.plan;
+  return (
+    <>
       <Card title="The old card" padded testId="future-old-card">
         <div className="trend-head">
           <span>Owes now</span>
@@ -592,8 +608,8 @@ function PeriodDetail({ period }: { readonly period: TrendsPeriod }) {
     <>
       {note !== null && <p className="sheet__note">{note}</p>}
       <div className="list">
-        {PARTS.map((part) => (
-          <ListRow key={part} title={partName(part)} trailing={<Money cents={period.spent[part]} testId={`sheet-part-${part}`} />} />
+        {partsOf(period).map((part) => (
+          <ListRow key={part} title={partName(part)} trailing={<Money cents={period.spent[part] ?? 0} testId={`sheet-part-${part}`} />} />
         ))}
         <ListRow title="In all" trailing={<Money cents={period.total} testId="sheet-total" />} />
       </div>

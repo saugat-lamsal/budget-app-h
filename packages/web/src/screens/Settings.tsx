@@ -1,5 +1,5 @@
 import { formatDollars, parseDollars, type Cents, type LeftoverChoice, type Settings } from '@budget-app/money';
-import type { BankRuleChange, LoginView, LogRow, PushView, RuleRequest, RuleRow, RuleSpec, SettingsPreviewView, SettingsRequest, SettingsView, SyncView } from '@budget-app/server/views';
+import type { BankRuleChange, LoginView, LogRow, PushView, RuleRequest, RuleRow, RuleSpec, SettingsPreviewView, SettingsRequest, SettingsShown as SettingsView, SettingsValuesShown, SyncView } from '@budget-app/server/views';
 import { useRef, useState, type ReactNode } from 'react';
 import { newDecisionId, sendChoice, type Load, type Reload } from '../app/api.js';
 import { pathOf, pathOfRoute } from '../app/routes.js';
@@ -121,6 +121,8 @@ type Editing =
 
 function SettingsReady({ view, reload, onChanged }: { readonly view: Tracking; readonly reload: Reload; readonly onChanged: Reload }) {
   const { settings: s, split, check, payoff } = view;
+  // The mom reserve in force and from the next paycheck; null when it is off ("Off in this setup").
+  const reserve = reserveOf(split);
   const [editing, setEditing] = useState<Editing | null>(null);
   // Each opening of the sheet is a new sheet, filled in from the values as they are then.
   const [opened, setOpened] = useState(0);
@@ -181,14 +183,15 @@ function SettingsReady({ view, reload, onChanged }: { readonly view: Tracking; r
         </Banner>
       )}
 
-      {/* 13.1: this pay period's split and reserve, next to what the next paycheck will use. */}
+      {/* 13.1: this pay period's split and reserve, next to what the next paycheck will use.
+          "Off in this setup": with no mom reserve, the split alone. */}
       <Card title="Paycheck split" testId="split-card">
         <p className="card__note" data-testid="split-note">
           {split.waiting.length > 0 ? `Your changes start at your next paycheck, ${next}. ` : 'A change starts at your next paycheck. '}
           This pay period keeps what it started with.
         </p>
         <CompareTable
-          caption="The split and the mom reserve, this pay period and from your next paycheck"
+          caption={reserve === null ? 'The split, this pay period and from your next paycheck' : 'The split and the mom reserve, this pay period and from your next paycheck'}
           testId="split-table"
           columns={[
             { name: 'This pay period', sub: `since ${shortDate(split.payPeriodStarted)}` },
@@ -202,24 +205,28 @@ function SettingsReady({ view, reload, onChanged }: { readonly view: Tracking; r
               differs: split.thisPayPeriod.split[bucket] !== split.fromNextPaycheck.split[bucket],
               testId: `split-${bucket}`,
             })),
-            {
-              label: 'Mom reserve per paycheck',
-              first: <Money cents={split.thisPayPeriod.momReservePerPaycheck} />,
-              second: <Money cents={split.fromNextPaycheck.momReservePerPaycheck} />,
-              differs: split.waiting.includes('momReservePerPaycheck'),
-              testId: 'split-reserve',
-            },
-            {
-              label: 'Mom reserve cap',
-              first: <Money cents={split.thisPayPeriod.momReserveCap} />,
-              second: <Money cents={split.fromNextPaycheck.momReserveCap} />,
-              differs: split.waiting.includes('momReserveCap'),
-              testId: 'split-cap',
-            },
+            ...(reserve === null
+              ? []
+              : [
+                  {
+                    label: 'Mom reserve per paycheck',
+                    first: <Money cents={reserve.now.perPaycheck} />,
+                    second: <Money cents={reserve.next.perPaycheck} />,
+                    differs: split.waiting.includes('momReservePerPaycheck'),
+                    testId: 'split-reserve',
+                  },
+                  {
+                    label: 'Mom reserve cap',
+                    first: <Money cents={reserve.now.cap} />,
+                    second: <Money cents={reserve.next.cap} />,
+                    differs: split.waiting.includes('momReserveCap'),
+                    testId: 'split-cap',
+                  },
+                ]),
           ]}
         />
         <ListRow icon="settings" title="Change the split" detail="Savings, needs, and wants, in whole percents" onClick={() => open({ what: 'split' })} testId="row-split" />
-        <ListRow icon="heart" title="Change the mom reserve" detail="What each paycheck sets aside for mom, and the most it holds" onClick={() => open({ what: 'reserve' })} testId="row-reserve" />
+        {reserve !== null && <ListRow icon="heart" title="Change the mom reserve" detail="What each paycheck sets aside for mom, and the most it holds" onClick={() => open({ what: 'reserve' })} testId="row-reserve" />}
       </Card>
 
       <Card title="Paycheck" testId="paycheck-card">
@@ -229,19 +236,21 @@ function SettingsReady({ view, reload, onChanged }: { readonly view: Tracking; r
         {textRow('leftover', 'Leftover at payday', leftoverText(s.leftoverAtPayday), 'What happens to what is left in needs and wants')}
       </Card>
 
-      <Card title="Mom" testId="mom-card">
-        {textRow('mom-rule', 'Mom rule', textRuleText(s.momRule), 'Her name as it shows on your transfers')}
-        <ListRow
-          title="Monthly target"
-          detail={
-            <span data-testid="value-target">
-              <Money cents={s.momMonthlyTarget.low} testId="target-low" /> to <Money cents={s.momMonthlyTarget.high} testId="target-high" /> a month
-            </span>
-          }
-          onClick={() => open({ what: 'target' })}
-          testId="row-target"
-        />
-      </Card>
+      {s.momRule !== undefined && s.momMonthlyTarget !== undefined && (
+        <Card title="Mom" testId="mom-card">
+          {textRow('mom-rule', 'Mom rule', textRuleText(s.momRule), 'Her name as it shows on your transfers')}
+          <ListRow
+            title="Monthly target"
+            detail={
+              <span data-testid="value-target">
+                <Money cents={s.momMonthlyTarget.low} testId="target-low" /> to <Money cents={s.momMonthlyTarget.high} testId="target-high" /> a month
+              </span>
+            }
+            onClick={() => open({ what: 'target' })}
+            testId="row-target"
+          />
+        </Card>
+      )}
 
       <Card title="Alerts and reminders" testId="alerts-card">
         {/* 9.8 (A52): a card whose statement cannot be read is never dropped without a word. */}
@@ -260,7 +269,7 @@ function SettingsReady({ view, reload, onChanged }: { readonly view: Tracking; r
         {row('low-alert', 'Low-bucket alert', `${s.lowBucketAlertPercent}%`, 'Of what needs or wants started the pay period with')}
         {textRow('reminders', 'Card reminders', reminderText(s.cardReminderDaysBefore), 'Before each card is due')}
         {textRow('closing-day-everyday', 'Everyday card: statement closing day', closingDayText(s.everydayCardClosingDay), 'Used only when the bank does not send the statement date')}
-        {textRow('closing-day-old', 'Old card: statement closing day', closingDayText(s.oldCardClosingDay), 'Used only when the bank does not send the statement date')}
+        {s.oldCardClosingDay !== undefined && textRow('closing-day-old', 'Old card: statement closing day', closingDayText(s.oldCardClosingDay), 'Used only when the bank does not send the statement date')}
         {row('review-time', 'Daily review', timeText(s.dailyReviewTime), 'Only when something waits in Review')}
         {textRow('time-zone', 'Home time zone', zoneText(s.homeTimeZone), 'Today is the date here, and the daily review time is in it')}
         {textRow('quiet-hours', 'Quiet hours', quietHoursText(s.quietHours), 'No alerts then. What comes due waits until they end')}
@@ -282,25 +291,27 @@ function SettingsReady({ view, reload, onChanged }: { readonly view: Tracking; r
         />
       )}
 
-      <Card title="Old card" testId="old-card-card">
-        {row('promo', 'Promo end date', s.oldCardPromoEndDate === null ? 'Not entered' : dayWithYear(s.oldCardPromoEndDate))}
-        <ListRow
-          title="Payoff countdown"
-          testId="payoff"
-          detail={
-            <span data-testid="payoff-text">
-              {!payoff.on
-                ? 'Off until you enter the promo end date'
-                : payoff.owed <= 0
-                  ? 'Nothing owed on the old card'
-                  : payoff.paydaysLeft === 0
-                    ? `No paydays left before ${dayWithYear(payoff.promoEndDate)}: all of it is due now`
-                    : `${payoff.paydaysLeft} ${payoff.paydaysLeft === 1 ? 'payday' : 'paydays'} left before ${dayWithYear(payoff.promoEndDate)}`}
-            </span>
-          }
-          trailing={payoff.on ? <Money cents={payoff.perPayday} testId="payoff-per-payday" /> : undefined}
-        />
-      </Card>
+      {payoff !== undefined && s.oldCardPromoEndDate !== undefined && (
+        <Card title="Old card" testId="old-card-card">
+          {row('promo', 'Promo end date', s.oldCardPromoEndDate === null ? 'Not entered' : dayWithYear(s.oldCardPromoEndDate))}
+          <ListRow
+            title="Payoff countdown"
+            testId="payoff"
+            detail={
+              <span data-testid="payoff-text">
+                {!payoff.on
+                  ? 'Off until you enter the promo end date'
+                  : payoff.owed <= 0
+                    ? 'Nothing owed on the old card'
+                    : payoff.paydaysLeft === 0
+                      ? `No paydays left before ${dayWithYear(payoff.promoEndDate)}: all of it is due now`
+                      : `${payoff.paydaysLeft} ${payoff.paydaysLeft === 1 ? 'payday' : 'paydays'} left before ${dayWithYear(payoff.promoEndDate)}`}
+              </span>
+            }
+            trailing={payoff.on ? <Money cents={payoff.perPayday} testId="payoff-per-payday" /> : undefined}
+          />
+        </Card>
+      )}
 
       <Card title="Sorting rules" testId="rules-card">
         <p className="card__note">The first rule that matches wins. A new rule goes to the end of its list. Fees, money out of savings, and paychecks have no rules.</p>
@@ -380,6 +391,7 @@ function SettingsReady({ view, reload, onChanged }: { readonly view: Tracking; r
           key={`bank-${opened}`}
           editing={bankEditing}
           rules={view.bankRules}
+          {...(view.accounts === undefined ? {} : { accounts: view.accounts })}
           send={sendBankRule}
           onClose={() => setBankEditing(null)}
           onDone={(change) => {
@@ -501,14 +513,22 @@ const dollars = (text: string): Cents | null => {
 // An amount as it is typed: 1,500.00 (never negative here).
 const typed = (cents: Cents): string => formatDollars(cents).replace('$', '');
 
-function startFields(editing: Editing, s: Settings): Fields {
+function reserveOf(split: Tracking['split']): { readonly now: { readonly perPaycheck: Cents; readonly cap: Cents }; readonly next: { readonly perPaycheck: Cents; readonly cap: Cents } } | null {
+  const { momReservePerPaycheck: perPaycheck, momReserveCap: cap } = split.thisPayPeriod;
+  const { momReservePerPaycheck: nextPerPaycheck, momReserveCap: nextCap } = split.fromNextPaycheck;
+  if (perPaycheck === undefined || cap === undefined || nextPerPaycheck === undefined || nextCap === undefined) return null;
+  return { now: { perPaycheck, cap }, next: { perPaycheck: nextPerPaycheck, cap: nextCap } };
+}
+
+// "Off in this setup": a setting that is not there is never opened (its row is not shown).
+function startFields(editing: Editing, s: SettingsValuesShown): Fields {
   switch (editing.what) {
     case 'split':
       return { savings: String(s.split.savings), needs: String(s.split.needs), wants: String(s.split.wants) };
     case 'reserve':
-      return { perPaycheck: typed(s.momReservePerPaycheck), cap: typed(s.momReserveCap) };
+      return { perPaycheck: typed(s.momReservePerPaycheck ?? 0), cap: typed(s.momReserveCap ?? 0) };
     case 'target':
-      return { low: typed(s.momMonthlyTarget.low), high: typed(s.momMonthlyTarget.high) };
+      return { low: typed(s.momMonthlyTarget?.low ?? 0), high: typed(s.momMonthlyTarget?.high ?? 0) };
     case 'low-alert':
       return { percent: String(s.lowBucketAlertPercent) };
     case 'reminders':
@@ -542,7 +562,7 @@ function startFields(editing: Editing, s: Settings): Fields {
     case 'closing-day-everyday':
       return { day: s.everydayCardClosingDay === null ? '' : String(s.everydayCardClosingDay) };
     case 'closing-day-old':
-      return { day: s.oldCardClosingDay === null ? '' : String(s.oldCardClosingDay) };
+      return { day: s.oldCardClosingDay === null || s.oldCardClosingDay === undefined ? '' : String(s.oldCardClosingDay) };
     case 'rule':
       return editing.rule === null ? { kind: 'purchase', text: '', to: 'needs' } : { kind: editing.rule.for, text: editing.rule.contains, to: editing.rule.to };
   }

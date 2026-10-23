@@ -7,9 +7,11 @@ How this rulebook is built (draft H1, Oct 23, 2026). It starts from
 upstream's rulebook, draft 30, kept word for word in sections 0 to 42,
 with every number, because the code is upstream's and its tests are named
 after those numbers. Today the code does exactly what sections 0 to 42 say,
-for upstream's setup (one bank, the old card, the mom reserve). Her setup is
-in section "H. Approved for her setup, not built yet" at the end: the texts
-he approved on Oct 23, 2026 (docs/her-plan.txt). A text there is not in
+for upstream's setup (one bank, the old card, the mom reserve), with the
+texts already moved here from section H in their places (PR 3: "Off in this
+setup" after section 1, section 2, 12.2, 40.2 and 40.4). The rest of her
+setup is in section "H. Approved for her setup, not built yet" at the end:
+the texts he approved on Oct 23, 2026 (docs/her-plan.txt). A text there is not in
 force until the pull request named above it moves it into its place here,
 with its tests. Until then, the rule it replaces is the one in force. "You"
 is the owner. New rules are numbered from 50, and her answers will be
@@ -80,11 +82,19 @@ sections from 60.
      changes.
 
 
+## Off in this setup
+
+These rules are part of the app and keep their tests, but this setup has no
+mom reserve and no old card, and they never apply: 3.2, 5.2, 5.4, 5.5, 7.6
+(the "for mom" choice), 8.1 to 8.4, 9.2, 9.5, 12.4, 40.13, and the old
+card's share in 10.14. Being off is fixed on setup day and is not a setting
+on the Settings screen. Off is not zero: nothing about them is shown or
+offered anywhere.
+
+
 ## 2. Settings and starting values
 
 - Split: savings 50%, needs 30%, wants 20% (must add up to 100)
-- Mom reserve: $1,500 per paycheck, capped at $3,000
-- Mom monthly target: $2,000 to $3,000
 - Low-bucket alert: 20% of what the bucket started the pay period with
 - Card reminders: 7 days and 2 days before the due date
 - Statement closing day, for each card: the day of the month its statement
@@ -114,7 +124,6 @@ sections from 60.
   stay exactly as sent.
 - Leftover at payday: ask each time (other options: always roll over,
   always move to savings)
-- Old card promo end date: (you fill in)
 - Paycheck rule: how your pay shows up on the statement (set after first sync)
 - Pay schedule: twice a month, on the 15th and on the last day of the
   month; when that day is a Saturday or Sunday, the Friday before. The
@@ -126,7 +135,6 @@ sections from 60.
   (13.1).
 - Setup day looks back 10 days for transfers with only one side showing
   (14.2). You can change it on the Setup day screen.
-- Mom rule: her name as it appears on transfers (you enter it in the app)
 - Bank rules: which bank items are transfers between your accounts,
   payments to people, and card fees or interest. Each is text the bank's
   description contains, on one account (set after the first sync; the
@@ -446,8 +454,8 @@ sections from 60.
       bank gives no available balance, its posted balance less pending
       charges. For the everyday card, what it owes, including pending
       charges (they already count in the buckets under 4.6).
-12.2  App side: savings + needs + wants + mom reserve + held for others
-      + unsorted money in - unsorted spending.
+12.2  App side: savings + needs + wants + held for others + unsorted
+      money in - unsorted spending.
       Unsorted money in: deposits and refunds waiting in review
       (3.7, 4.5, 6.1).
 12.3  The two must be equal. If not, the app shows a warning with the
@@ -931,7 +939,9 @@ it is worked out on the server, and nothing on it is sent anywhere.
       matches, and money in to checking or savings are left out; money back
       on a card counts against the bucket its rule sorts it to; a charge
       still pending on setup day counts once, at the amount setup day
-      counted (14.2), and any later difference is in the books.
+      counted (14.2), and any later difference is in the books. In this
+      setup there is no old card ("Off in this setup"), and nothing ever
+      shows "Old card payment".
 40.3  Pay periods. From setup day on, the books' pay periods (3.1, B53).
       Before setup day, a pay period begins at the last paycheck you gave on
       setup day, and before that at each payday the pay schedule gives
@@ -943,7 +953,8 @@ it is worked out on the server, and nothing on it is sent anywhere.
 40.4  Past: spending per pay period. A bar for each pay period in the last
       90 days and the current one, with needs, wants, old card payments,
       and unsorted, each with its amount. Tapping a bar lists the items
-      behind it, which add up to it to the cent.
+      behind it, which add up to it to the cent. In this setup a bar never
+      shows "Old card payment" ("Off in this setup").
 40.5  Past: savings over time. What the savings bucket held when tracking
       started, at the end of each pay period since, and now, as the books
       hold it, with the mom reserve beside it the same way, each its own
@@ -1115,21 +1126,8 @@ change with the answer.
 
 ### PR 3. No mom reserve, no old card
 
-  Off in this setup. These rules are part of the app and keep their tests,
-  but this setup has no mom reserve and no old card, and they never apply:
-  3.2, 5.2, 5.4, 5.5, 7.6 (the "for mom" choice), 8.1 to 8.4, 9.2, 9.5,
-  12.4, 40.13, and the old card's share in 10.14. Being off is fixed on
-  setup day and is not a setting on the Settings screen. Off is not zero:
-  nothing about them is shown or offered anywhere. (This becomes a section
-  of its own, after section 1.)
-
-  Section 2 loses the mom reserve, the mom monthly target, the mom rule,
-  the old card promo end date and the old card's closing day.
-
-  12.2  App side: savings + needs + wants + held for others + unsorted
-        money in - unsorted spending. (Unsorted money in as now.)
-
-  40.2 and 40.4 never show "Old card payment".
+  In place: "Off in this setup" after section 1, section 2, 12.2, 40.2 and
+  40.4.
 
 ### PR 4. Ask before splitting a paycheck
 

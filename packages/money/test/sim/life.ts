@@ -1,5 +1,7 @@
 import {
   DEFAULT_SETTINGS,
+  HER_SETTINGS,
+  HER_SWITCHES,
   MoneyError,
   addDays,
   cardNotices,
@@ -23,6 +25,7 @@ import {
   type Purchase,
   type RecheckedItem,
   type Refund,
+  type ReviewDetail,
   type ReviewItem,
   type SavingsWithdrawal,
   type Settings,
@@ -58,6 +61,13 @@ export interface LifeOptions {
   // else is the simulator's as always: its bank, its book, and every check on
   // every day. Without a plan, nothing about a life changes.
   readonly plan?: LifePlan;
+  // A life shaped like hers (her rulebook, "Off in this setup", and
+  // docs/her-plan.txt Piece J): her setup day, with the mom reserve and the
+  // old card switched off, so there is no mom and no old card at all. Every
+  // evening it checks that nothing about them is offered, and now and then
+  // asks for something about them and checks it is refused. Upstream's life
+  // (none given) is unchanged, draw for draw.
+  readonly profile?: 'upstream' | 'her';
 }
 
 // ---- A life lived as planned --------------------------------------------
@@ -300,7 +310,25 @@ export const STAT_NAMES = [
   'refundedInFullWhileWaiting',
   'refundsTakenBack',
 ] as const;
-export type Stats = Record<(typeof STAT_NAMES)[number], number>;
+// What only a life shaped like hers counts: answers about the mom reserve or
+// the old card refused, and items in review checked to offer nothing about them.
+export const HER_STAT_NAMES = ['offRefused', 'offersChecked'] as const;
+// What a life shaped like hers never has.
+export const OFF_IN_HER_LIFE: readonly (typeof STAT_NAMES)[number][] = [
+  'momPayments',
+  'momDifferences',
+  'momFromSavings',
+  'paymentsForMom',
+  'forMomRules',
+  'forMomResorted',
+  'oldCardPayments',
+  'oldCardFromSavings',
+  'oldCardPurchases',
+  'oldCardRefunds',
+  'momRuleSetWhileWaiting',
+  'momPaymentsRefundedWhileWaiting',
+];
+export type Stats = Record<(typeof STAT_NAMES)[number] | (typeof HER_STAT_NAMES)[number], number>;
 
 const PAYROLL = 'ACME PAYROLL';
 const MOM = 'Made Up Mom';
@@ -411,6 +439,7 @@ export function liveALife(options: LifeOptions): LifeResult {
 
 class Life {
   readonly #seed: number;
+  readonly #her: boolean;
   readonly #days: number;
   readonly #sabotageOnDay: number | undefined;
   readonly #record: LifeRecorder | undefined;
@@ -513,12 +542,13 @@ class Life {
 
   constructor(options: LifeOptions) {
     this.#seed = options.seed;
+    this.#her = options.profile === 'her';
     this.#plan = options.plan;
     this.#days = options.plan === undefined ? Math.round(options.years * 365) : options.plan.days;
     this.#sabotageOnDay = options.sabotageOnDay;
     this.#record = options.record;
     this.#random = new Random(options.seed);
-    this.#stats = Object.fromEntries(STAT_NAMES.map((name) => [name, 0])) as Stats;
+    this.#stats = Object.fromEntries([...STAT_NAMES, ...HER_STAT_NAMES].map((name) => [name, 0])) as Stats;
     const r = this.#random;
     if (options.plan !== undefined) {
       const plan = options.plan;
@@ -574,10 +604,11 @@ class Life {
       this.#person = {
         pay: r.int(260_000, 480_000),
         rent: r.int(90_000, 180_000),
-        closingDay: { 'everyday-card': r.int(1, 28), 'old-card': r.int(1, 28) },
+        // Her life has no old card, so its statement never closes (day 0).
+        closingDay: { 'everyday-card': r.int(1, 28), 'old-card': this.#her ? 0 : r.int(1, 28) },
         roommate: r.chance(1, 2),
-        momTimesPerMonth: r.int(1, 3),
-        alwaysForMom: r.chance(1, 2),
+        momTimesPerMonth: this.#her ? 0 : r.int(1, 3),
+        alwaysForMom: this.#her ? false : r.chance(1, 2),
       };
       this.#start = addDays(FIRST_START, r.int(0, 364));
       this.#date = this.#start;
@@ -592,7 +623,7 @@ class Life {
         checking: r.int(150_000, 600_000),
         savings: r.int(200_000, 2_000_000),
         everydayCard: r.int(0, 250_000),
-        oldCard: r.int(250_000, 350_000),
+        oldCard: this.#her ? 0 : r.int(250_000, 350_000),
       };
       this.#bank = new SimBank(this.#startPosted);
       for (let i = r.int(0, 3); i > 0; i--) {
@@ -604,7 +635,7 @@ class Life {
         this.#stats.pendingAtSetup++;
         this.#laterOn(addDays(this.#start, r.int(1, 3)), () => this.#post(charge.id, charge.amount + (r.chance(1, 4) ? r.int(1, 1_500) : 0)));
       }
-      if (r.chance(1, 5)) {
+      if (!this.#her && r.chance(1, 5)) {
         const charge = this.#bank.authorize(addDays(this.#start, -1), 'old-card', r.int(1_000, 6_000), 'MADE UP CAFE');
         this.#standing.set(charge.id, 'old-card');
         this.#stats.pendingAtSetup++;
@@ -632,7 +663,7 @@ class Life {
           seen.left = this.#date;
         });
       }
-      if (r.chance(1, 8)) {
+      if (!this.#her && r.chance(1, 8)) {
         const left = this.#bank.send(addDays(this.#start, -1), 'checking', 'old-card', r.int(5_000, 30_000));
         this.#stats.inTransitAtSetup++;
         const seen: CardPaymentSeen = { left: left.date, landed: null, amount: left.amount };
@@ -645,11 +676,13 @@ class Life {
       // 14.2: the person assigns the starting money, worked out here on its own.
       const balances = this.#bank.balances();
       const startingMoney = balances.checking + balances.savings - balances.everydayCard + this.#bank.inTransit();
-      const momReserve = Math.min(r.int(0, 300_000), balances.savings);
+      const momReserve = this.#her ? 0 : Math.min(r.int(0, 300_000), balances.savings);
       const savings = balances.savings - momReserve;
       const rest = startingMoney - savings - momReserve;
       const needs = rest > 0 ? share(rest, 60) : rest;
-      this.#settings = changeSettings(DEFAULT_SETTINGS, { paycheckRule: { contains: PAYROLL }, momRule: { contains: MOM } });
+      this.#settings = this.#her
+        ? changeSettings(HER_SETTINGS, { paycheckRule: { contains: PAYROLL } })
+        : changeSettings(DEFAULT_SETTINGS, { paycheckRule: { contains: PAYROLL }, momRule: { contains: MOM } });
       this.#periodSplit = this.#settings.split;
       this.#setupInput = {
         date: this.#start,
@@ -661,6 +694,7 @@ class Life {
         lastPaycheckDate: lastPaycheck,
         settings: this.#settings,
         rules: START_RULES,
+        ...(this.#her ? { switches: HER_SWITCHES } : {}),
       };
     }
     const setup = startTracking(this.#setupInput);
@@ -782,7 +816,7 @@ class Life {
     const dayOfMonth = Number(today.slice(8, 10));
     // Plans first, since some of what they plan can happen today.
     if (today === this.#nextScheduledPayday) this.#planPaycheck();
-    if (dayOfMonth === 1) this.#planMomPayments();
+    if (dayOfMonth === 1 && !this.#her) this.#planMomPayments();
     const events: (() => void)[] = [...(this.#later.get(today) ?? [])];
     this.#later.delete(today);
 
@@ -800,14 +834,14 @@ class Life {
     if (r.chance(1, 25)) events.push(() => this.#payForFriend());
     if (r.chance(1, 40)) events.push(() => this.#deposit('checking', r.int(1_500, 6_000), 'ZELLE FROM MADE UP FRIEND', 'wants'));
     if (r.chance(1, 30)) events.push(() => this.#payPerson(r.int(2_500, 8_000), 'MADE UP BARBER', 'wants'));
-    if (r.chance(1, 60)) events.push(() => this.#payPerson(r.int(5_000, 40_000), FOR_MOM, 'mom'));
+    if (!this.#her && r.chance(1, 60)) events.push(() => this.#payPerson(r.int(5_000, 40_000), FOR_MOM, 'mom'));
     if (r.chance(1, 40)) events.push(() => this.#payPerson(r.int(2_000, 16_000), 'MADE UP COWORKER', 'split'));
     if (r.chance(1, 45)) events.push(() => this.#billFromSavings());
     if (r.chance(1, 50)) events.push(() => this.#misreadTransfer());
     if (r.chance(1, 150)) events.push(() => this.#chargeTwice());
     if (r.chance(1, 120)) events.push(() => this.#deposit('checking', r.int(2_000, 30_000), 'MADE UP GIFT', r.pick(['other-income', 'wants'] as const)));
-    if (r.chance(1, 600)) events.push(() => this.#oldCardPurchase());
-    if (r.chance(1, 400)) events.push(() => this.#oldCardRefund());
+    if (!this.#her && r.chance(1, 600)) events.push(() => this.#oldCardPurchase());
+    if (!this.#her && r.chance(1, 400)) events.push(() => this.#oldCardRefund());
     if (today.slice(5) === '03-15') events.push(() => this.#deposit('checking', r.int(20_000, 250_000), 'IRS TREAS 310 TAX REF', 'other-income'));
     if (r.chance(1, 50)) events.push(() => this.#sendDuplicate());
 
@@ -1163,7 +1197,8 @@ class Life {
     if (this.#book.reviewItems().some((i) => i.id === first)) throw new CheckFailed('4.5 A26 a purchase refunded in full leaves review', `${first} still waits after ${refund.id}`);
     this.#standing.set(first, 'refunded');
     this.#stats.refundedInFullWhileWaiting++;
-    if (this.#random.chance(1, 2)) this.#laterOn(addDays(this.#date, this.#random.int(1, 8)), () => this.#takeBackRefund(first, refund));
+    // Her life (rarer refunds in full, as no mom payments are ever refunded) takes every one back.
+    if (this.#her || this.#random.chance(1, 2)) this.#laterOn(addDays(this.#date, this.#random.int(1, 8)), () => this.#takeBackRefund(first, refund));
   }
 
   #takeBackRefund(first: string, refund: Refund): void {
@@ -1803,8 +1838,9 @@ class Life {
       }
     }
     if (r.chance(1, 40)) this.#resort();
-    if (r.chance(1, 150)) this.#notForMom();
+    if (!this.#her && r.chance(1, 150)) this.#notForMom();
     this.#handMoves();
+    if (this.#her) this.#offInHerSetup();
   }
 
   #handle(item: ReviewItem): void {
@@ -2111,6 +2147,73 @@ class Life {
     this.#note(`re-sort ${target.id} -> ${to}`);
   }
 
+  // Her rulebook, "Off in this setup", every evening of a life shaped like
+  // hers: the switches are as setup day set them, nothing about the mom
+  // reserve or the old card holds anything, and nothing in review or sorting
+  // again offers them. Now and then the person asks for one of them anyway,
+  // and it must be refused with nothing changed.
+  #offInHerSetup(): void {
+    const book = this.#book;
+    const r = this.#random;
+    if (!same(book.switches(), HER_SWITCHES)) throw new CheckFailed('Off in this setup: fixed on setup day', JSON.stringify(book.switches()));
+    if (book.pots().momReserve !== 0 || book.oldCardDebt() !== 0) throw new CheckFailed('Off in this setup: off is not zero, and holds nothing', `mom reserve ${book.pots().momReserve}, old card ${book.oldCardDebt()}`);
+    const s = book.settings();
+    if (s.momReservePerPaycheck !== 0 || s.momReserveCap !== 0 || s.momRule !== null || s.oldCardPromoEndDate !== null || s.oldCardClosingDay !== null) {
+      throw new CheckFailed('Off in this setup: no settings about them', JSON.stringify(s));
+    }
+    const offered = (options: ReviewDetail['options'], what: string): void => {
+      this.#stats.offersChecked++;
+      if (options.type !== 'sort') return;
+      const tos = [...options.picks.map((p) => p.to), ...options.always];
+      if (tos.includes('mom') || tos.includes('momReserve') || options.transfer.includes('old-card') || 'old-card' in options.transferOutcome) {
+        throw new CheckFailed('Off in this setup: nothing about them is offered', `${what}: ${JSON.stringify(options)}`);
+      }
+    };
+    for (const detail of book.reviewDetails()) offered(detail.options, detail.item.id);
+    const purchases = book.purchases();
+    if (purchases.length > 0) {
+      const id = r.pick(purchases).id;
+      const detail = book.resortDetail(id);
+      if (detail?.resortable === true) offered(detail.options, `sorting ${id} again`);
+    }
+    if (!r.chance(1, 10)) return;
+    const waiting = book.reviewItems().filter((i) => i.type === 'spending' || i.type === 'money-in');
+    const item = waiting.length > 0 ? r.pick(waiting) : undefined;
+    const today = this.#date;
+    const tries: { readonly what: string; readonly run: () => unknown }[] = [
+      { what: 'moving money into the mom reserve', run: () => book.moveMoney({ from: 'savings', to: 'momReserve', amount: r.int(1, 5_000), confirmed: true }, today) },
+      { what: 'moving money out of the mom reserve', run: () => book.moveMoney({ from: 'momReserve', to: 'needs', amount: 1, confirmed: true }, today) },
+      { what: 'setting a mom rule', run: () => book.changeSettings({ momRule: { contains: MOM } }, today) },
+      { what: 'a mom reserve per paycheck', run: () => book.changeSettings({ momReservePerPaycheck: 150_000 }, today) },
+      { what: 'an old card promo end date', run: () => book.changeSettings({ oldCardPromoEndDate: addDays(today, 200) }, today) },
+      { what: 'a person rule for mom', run: () => book.addRule({ id: `her-mom-${today}`, for: 'person', contains: 'MADE UP AUNT', choice: { to: 'mom' } }, today) },
+      { what: 'a purchase on the old card', run: () => book.receive({ kind: 'purchase', id: `her-old-card-${today}`, account: 'old-card', date: today, amount: 1_000, description: 'MADE UP CAFE', pending: false }) },
+      { what: 'a payment to the old card', run: () => book.receive({ kind: 'transfer', id: `her-to-old-card-${today}`, from: 'checking', to: 'old-card', date: today, amount: 1_000, description: 'PAYMENT FROM checking TO old-card' }) },
+      ...(item === undefined
+        ? []
+        : [
+            { what: `${item.id} for mom`, run: () => book.sort(item.id, { to: 'mom' }, today) },
+            { what: `${item.id} into the mom reserve`, run: () => book.sort(item.id, { to: 'momReserve' }, today) },
+            { what: `${item.id} a transfer to the old card`, run: () => book.sort(item.id, { transfer: 'old-card' }, today) },
+          ]),
+    ];
+    const attempt = r.pick(tries);
+    const before = book.pots();
+    const logBefore = book.changeLog().length;
+    const waitingBefore = JSON.stringify(book.reviewItems());
+    try {
+      attempt.run();
+    } catch (error) {
+      if (!(error instanceof MoneyError) || error.code !== 'off-in-this-setup') throw error;
+      this.#expectChange(before, {}, 'Off in this setup: a refused answer leaves no trace', attempt.what);
+      if (book.changeLog().length !== logBefore || JSON.stringify(book.reviewItems()) !== waitingBefore) throw new CheckFailed('Off in this setup: a refused answer leaves no trace', attempt.what);
+      this.#stats.offRefused++;
+      this.#note(`refused, as it should be: ${attempt.what}`);
+      return;
+    }
+    throw new CheckFailed('Off in this setup: anything about them is refused', `${attempt.what} was accepted`);
+  }
+
   // 13.3: covering an overspent needs from savings, small moves between
   // needs and wants, keeping money a friend said to keep, and now and then
   // something out of the mom reserve.
@@ -2123,10 +2226,10 @@ class Life {
       this.#move(from, to, r.int(2_000, 10_000), r.chance(1, 2));
     }
     if (pots.heldForOthers > 0 && r.chance(1, 90)) this.#move('heldForOthers', 'wants', pots.heldForOthers, true);
-    if (pots.momReserve > 5_000 && r.chance(1, 200)) this.#move('momReserve', 'needs', 5_000, true);
+    if (!this.#her && pots.momReserve > 5_000 && r.chance(1, 200)) this.#move('momReserve', 'needs', 5_000, true);
     // Rarely more comes out of the mom reserve than it holds, so the next
     // payment to mom meets a reserve below zero (8.3, B27).
-    if (pots.momReserve >= 0 && r.chance(1, 400)) this.#move('momReserve', 'needs', pots.momReserve + r.int(1, 20_000), true);
+    if (!this.#her && pots.momReserve >= 0 && r.chance(1, 400)) this.#move('momReserve', 'needs', pots.momReserve + r.int(1, 20_000), true);
     // And now and then a slip the app must refuse: a move to the same
     // bucket, or of nothing.
     if (r.chance(1, 100)) {
@@ -2174,8 +2277,8 @@ class Life {
     if (this.#date !== this.#nextSettingsChange) return;
     this.#nextSettingsChange = addDays(this.#date, r.int(300, 420));
     const patch: { -readonly [K in keyof Settings]?: Settings[K] } = { split: r.pick(SPLITS) };
-    if (r.chance(2, 5)) patch.momReservePerPaycheck = r.pick([100_000, 150_000, 200_000]);
-    if (r.chance(1, 4)) patch.momReserveCap = r.pick([300_000, 400_000]);
+    if (!this.#her && r.chance(2, 5)) patch.momReservePerPaycheck = r.pick([100_000, 150_000, 200_000]);
+    if (!this.#her && r.chance(1, 4)) patch.momReserveCap = r.pick([300_000, 400_000]);
     if (r.chance(1, 4)) patch.lowBucketAlertPercent = r.pick([10, 20, 25]);
     if (r.chance(1, 8)) patch.payScheduleDays = this.#settings.payScheduleDays === 14 ? 15 : 14;
     // Section 2 (A48): now and then the schedule is twice a month, or back.
@@ -2653,11 +2756,11 @@ function sortedKeys(value: unknown): unknown {
   return value;
 }
 
-export function describeFailure(result: Extract<LifeResult, { ok: false }>, years: number): string {
+export function describeFailure(result: Extract<LifeResult, { ok: false }>, years: number, profile: 'upstream' | 'her' = 'upstream'): string {
   return [
-    `Simulated life failed: seed ${result.seed}, day ${result.day} (${result.date}), check "${result.check}".`,
+    `Simulated life${profile === 'her' ? ' shaped like hers' : ''} failed: seed ${result.seed}, day ${result.day} (${result.date}), check "${result.check}".`,
     result.message,
-    `Replay: node scripts/simulate.mjs --seed ${result.seed} --years ${years}`,
+    `Replay: node scripts/simulate.mjs${profile === 'her' ? ' --profile her' : ''} --seed ${result.seed} --years ${years}`,
     'Last things that happened:',
     ...result.recent.map((line) => `  ${line}`),
   ].join('\n');

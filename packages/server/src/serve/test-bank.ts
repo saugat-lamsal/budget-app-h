@@ -74,6 +74,10 @@ export interface ConnectLikeHisInput {
   readonly today: IsoDate;
   // Between syncs while the test bank is still sending the history.
   readonly wait?: (ms: number) => Promise<void>;
+  // The accounts to pick (rolesFor); his four when not given. Her setup's
+  // three leave the old card's account unpicked, so it is never read ("Off in
+  // this setup").
+  readonly roles?: readonly AccountId[];
 }
 
 // Connects the test bank with the made-up accounts, syncs until it has sent
@@ -92,5 +96,6 @@ export async function connectLikeHis(input: ConnectLikeHisInput): Promise<void> 
     await wait(3_000);
   }
   const roles = Object.fromEntries(readAccounts(db).flatMap((a) => (a.raw.mask !== null && a.raw.mask !== undefined && TEST_BANK_MASKS[a.raw.mask] !== undefined ? [[a.plaidAccountId, TEST_BANK_MASKS[a.raw.mask] ?? null]] : [])));
-  setAccountRoles(db, roles);
+  const asked = input.roles;
+  setAccountRoles(db, asked === undefined ? roles : Object.fromEntries(Object.entries(roles).filter(([, role]) => role !== null && asked.includes(role))));
 }

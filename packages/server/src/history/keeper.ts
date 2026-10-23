@@ -2,7 +2,9 @@ import { BankDesk, rolesComplete } from '../bank-desk.js';
 import { PLAID_URLS } from '../plaid/sandbox-lock.js';
 import type { IncomingMessage, Server } from 'node:http';
 import type { Agent } from 'node:https';
-import { DEFAULT_SETTINGS, type BankBalances, type Book, type CardStatement, type IsoDate, type Pot } from '@budget-app/money';
+import { rolesFor, type AccountId, type BankBalances, type Book, type CardStatement, type IsoDate, type Pot, type Switches } from '@budget-app/money';
+import { UPSTREAM_START, type SetupStart } from '../setup-start.js';
+import { offTakenOut } from '../http/off-options.js';
 import { alertScreen } from '../alerts/alerts.js';
 import { applyAlerts, nextAlertsEvent, nextDueIn, stillTrueNow, type AlertLedger, type AlertWorld } from '../alerts/plan.js';
 import { addToOutbox, markFailed, markNotSent, markSent, markTrying, outboxCounts, outboxUnsent, readOutbox, type OutboxRow } from '../alerts/outbox.js';
@@ -100,6 +102,9 @@ export interface KeeperInput {
   // Phase 5, the phone: the app's push keys (none: no phone gets the alerts),
   // and for the tests only, the made-up push service's certificate.
   readonly push?: { readonly keys: PushKeys | null; readonly agent?: Agent };
+  // What setup day starts from: her setup's on her app (BUDGET_SETUP=her),
+  // upstream's when not given. Once tracking starts, the book's switches rule.
+  readonly start?: SetupStart;
 }
 
 interface State {
@@ -134,6 +139,7 @@ export class Keeper {
   readonly #db: Db;
   readonly #now: () => Date;
   readonly #beforeCommit: (() => void) | undefined;
+  readonly #start: SetupStart;
   // Step 2: his passkeys and logins.
   readonly #auth: Auth;
   // Phase 5: the Notifications card, and the real sender.
@@ -162,6 +168,7 @@ export class Keeper {
 
   private constructor(input: KeeperInput) {
     this.#db = input.db;
+    this.#start = input.start ?? UPSTREAM_START;
     this.#now = input.now;
     this.#beforeCommit = input.beforeCommit;
     this.#origin = input.origin ?? (() => 'http://localhost:5190');
@@ -277,14 +284,17 @@ export class Keeper {
       lines: () => bankLinesIn(this.#db),
       today,
       bookLines: () => book?.changeLog().length ?? 0,
+      oldCardOff: () => this.#switches().oldCard === 'off',
     });
     let setup: SetupDesk | null = null;
     if (book === null) {
       const connection = readConnection(this.#db);
+      // Upstream's history stays exactly as it was: its setup day names no switches.
+      const switches = this.#start === UPSTREAM_START ? {} : { switches: this.#start.switches };
       setup = new SetupDesk({
-        bank: { connection, setUp: false, accounts: readAccounts(this.#db), items: readItems(this.#db), rules: readBankRules(this.#db) },
+        bank: { connection, setUp: false, accounts: readAccounts(this.#db), items: readItems(this.#db), rules: readBankRules(this.#db), ...switches },
         today,
-        settings: DEFAULT_SETTINGS,
+        settings: this.#start.settings,
         halvesWithinDays: SETUP_LOOK_BACK_DAYS,
         madeUpData: false,
         bankRules,
@@ -302,7 +312,18 @@ export class Keeper {
   // His home time zone (section 2): the book's setting once tracking has
   // started, and before that the one it will start with.
   timeZone(): string {
-    return (this.book()?.settings() ?? DEFAULT_SETTINGS).homeTimeZone;
+    return (this.book()?.settings() ?? this.#start.settings).homeTimeZone;
+  }
+
+  // "Off in this setup": the book's, once tracking has started; before that,
+  // what setup day will start with.
+  #switches(): Switches {
+    return this.book()?.switches() ?? this.#start.switches;
+  }
+
+  // 1.2: the accounts picked, each once, before the bank is read.
+  #roles(): readonly AccountId[] {
+    return rolesFor(this.#switches());
   }
 
   today(): IsoDate {
@@ -561,6 +582,7 @@ export class Keeper {
       today: () => this.today(),
       zone: () => this.timeZone(),
       tracking: () => this.book() !== null,
+      roles: () => this.#roles(),
       bookLines: () => this.book()?.changeLog().length ?? 0,
       sync: () => this.sync(bank),
       webhook: () => this.webhookAddress(),
@@ -585,7 +607,7 @@ export class Keeper {
   sync(bank: SyncBank): Promise<SyncResult> {
     if (this.#syncing !== null) return this.#syncing;
     // 1.2: nothing is read from the bank until all four accounts are picked.
-    if (readConnection(this.#db) !== null && !rolesComplete(readAccounts(this.#db))) return Promise.reject(new Error('the accounts are not all picked yet (1.2): nothing is read from the bank until they are'));
+    if (readConnection(this.#db) !== null && !rolesComplete(readAccounts(this.#db), this.#roles())) return Promise.reject(new Error('the accounts are not all picked yet (1.2): nothing is read from the bank until they are'));
     this.#lastTry = this.#now().getTime();
     const running = syncBank({
       db: this.#db,
@@ -648,7 +670,7 @@ export class Keeper {
   // when the server has just started. 0 or less: due now. Null while there is
   // no bank connection to read, or its accounts are not all picked (1.2).
   syncDueIn(): number | null {
-    if (readConnection(this.#db) === null || !rolesComplete(readAccounts(this.#db))) return null;
+    if (readConnection(this.#db) === null || !rolesComplete(readAccounts(this.#db), this.#roles())) return null;
     if (this.#lastTry === null) return 0;
     return this.#lastTry + this.syncEveryMinutes() * 60_000 - this.#now().getTime();
   }
@@ -722,7 +744,7 @@ export class Keeper {
 
   // 10.8: when quiet hours end, if it is in them now (section 2, his home time zone).
   #quietUntil(now: Date): Date | null {
-    return quietUntil(this.timeZone(), (this.book()?.settings() ?? DEFAULT_SETTINGS).quietHours, now);
+    return quietUntil(this.timeZone(), (this.book()?.settings() ?? this.#start.settings).quietHours, now);
   }
 
   // What is not sent yet, and what happens to each at this look (10.9, A40):
@@ -747,7 +769,7 @@ export class Keeper {
     const { rows, plan } = this.#sendPlan();
     if (plan.notTrue.length > 0) markNotSent(this.#db, plan.notTrue, 'not-true', now.toISOString());
     const zone = this.timeZone();
-    const amounts = (this.book()?.settings() ?? DEFAULT_SETTINGS).amountsOnLockScreen;
+    const amounts = (this.book()?.settings() ?? this.#start.settings).amountsOnLockScreen;
     const sentOn = todayIn(zone, now);
     const go = new Set(plan.go);
     return rows
@@ -863,7 +885,8 @@ export class Keeper {
     this.#origin = origin;
     this.#startedAt ??= this.#now();
     const auth = this.#auth;
-    return createAppServer({
+    // "Off in this setup": what is off is taken out of each screen before it is sent.
+    return createAppServer(offTakenOut(() => this.#switches(), {
       webRoot,
       ...(onError === undefined ? {} : { onError }),
       gate: {
@@ -912,7 +935,7 @@ export class Keeper {
           return session === null ? NOT_LOGGED_IN : this.#push.test(session);
         },
       },
-    });
+    }));
   }
 
   // The device asking, by its login (the gate let it through only logged in).

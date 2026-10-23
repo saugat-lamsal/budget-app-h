@@ -98,3 +98,5 @@ export { commonPlaceWords, placeName, type RuleOffer } from './rule-offers.js';
 export { bucketLevel, type Alert, type AlertInput, type BucketLevel } from './alerts.js';
 export { bankSide, withPendingCharges, type BankBalances, type PendingCharge } from './self-check.js';
 export { checkAssignment, inTransitEffect, startTracking, startingDebt, startingMoney, type SetupInput, type SetupResult } from './setup.js';
+export { UPSTREAM_SWITCHES, checkSwitches, rolesFor, settingsWhenOff, type Switch, type Switches } from './switches.js';
+export { HER_SETTINGS, HER_SWITCHES } from './her-setup.js';

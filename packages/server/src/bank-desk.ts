@@ -24,10 +24,20 @@ export const ROLES: readonly AccountId[] = ['checking', 'savings', 'everyday-car
 // never his name or email.
 export const CLIENT_USER_ID = 'budget-app-owner';
 
-// All four are picked, each once (1.2): only then is the bank read.
-export function rolesComplete(accounts: readonly StoredAccount[]): boolean {
+// All four are picked, each once (1.2): only then is the bank read. Her
+// setup picks three: the old card is off ("Off in this setup", rolesFor).
+export function rolesComplete(accounts: readonly StoredAccount[], asked: readonly AccountId[] = ROLES): boolean {
   const roles = accounts.flatMap((a) => (a.role === null ? [] : [a.role]));
-  return ROLES.every((role) => roles.includes(role));
+  return asked.every((role) => roles.includes(role));
+}
+
+const ROLE_WORDS: Readonly<Record<AccountId, string>> = { checking: 'checking', savings: 'savings', 'everyday-card': 'the everyday card', 'old-card': 'the old card' };
+const countWord = (roles: readonly AccountId[]): string => (roles.length === 3 ? 'three' : 'four');
+
+// "Pick each of the four: checking, savings, the everyday card, and the old card."
+function pickEach(roles: readonly AccountId[]): string {
+  const names = roles.map((role) => ROLE_WORDS[role]);
+  return `Pick each of the ${countWord(roles)}: ${names.slice(0, -1).join(', ')}, and ${names.at(-1) ?? ''}.`;
 }
 
 export interface BankDeskInput {
@@ -44,6 +54,8 @@ export interface BankDeskInput {
   readonly bookLines: () => number;
   // Reads the bank (a sync), once all four are picked.
   readonly sync: () => Promise<unknown>;
+  // 1.2: the accounts to pick (rolesFor); upstream's four when not given.
+  readonly roles?: () => readonly AccountId[];
   // Section 2 (A47): where Plaid sends a new connection's webhooks (the hosted
   // server's https address); null where Plaid cannot reach the app.
   readonly webhook?: () => string | null;
@@ -69,6 +81,10 @@ export class BankDesk {
     this.#input = input;
   }
 
+  get #roles(): readonly AccountId[] {
+    return this.#input.roles?.() ?? ROLES;
+  }
+
   get #bank(): 'test' | 'real' {
     return this.#input.plaid.environment === 'production' ? 'real' : 'test';
   }
@@ -84,7 +100,9 @@ export class BankDesk {
       connectedOn: connection.connectedOn,
       needsLogin: connection.needsLogin,
       accounts: accounts.map(lineOf),
-      rolesSet: rolesComplete(accounts),
+      // Only when they are not upstream's four (her setup's three).
+      ...(this.#roles.includes('old-card') ? {} : { roles: this.#roles }),
+      rolesSet: rolesComplete(accounts, this.#roles),
       rolesFixed: this.#input.tracking(),
       permissionEnds: connection.permissionEnds === null ? null : todayIn(this.#input.zone(), new Date(connection.permissionEnds)),
       historyComplete: connection.historyComplete,
@@ -159,15 +177,16 @@ export class BankDesk {
     if (this.#input.tracking()) return refuse('roles-fixed', 'Tracking has started, so which account is which cannot change.');
     if (readConnection(db) === null) return refuse('not-connected', 'There is no bank connection yet. Connect the bank first.');
     const accounts = readAccounts(db);
+    const roles = this.#roles;
     const named = Object.keys(request.roles).sort();
-    if (named.join() !== [...ROLES].sort().join()) return refuse('not-roles', 'Pick each of the four: checking, savings, the everyday card, and the old card.');
-    const picked = ROLES.map((role) => accounts.find((a) => a.plaidAccountId === request.roles[role]));
+    if (named.join() !== [...roles].sort().join()) return refuse('not-roles', pickEach(roles));
+    const picked = roles.map((role) => accounts.find((a) => a.plaidAccountId === request.roles[role]));
     if (picked.some((a) => a === undefined)) return refuse('not-roles', "Each must be one of the bank's accounts. If one is missing, log in to the bank again to add it.");
-    if (new Set(picked).size !== ROLES.length) return refuse('not-roles', 'An account can be only one of the four.');
+    if (new Set(picked).size !== roles.length) return refuse('not-roles', `An account can be only one of the ${countWord(roles)}.`);
     if (!request.yes) return refuse('needs-yes', 'Once tracking starts, which account is which cannot change. Keep these?');
     db.transaction(() => {
-      setAccountRoles(db, Object.fromEntries(ROLES.map((role) => [request.roles[role], role])));
-      saveServerLine(db, { date: today(), action: 'bank-accounts', accounts: Object.fromEntries(ROLES.map((role, i) => [role, labelOf(picked[i] as StoredAccount)])) as Record<AccountId, string>, afterBookLines: this.#input.bookLines() });
+      setAccountRoles(db, Object.fromEntries(roles.map((role) => [request.roles[role], role])));
+      saveServerLine(db, { date: today(), action: 'bank-accounts', accounts: Object.fromEntries(roles.map((role, i) => [role, labelOf(picked[i] as StoredAccount)])) as Record<AccountId, string>, afterBookLines: this.#input.bookLines() });
     })();
     this.#input.changed();
     return { ok: true, said: 'Saved. The bank is read now.' };
@@ -188,7 +207,7 @@ export class BankDesk {
       return refuse('bank-said-no', "The bank couldn't be read just now. Nothing was changed. Try again in a minute.");
     }
     if (options.loggedInAgain === true) saveServerLine(db, { date: today(), action: 'bank-logged-in-again', afterBookLines: this.#input.bookLines() });
-    if (rolesComplete(readAccounts(db))) {
+    if (rolesComplete(readAccounts(db), this.#roles)) {
       try {
         await this.#input.sync();
       } catch (error) {
@@ -196,7 +215,7 @@ export class BankDesk {
       }
     }
     this.#input.changed();
-    return { ok: true, said: rolesComplete(readAccounts(db)) ? 'The bank was read.' : 'The accounts were read. Now say which account is which.' };
+    return { ok: true, said: rolesComplete(readAccounts(db), this.#roles) ? 'The bank was read.' : 'The accounts were read. Now say which account is which.' };
   }
 
   async #readAccounts(key: BankKey): Promise<void> {
