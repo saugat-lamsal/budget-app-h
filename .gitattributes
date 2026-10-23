@@ -1,1 +1,9 @@
 * text=auto eol=lf
+
+# Her files: a merge from upstream keeps hers. This only works where
+# "git config merge.ours.driver true" was run once (docs/her-merging.txt).
+CLAUDE.md merge=ours
+budget-app-rulebook.md merge=ours
+budget-app-roadmap.md merge=ours
+fly.toml merge=ours
+litestream.yml merge=ours

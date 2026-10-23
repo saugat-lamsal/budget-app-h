@@ -1,0 +1,116 @@
+MERGING FROM UPSTREAM (Oct 23, 2026)
+
+How to bring upstream's fixes (a Node security update, a rule fix) into her
+repo without losing her own files. Do it every time, the same way.
+
+
+BOTTOM LINE
+
+- Five files are always hers: CLAUDE.md, budget-app-rulebook.md,
+  budget-app-roadmap.md, fly.toml, litestream.yml.
+- .gitattributes marks them "merge=ours". That line ONLY WORKS ON A
+  MACHINE WHERE THIS WAS RUN ONCE, in that clone:
+
+      git config merge.ours.driver true
+
+  The config is local and is never in git, so a new clone, a new PC, a
+  cloud session or a CI runner does not have it.
+- Merge on a machine with that config. Never use GitHub's web buttons
+  ("Update branch", or a PR from upstream merged on GitHub): GitHub ignores
+  local merge drivers.
+- After every merge, check that the five files are unchanged (below).
+
+
+WHY THE CONFIG IS NEEDED
+
+".gitattributes: CLAUDE.md merge=ours" tells git to use a merge driver
+called "ours" for that file. Git has no such driver built in: the config
+line defines it ("true" is a command that does nothing and succeeds, so
+the file stays as it is on her side). Without the config, git ignores the
+attribute and merges the file as usual.
+
+Tested on Oct 23, 2026, in a throwaway pair of repos:
+1. Without the config, both sides changed the file: a conflict. (Nothing
+   is lost, but it has to be sorted by hand.)
+2. With the config: her file kept, upstream's other files merged in.
+3. Upstream changing the file again later: her file kept again.
+4. The config removed: a conflict again.
+
+One limit: the driver only runs when both sides changed the file since the
+last merge. A file of hers that is still exactly upstream's takes
+upstream's changes as usual. That is the case for fly.toml and
+litestream.yml until PR 2 makes them hers, and it is harmless: until then
+they are upstream's anyway.
+
+
+ONCE PER MACHINE OR CLONE
+
+    git config merge.ours.driver true
+    git config --get merge.ours.driver      (prints: true)
+
+Also check, once: git remote -v shows upstream's push URL as DISABLED.
+If it does not (a fresh clone):
+
+    git remote set-url --push upstream DISABLED
+
+Done in the first clone on Oct 23, 2026.
+
+
+EACH MERGE
+
+1. Start from her main, up to date:
+
+       git switch main
+       git pull origin main
+       git fetch upstream
+
+2. See what is coming in:
+
+       git log --oneline main..upstream/main
+
+3. Merge on a branch of its own, never on main directly:
+
+       git switch -c merge-upstream-<date>
+       git merge upstream/main
+
+4. Check that her five files did not change (empty output means they are
+   still hers):
+
+       git diff HEAD^1 HEAD -- CLAUDE.md budget-app-rulebook.md budget-app-roadmap.md fly.toml litestream.yml
+
+   If anything shows, the config was missing. Undo it with
+   git reset --hard HEAD^1, run the config line, and merge again.
+
+5. Read upstream's own changes to those five files, which were not taken:
+
+       git diff <the last merged upstream commit> upstream/main -- CLAUDE.md budget-app-rulebook.md budget-app-roadmap.md fly.toml litestream.yml
+
+   A rule he changed, a testing rule, a pinned version in fly.toml: each
+   may need the same change in hers. That is a change of its own, with
+   the developer's OK (and for the rulebook, as a section 60+ answer).
+
+6. Other conflicts: shared code should merge cleanly while her changes stay
+   in her own files (CLAUDE.md, "Upstream, and keeping close to it"). A
+   conflict there means one of her hooks in a shared file grew too big. Do
+   not pick a side blindly: keep upstream's change and move her part into
+   her own file.
+
+7. The full test run, then push the branch and open a pull request on
+   budget-app-h, with CI:
+
+       SKIP_BROWSER_TESTS=1 npm test
+       git push -u origin merge-upstream-<date>
+
+   A merge that changes packages/money also gets the long runs (CLAUDE.md,
+   testing bar point 7).
+
+8. After it is merged, the deploy check, then the deploy, at his word, as
+   for any change.
+
+
+NEVER
+
+- Never push to upstream, and never change its push URL back.
+- Never merge upstream into her main on GitHub's website.
+- Never edit upstream's QUESTIONS.md, docs/later.txt or phase reports here:
+  they are upstream's history, and edits would only make merges harder.
