@@ -13,7 +13,8 @@ LATER (an idea for after her trial).
 
 FROM THE PLAN (Oct 23)
 
-1. DECIDE. HA1 to HA5 in docs/her-questions.txt (plan Q2, Q4 to Q7).
+1. DONE Oct 23. HA1 to HA5 answered (docs/her-questions.txt, rulebook
+   section 60).
 
 2. HIS, Phase 2. His steps in docs/her-setup.txt (PR 2): her Fly app and
    volume, her R2 bucket and token, the secrets, UptimeRobot.

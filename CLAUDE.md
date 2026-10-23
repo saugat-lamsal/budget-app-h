@@ -225,4 +225,8 @@ or "Due" on Wishlist items and cards, never color alone.
 - PR 1, her docs: this file, her rulebook draft H1, her roadmap,
   docs/her-later.txt, docs/her-questions.txt, docs/her-merging.txt,
   .gitattributes. Docs only.
-- Waiting on: HA1 to HA5 in docs/her-questions.txt (plan Q2, Q4 to Q7).
+- PR 1 merged (Oct 23, 2026).
+- His answers to HA1 to HA5 (Oct 23): rulebook section 60,
+  docs/her-questions.txt. Section H's 14.2 for PR 5 no longer names
+  Wishlist (PR 9 adds it).
+- PR 2, hosting config: on branch her-hosting.

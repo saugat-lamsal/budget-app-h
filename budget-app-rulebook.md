@@ -1085,6 +1085,23 @@ a.  Future and Habits on the Trends tab, as 40.10 to 40.17: Needs and Wants
     numbers are not settings (QUESTIONS.md A59).
 
 
+## 60. Answers on her setup (Oct 23, 2026)
+
+a.  A Wishlist item bought for less or more than its price is marked
+    bought, and the bucket goes down by what it really cost; nothing more
+    is asked. A refunded item stays bought, and you can add it again (50.3,
+    section H, docs/her-questions.txt HA1).
+b.  The owner's phone is an iPhone: notifications come through the app
+    added to the home screen, as upstream's (HA2).
+c.  Two paychecks waiting for your yes: the older one is answered first
+    (51.2, section H, HA4).
+d.  Her starting values: the pay schedule every 14 days, counted from the
+    last paycheck, and the home time zone America/New_York (section 2,
+    HA3). Both are upstream's starting values too.
+e.  The app runs on Fly.io in ewr (Secaucus, New Jersey), as upstream's
+    (HA5).
+
+
 ## H. Approved for her setup, not built yet
 
 His OK, Oct 23, 2026 (docs/her-plan.txt, with his answers to its Q1, Q3
@@ -1140,7 +1157,7 @@ change with the answer.
         changes (13.7).
   51.2  Two paychecks waiting: the older one is answered first. A yes to
         the newer one is refused while the older one waits, and says so.
-        (waits on HA4)
+        (60c)
   51.3  The early paycheck check (3.7) still applies: a paycheck less than
         10 days after the last one says so on its card.
 
@@ -1188,8 +1205,8 @@ change with the answer.
         under 4.6).
   12.6  As now, with lines for each card as for the everyday card.
   14.2  You assign the starting money (checking + savings - both cards'
-        balances) across savings, needs, wants, Wishlist and held for
-        others. (The rest of 14.2 as now.)
+        balances) across savings, needs, wants and held for others. (The
+        rest of 14.2 as now. PR 9 adds Wishlist.)
 
 ### PR 6. Two bank connections
 
@@ -1307,6 +1324,9 @@ change with the answer.
         never fill.)
   12.2  App side: savings + needs + wants + Wishlist + held for others
         + unsorted money in - unsorted spending.
+  14.2  You assign the starting money (checking + savings - both cards'
+        balances) across savings, needs, wants, Wishlist and held for
+        others. (The rest of 14.2 as now.)
   13.1, a sentence added: a change to Wishlist's share waits for the next
   paycheck, like the rest of the split.
   13.4  Moving money out of savings or Wishlist asks you to confirm first.
@@ -1356,7 +1376,7 @@ change with the answer.
         down by what the purchase cost, not the item's price. A purchase
         marked bought can be changed back from its row on Wishlist's list.
         A refund goes back to the Wishlist bucket (4.5). The item does not
-        come back by itself; you can add it again. (waits on HA1)
+        come back by itself; you can add it again. (60a)
 
 ### Unchanged for her setup
 
