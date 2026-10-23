@@ -1,0 +1,798 @@
+HER PLAN (Oct 23, 2026). APPROVED OCT 23; NOT BUILT YET.
+
+The owner's own copy of the budget app, in its own repo (budget-app-h).
+He approved this plan on Oct 23, 2026, with his answers to Q1, Q3 and Q8
+(in the questions at the end, and worked into Pieces E and D). Nothing
+below is built yet. The rule texts go into her rulebook as approved, and
+each one is put in force by the PR that builds it.
+
+The repo is public, like upstream. So nothing about the owner's real money
+goes in it, ever: no names of her stores, no balances, no account numbers,
+and no amounts from her statements. Every number in this plan is made up.
+The docs call her "the owner". "He" is the developer (upstream's owner),
+who gives the OKs.
+
+
+BOTTOM LINE
+
+- Step 0 is done. The repo is cloned, upstream is fetch only, and main is
+  pushed to budget-app-h (details below).
+- One big choice runs through the whole plan: change upstream's code with
+  switches and new files, never by deleting anything. Upstream's own
+  behavior stays the default, and every upstream test keeps passing
+  unchanged. That is what keeps "merge the Node security fix from
+  upstream" a five-minute job instead of a day of conflicts.
+- 12 pull requests, smallest risk first. PRs 1 and 2 are docs and hosting
+  setup, with no code. PRs 3 to 11 are the features. PR 12 is the end
+  check before her connection day.
+- Five of them change the money math (PRs 3, 4, 5, 9 and 10). Each gets
+  the full testing bar: tests first, edge cases, break-it for the changed
+  functions, the random tests, and long simulator runs with a new
+  simulated life shaped like hers.
+- Recommended: build all of it before her setup day, so her books start
+  once, on the final math, and never need a replay fix (0.6).
+- Q1, Q3 and Q8 are answered (Oct 23). Five questions still need his or
+  her answer before the PRs that use them (end of this file). None blocks
+  PRs 1 to 3.
+
+
+STEP 0, AS DONE (Oct 23, 2026)
+
+- Cloned https://github.com/saugat-lamsal/budget-app into this folder,
+  main at af53eee (the Node 22.23.4 merge, PR #51).
+- That remote is now "upstream": fetch from github.com/.../budget-app,
+  push URL "DISABLED". Checked: git push upstream fails ("make sure you
+  have the correct access rights").
+- "origin" is https://github.com/saugat-lamsal/budget-app-h. main is
+  pushed there and tracks origin/main. The new repo had nothing in it
+  before.
+- Upstream's other branches were fetched but not pushed. Only main is in
+  budget-app-h.
+- This plan is on the branch her-plan (committed and pushed after his
+  OK, Oct 23).
+- Not done: no change to his repo, no account, no Fly app, no Plaid call.
+
+
+HOW HER SETUP DIFFERS FROM UPSTREAM
+
+Upstream (his)                         Hers
+-------------------------------------  -------------------------------------
+Bank of America, one connection        Capital One and Amex, two connections
+Checking, savings, everyday card,      Checking, savings, Capital One card,
+  old card (debt, payoff countdown)      Amex card; both cards day to day
+Savings, needs, wants + mom reserve    Savings, needs, wants, Wishlist;
+                                         no mom reserve (off and hidden)
+Paycheck rule splits by itself         "Ask before splitting a paycheck",
+                                         on to start
+One card's reminders                   Both cards on Home: owed, due,
+                                         set aside; reminders per card;
+                                         a statement view per card
+Pay schedule setting                   The same
+Sorting and bank rules                 The same
+
+Kept exactly as now: card purchases come out of their bucket the day they
+are made (4.1), paying a card is not spending (5.1), safe to spend is
+wants only (11.1), the self-check (12), review, hand moves, alerts, the
+phone, login, backups, and Trends (with the old card's parts hidden and a
+Wishlist part added).
+
+
+THE ONE BIG CHOICE: SWITCHES, NOT DELETIONS
+
+Upstream keeps changing: rule fixes, security updates, new screens. To
+merge those in later, her repo has to stay close to upstream's code.
+How:
+
+1. Nothing of upstream's is deleted. The old card and the mom reserve
+   stay in the code. Her setup turns them off with switches that are
+   fixed on her setup day and are not on her Settings screen. Off means
+   off: no reserve is ever taken, nothing about mom or the old card is
+   offered in review, and no screen shows them. It is not the same as
+   setting them to zero.
+2. Upstream's defaults stay upstream's. DEFAULT_SETTINGS does not change.
+   Her starting values live in a new file (packages/money/src/her-setup.ts)
+   that her setup day starts from. Every upstream test runs on upstream's
+   defaults and keeps passing untouched. Those tests are a guard on the
+   shared code.
+3. Each new setting gets the value that means "as upstream" for any
+   history saved before it existed, as B242 taught: a saved setup day
+   with no Wishlist share opens with Wishlist at 0%, one card, mom on,
+   and no asking. history-check.test.ts's guard (SETTINGS_ON_HIS_SETUP_DAY)
+   keeps proving his real history still opens.
+4. Her additions go in new files wherever possible: her-setup.ts,
+   wishlist.ts, statement.ts, her own test files, her own worked-example
+   files (packages/money/worked-examples-h.txt and
+   packages/server/worked-examples-h.txt), docs/her-*.txt. Shared files
+   get small hooks only.
+5. Database steps. Upstream adds steps to db/database.ts STEPS (one list,
+   numbered by place). If her repo adds step 12 and upstream later adds
+   its own step 12, the two can never be merged. So her tables go in a
+   second list (HER_STEPS, its own version in a table her_schema), run
+   after upstream's. Upstream's list is never touched, and its new steps
+   merge in as they come.
+6. Rule numbers. Her rulebook keeps every upstream number. Rules that do
+   not apply to her are listed once as "Off in this setup" (their tests
+   still run, on upstream's settings). New rules get numbers from 50 up,
+   so upstream's new sections (43, 44, ...) never land on hers.
+   test/every-rule-has-a-test.test.ts reads budget-app-rulebook.md, so her
+   rulebook keeps that file name.
+
+Not chosen: rewriting the code for four fixed accounts of hers. It would
+be simpler code, but it would conflict with nearly every upstream change.
+
+
+THE PIECES
+
+Each piece says what it does, the rulebook text to change (a draft for his
+OK, to go into her rulebook only after it), the tests that prove it, and
+its PR. "Full bar" means everything in CLAUDE.md's testing bar: tests
+first and watched failing, edge cases (zero, one cent, negative, very
+large, exact boundaries), break-it for every function changed, random
+tests for the invariants, worked examples by hand, and the long simulator
+runs: 1,000 lives of 5 years for each money-math PR, and 20 simulated
+years through the bank connection and through the database with restarts.
+
+The rule texts below are written the way his rulebook is written. "You"
+is the owner.
+
+
+PIECE A. NO MOM RESERVE, NO OLD CARD (switched off and hidden). PR 3.
+
+What: two switches, fixed at setup day: momReserve 'off', oldCard 'off'.
+With mom off, no paycheck ever takes a reserve, "for mom" is never
+offered, there is no mom rule, and Buckets, Payday, Settings and Trends
+show nothing about mom. With the old card off, no account is picked as
+the old card, rules 5.2, 5.4, 5.5, 9.2, 9.5 and 12.4 never apply, and
+Trends has no old card part (40.13 hidden, "Old card payment" never shown).
+
+Rulebook (hers):
+- Section 1 lists her accounts (Piece C). Section 8 (mom), 3.2, 7.6's "for
+  mom", 8.1 to 8.4, 5.2, 5.4, 5.5, 9.2, 9.5, 10.14's old card share, 12.4
+  and 40.13 move under one heading:
+
+  "Off in this setup. These rules are part of the app and keep their
+  tests, but this setup has no mom reserve and no old card, and they
+  never apply: 3.2, 5.2, 5.4, 5.5, 7.6 (the "for mom" choice), 8.1 to
+  8.4, 9.2, 9.5, 12.4, 40.13. Being off is fixed on setup day and is not
+  a setting on the Settings screen. Off is not zero: nothing about them
+  is shown or offered anywhere."
+
+- 3.3 becomes: "The paycheck is split by the percentages (no reserve
+  comes off first in this setup)..." (the full new 3.3 is in Piece E).
+- 12.2 drops "mom reserve" from the sum (it is always zero when off).
+
+Tests:
+- Money, new 50-switches.test.ts: a twin test. A book with mom off and a
+  book with mom on, reserve $0.00 and cap $0.00, given the same random
+  life (fast-check, 500 lives), hold the same cents in every bucket every
+  day. Only the offers differ: "for mom" is never offered when off, and a
+  "for mom" answer is refused with nothing changed. Old card off: an
+  account role old-card is refused at setup and a transfer to it is
+  refused.
+- Server: views for Buckets, Payday, Settings and Trends have no mom or
+  old card fields when off (views-*-her.test.ts). The mom rule and promo
+  date settings are refused when off.
+- Browser (Chromium): no word "mom" and no "old card" anywhere on any
+  screen of a her-shaped demo life (a text sweep of every screen and
+  sheet).
+- Break-it: "[her-switches]" for every function changed.
+- Simulator: the her-shaped life (Piece J) starts in this PR.
+- Full bar (it touches review offers in the money package).
+
+
+PIECE B. "ASK BEFORE SPLITTING A PAYCHECK". PR 4.
+
+What: a setting, on to start. While it is on, every paycheck waits in
+review showing what each bucket would get, and nothing is split until the
+owner says yes. That includes one the paycheck rule matches. This reuses
+the path that already exists for "This is my paycheck" (6.1, B53), so the
+pay period still starts on the day the paycheck arrived.
+
+Rulebook (hers), draft:
+- Section 2, a new line: "Ask before splitting a paycheck: on. While on,
+  every paycheck waits for your yes before it is split (3.1). Off: a
+  deposit the paycheck rule matches is split by itself, as soon as it
+  posts."
+- 3.1 becomes: "A deposit that matches the paycheck rule is a paycheck.
+  With "Ask before splitting a paycheck" on, it first waits in review: it
+  shows the amount and what each bucket would get (3.3, with the split
+  the next paycheck uses, 13.1), and nothing moves until you say yes.
+  Yes splits it and starts the new pay period on the day it arrived, not
+  the day you answer, exactly as "This is my paycheck" does (6.1). "Not a
+  paycheck" gives it the other choices of 6.1 (other income, payback, not
+  mine). With the setting off, a matching deposit is split by itself and
+  starts a new pay period."
+- 51.1 (new): "A paycheck waiting for your yes is money in waiting in
+  review: it counts in the self-check (12.2) and not in safe to spend
+  (11.3). Home says "Paycheck waiting for your yes" with its amount and a
+  way to Review. If the split it would get changes while it waits (a
+  split change, 13.1), Review shows the new parts. A yes about parts that
+  are no longer what it would get is refused, and nothing changes
+  (13.7)."
+- 51.2 (new): "Two paychecks waiting: the older one is answered first.
+  A yes to the newer one is refused while the older one waits, and says
+  so." (Question Q6.)
+- 51.3 (new): "The early paycheck check (3.7) still applies: a paycheck
+  less than 10 days after the last one says so on its card."
+- 10.15 (new alert): "A paycheck is waiting for your yes: you are told
+  once, when it posts. Quiet hours apply (10.8), a tap opens Review, and
+  the amount is shown only if the lock screen setting allows it (10.10).
+  The payday alert (10.14) comes at your yes, not before."
+- 13.2 gains: "Setting the paycheck rule while "Ask before splitting" is
+  on marks matching deposits as paychecks waiting for your yes; it
+  splits none of them."
+
+Tests:
+- Money, 51-paycheck-ask.test.ts: one test per rule above, named after
+  it. A matching deposit waits; yes gives exactly splitPaycheck's parts;
+  the pay period starts on the arrival day; spending between the arrival
+  and the yes counts in the right pay period (B53, B97); the leftover
+  question (3.4) comes at the yes; a split change while it waits; two
+  waiting; early (3.7); refused answers leave no trace
+  (0-refused-leaves-no-trace style). Edge cases: a 1-cent paycheck, a
+  paycheck exactly at each rounding boundary, a yes on the day the next
+  one is due.
+- A twin property test: with the setting on and a yes at once, every
+  bucket on every day equals a book with the setting off.
+- Server: the alert (alerts-plan, payday-alert, a new paycheck-ask-alert
+  test), Home's waiting card, 13.7 refusals through the choice desk,
+  restarts with a paycheck waiting (keeper).
+- Browser: Review's paycheck card shows the parts, asks first, yes and
+  not-a-paycheck (Chromium and WebKit); the double tap test (B92).
+- Simulator: the her-shaped life says yes some days late, sometimes says
+  "not a paycheck" first and then "This is my paycheck".
+- Full bar.
+
+
+PIECE C. THE SECOND CARD (both cards everyday). PR 5.
+
+What: a fifth account role, 'second-card', that works exactly like the
+everyday card. Hers: checking, savings and the Capital One card on the
+first connection, and the Amex card on the second. In the code the cards
+are 'everyday-card' (the Capital One card) and 'second-card' (the Amex
+card). Screens use the bank's own name for each account, so no card name
+is written in the code.
+
+Rulebook (hers), draft:
+- Section 1: "1. Accounts (two banks, two connections).
+  - Capital One: checking (debit card), savings, and the Capital One card.
+  - American Express: the Amex card.
+  Both cards are used day to day and work the same way."
+- 1.2 becomes: "After connecting, before setup day, you say which of the
+  banks' accounts is checking, savings, the Capital One card and the Amex
+  card, each once, from either connection. Nothing is read from either
+  bank until all four are picked..." (the rest as now).
+- 4.1: "A purchase on the debit card or on either card comes out of a
+  bucket on the day of the purchase."
+- 4.8: "Fees and interest on either card go to review. Suggested
+  bucket: needs."
+- 5.1: "Checking or savings to either card: not spending. The purchases
+  were already counted under 4.1." (5.2 is off.)
+- 9.1 and 9.3: "Each card: reminders show the statement balance, the
+  minimum and the due date, and continue until the payments the app sees
+  since the statement add up to the full statement balance..." (the rest
+  as now, per card).
+- 9.8 and section 2: a closing day for each card.
+- 12.1: "Bank side: checking + savings - the Capital One card - the Amex
+  card. For each card, what it owes, including pending charges..."
+- 14.2: "The starting money (checking + savings - both cards' balances)."
+- 12.6: lines for each card, as for the everyday card now.
+
+Tests:
+- Money: every existing everyday-card test has a second-card twin,
+  generated by one helper (no copy-pasted files): 4.1, 4.5 refunds, 4.6
+  pending, 4.8, 4.10, 5.1, 5.6, 9.x, 12.1, 12.5 (payments in transit to
+  either card), 14.2. A property test: a life where the second card's
+  activity is moved to the everyday card gives the same buckets every day.
+- Second card in the self-check: random lives with both cards and
+  payments landing a day late on each (12.5): the self-check holds every
+  day.
+- Server: bank/balances with two cards, statements per card, setup day's
+  starting money, bank rules on the second card.
+- Simulator: the her-shaped life uses both cards every week and pays
+  each in full, sometimes in two payments, sometimes from savings.
+- Full bar.
+
+
+PIECE D. TWO BANK CONNECTIONS. PR 6.
+
+What: up to two Plaid connections (Capital One and Amex), each with its
+own sealed key, cursor, webhook item id, "log in again", and permission
+end date. The money math does not change. The server reads both.
+
+Rulebook (hers), draft:
+- 1.1: "Connecting the banks. This setup has two connections: Capital
+  One, then American Express. "Connect a bank" is offered while fewer
+  than two are connected. It asks first: each connection uses 1 of the
+  10 Plaid allows, and one that is removed never comes back. Each bank's
+  own login opens (through Plaid). The app keeps each connection the
+  moment it gets it, sealed, on the server only. The app never makes a
+  third, never connects the same bank twice, and never removes one."
+- 1.3: "Logging in to a bank again: for each connection, when that bank
+  needs it (10.5), when its permission is running out (10.13), or to add
+  a missing account. It keeps the same connection..."
+- 0.5: "If either bank cannot be read, Home shows the last safe to spend
+  that both banks backed up, greyed, with the day and time, and says
+  which bank could not be read."
+- Section 2, sync: "Each sync reads both banks. Plaid's webhook for one
+  bank syncs that bank. A sync where one bank fails keeps what the other
+  read, and the failed one is tried again at the next time."
+- 12.3 gains: "The check uses each bank's latest good read. When one bank
+  was read and the other could not be, the check waits, as when the bank
+  is still catching up (10.4)."
+- 10.5, 10.7 and 10.13: per connection, and the alert names the bank.
+- 0.7: the status page shows each connection.
+
+Tests:
+- Server: the made-up bank (fake-plaid.ts) gets a second item. New
+  two-connections.test.ts covers connecting in order, a third refused,
+  the same bank twice refused, roles across both, nothing read until all
+  four are picked, one bank failing (the other's read kept, the self-check
+  waits, 0.5 greyed and naming the bank), login again for one, webhooks
+  per item (another item id refused), and permission end dates per
+  connection. Database: HER_STEPS step 1 (connections table, accounts get
+  a connection), migrate from empty and from an upstream-shaped database.
+  bank-desk, keeper, sync-random with two items (SYNC_SCENARIOS), the
+  simulated life through the bank connection with two items (20 simulated
+  years), and restarts.
+- test/sandbox-only.test.ts and the Plaid client lock: unchanged and
+  passing (both items go through the same lock).
+- Plaid's build_guidance is read before the Plaid code changes, and its
+  acceptance check is read only, as on his webhooks PR.
+- Break-it "[her-connections]".
+- Not money math. The normal bar, plus the long runs through the bank
+  connection, since all her money comes in through it.
+
+
+PIECE E. THE WISHLIST BUCKET. PR 9.
+
+What: a fourth bucket that gets its own percentage of each paycheck.
+Spending can be sorted to it. It is never asked about at payday and
+always rolls over. It is not part of safe to spend.
+
+Rulebook (hers), draft:
+- Section 2: "Split: savings, needs, wants, Wishlist (whole percents that
+  add up to 100; you pick on setup day)."
+- 3.3: "The paycheck is split by the percentages. Needs, wants and
+  Wishlist are each rounded down to the cent, and savings gets the rest,
+  so the parts always add up to the paycheck exactly."
+- 3.4: "...unspent needs and unspent wants either roll over or move to
+  savings... Wishlist is never asked about: it always rolls over."
+- 3.5: unchanged; it applies to Wishlist too.
+- 4.2: "Spending goes to needs, wants or Wishlist."
+- 4.4: "...split across needs, wants and Wishlist."
+- 11.1 unchanged: "Safe to spend = wants left, minus unsorted spending."
+  11.3 gains Wishlist: "Savings, Wishlist, held for others and unsorted
+  money in are never part of it." Why not include Wishlist: it is money
+  kept for things on her list. Counting it in safe to spend would let it
+  go on everyday wants, and the list would never fill.
+- 12.2: "savings + needs + wants + Wishlist + held for others + unsorted
+  money in - unsorted spending."
+- 3.8 (Q1, his answer: the savings account): "On payday the app tells you
+  how much should be sitting in the savings account (savings plus
+  Wishlist) and how much you still need to move. If the account already
+  holds more than it should, the amount to move is $0 and the extra is
+  shown separately."
+- 50.4 (new, his ask with Q1): "Moving Wishlist money for a purchase.
+  Wishlist money is kept in the savings account (3.8), and purchases are
+  paid from checking or a card. So when a purchase is sorted to Wishlist,
+  the app tells you to move that amount from savings to checking. Home
+  says "Move $X from savings to checking" with when: "before the Amex
+  card is due, Nov 3" for a purchase on a card whose statement has its
+  due date, "before the Amex card's next due date" while the statement it
+  is on has not closed yet, and "now" for a debit card purchase, which
+  has already left checking. With purchases on both cards, it names the
+  earliest due date. $X is the smaller of two amounts. One is the extra in
+  savings (3.8), so money still to move into savings is netted in and one
+  move covers both. The other is everything sorted to Wishlist since
+  tracking started, less Wishlist refunds and less every move from savings
+  to checking since tracking started. The card's reminders (9.1, 9.7) say
+  it too while it is not moved. It goes away once $X is $0.00. A move from
+  savings to checking is not spending (5.3)."
+- Tests for 50.4: random lives. $X is never above the extra and never
+  above the Wishlist purchases not yet moved. It is $0.00 right after a
+  move of exactly $X. A Wishlist refund lowers it. The due date named is
+  the earliest of the cards involved. Exactly on the due date, and the day
+  after, the wording changes as 9.6 does.
+- 10.1 and 10.2 unchanged: low and empty alerts are for needs and wants
+  only, not Wishlist.
+- 13.3 and 13.4: "You can move money between buckets by hand at any time.
+  Moving money out of savings or Wishlist asks you to confirm first."
+- 13.1: a Wishlist share change waits for the next paycheck, like the
+  split.
+- 40.2 and 40.4: Wishlist spending is its own part of each pay period's
+  bar. 40.5: Wishlist over time beside savings, its own amount. 40.11:
+  no estimate for Wishlist (it is not spent at a pace). 40.17: unchanged
+  (Wants).
+- Rules 40.7 and 40.8 stay on needs and wants.
+
+Tests:
+- Money, 50-wishlist.test.ts: one or more per rule, named after it. The
+  random tests (properties.test.ts style, fast-check) check that the four
+  parts add up to the paycheck exactly for every amount from 1 cent to
+  the largest exact total and every split; that rounding goes to savings;
+  that no cent is made or lost through payday, sorting, refunds, take
+  backs and hand moves; that own-account transfers never change Wishlist;
+  and that the self-check holds.
+- Edge cases: Wishlist 0% (exactly upstream: a twin test against a
+  3-bucket book), 100%, a 1-cent paycheck, a negative Wishlist at payday
+  (3.5), a refund of a Wishlist purchase (4.5), a split purchase across
+  all three, the bank taking back a Wishlist purchase (4.10).
+- Replay: a history saved before Wishlist opens unchanged (0%),
+  history-check's guard.
+- Server: views (Buckets, Payday, Review, Activity, Move, Settings,
+  Trends), choices-settings (the 4-way split must add to 100).
+- Browser: Buckets shows Wishlist, Review can sort to it, the design rules
+  (contrast, 44-point taps, text size) on the new rows.
+- Worked examples H1 to H4 by hand (a payday with rounding, a Wishlist
+  purchase, a refund, a hand move).
+- Simulator: the her-shaped life buys from Wishlist now and then, refunds
+  some, and moves money in and out by hand. 1,000 lives of 5 years.
+- Second opinion (recommended): a session that has not seen the code
+  writes tests from her rulebook's Wishlist and paycheck rules, as in his
+  Phase 2.
+- Full bar. This is the biggest money change, so it comes after the
+  smaller ones.
+
+
+PIECE F. WISHLIST ITEMS. PR 10.
+
+What: a short list of things, each with a name and a price, in order. The
+list is read from the Wishlist bucket. It holds no money of its own.
+
+Rulebook (hers), draft:
+- 50.1: "Wishlist items: up to 20, each a name and a price, in the order
+  you choose. Adding, changing, removing and moving one is logged (13.5).
+  The names stay in the app's database on the server, like your sorting
+  rules."
+- 50.2: "The Wishlist bucket fills the items in order. Going down the
+  list, each item gets the smaller of its price and what is left of the
+  bucket after the items above it. An item that has its whole price says
+  "Ready". With the bucket at zero or below, none has anything. What is
+  more than all the prices together is shown as "More than the list
+  needs". Each item shows what it has, its price, and how far along it is,
+  in words and amount, not only a bar. The items only read the bucket:
+  they never move money."
+- 50.3: "When you sort a purchase to Wishlist, review also asks which
+  item it was, or "None of them". The item you pick is marked bought, with
+  the day and what was paid, and leaves the list. The bucket goes down by
+  what the purchase cost, not the item's price. A purchase marked bought
+  can be changed back from its row on Wishlist's list. A refund goes back
+  to the Wishlist bucket (4.5). The item does not come back by itself; you
+  can add it again." (Question Q2.)
+
+Tests:
+- Money (the fill is pure arithmetic, wishlist.ts): random lists and
+  buckets. Each item's share is 0 or more and at most its price, the
+  shares are in order (no item gets money while one above it is short),
+  and the shares plus "more than the list needs" equal the bucket when it
+  is above zero. Edge cases: the bucket exactly at one item's price, one
+  cent short, at zero, negative, an empty list, a $0.00 price (refused).
+- Marking bought: an answer event that replays (0.6), refused when stale
+  (13.7), changes no bucket (a twin test against the same book without
+  items).
+- Server and browser: the Wishlist screen in every state (empty, filling,
+  ready, more than needed, loading, error), its sheets, the design rules.
+- Full bar (it changes the money package and review's offers).
+
+
+PIECE G. BOTH CARDS ON HOME, "SET ASIDE", PER-CARD REMINDERS. PR 7.
+
+What: a card row on Home for each card, showing what it owes, its due
+date, how much is already set aside for it, and its state (due, overdue,
+paid). Reminders per card (9.x, already per card after Piece C), with
+reminder days per card.
+
+Rulebook (hers), draft:
+- 52.1: "Home shows each card: its statement balance and due date, what
+  the payments since the statement have paid toward it (9.3), what it
+  owes now in all (the statement plus purchases since), and how much of
+  that is set aside (52.2). From the first reminder day it says due, and
+  after the due date, overdue, in words, not only color (9.6). With the
+  card's reminders off (9.8), it says so instead. Tapping a card opens
+  its statement (52.4)."
+- 52.2: "Set aside. Every purchase on a card already came out of its
+  bucket on the day you made it (4.1), so the money to pay the card is
+  not in any bucket: it stays in your bank accounts until you pay. So
+  what is set aside for a card is all of what it owes now as the app
+  counts it (its balance on setup day, plus purchases, fees and interest
+  since, less refunds and the payments that reached it), pending charges
+  included. When the totals match the bank (12.3), that is exactly what
+  the bank says the card owes. Purchases still waiting to be sorted count
+  too: they are held back from safe to spend until you sort them (4.3).
+  If the savings account holds more than the buckets that live there
+  (3.8, "extra"), Home says how much of the set-aside money is in savings
+  rather than checking."
+- 52.3: "Reminder days, for each card: 7 days and 2 days before the due
+  date (section 2). Each card's reminders, due line and overdue alert are
+  its own."
+
+The plain-words explanation for her (it goes on the card's sheet in the
+app and in her rulebook, with made-up numbers):
+
+  "Why paying your card isn't spending. When you buy $30 of groceries on
+  a card, the app takes the $30 out of Needs that same day. Your checking
+  account still has the $30, because you haven't paid the card yet. So
+  the $30 isn't in any bucket any more, but it's still in your account,
+  waiting for the card bill. That's what "set aside" means. When you pay
+  the card $30 from checking, checking goes down $30 and the card goes
+  down $30, and no bucket changes, because the $30 was already counted on
+  the day you bought the groceries. You don't have to work out the bill
+  or save for it separately. If every purchase is sorted, the money for
+  each card is already there."
+
+Tests:
+- Money: setAsideFor(card), a random property. For every random life,
+  every day, the set-aside amounts equal what each card owes as the books
+  count it. When the self-check passes, the sum also equals the cards'
+  balances at the bank. With an extra in savings, the "in savings" part
+  is exactly that extra, and never more than the set-aside total.
+- Server: views-home-cards (both cards, every state: due, overdue, paid
+  in full, paid in part, reminders off, a payment on its way), per-card
+  reminder alerts (alerts-plan with two cards, the alert simulations with
+  two cards: every alert at its moment, once).
+- Browser: Home's card rows, the explanation sheet, design rules.
+- Worked example H5: a month of both cards by hand, with set aside each
+  day.
+- The money part is a read-only function. Full bar for it, normal bar for
+  the screens.
+
+
+PIECE H. THE STATEMENT VIEW, PER CARD. PR 8.
+
+What: for each card, the purchases on its current statement (the last
+one the bank closed, the one being paid now), by bucket and by paycheck,
+adding up to the statement balance to the cent. It only reads, like
+Trends.
+
+Rulebook (hers), draft:
+- 52.4: "Statement. For each card, its last statement: from the day after
+  the statement before closed to its own closing day (9.8). It lists what
+  is on it in lines that add up to the statement balance exactly, to the
+  cent:
+  - what was carried in from the statement before, less the payments and
+    credits that reached the card in this statement's days;
+  - each purchase, fee and interest charge, less refunds, by the bucket it
+    is sorted to now (needs, wants, Wishlist, or still unsorted), and
+    again by the pay period (paycheck) it was counted in, each with its
+    total;
+  - purchases from before setup day, read by today's rules and marked
+    "Before setup day", as Trends reads them (40.1);
+  - anything the app's lines do not account for is one more line, "Not
+    matched to a purchase", with its amount. It is never hidden, and the
+    lines still add up exactly.
+  The carried-in line needs the statement before. For the first statement
+  the app sees, it is "From before the app saw this card" instead. Tapping
+  a bucket or a paycheck lists its purchases. It only reads: it never
+  changes a bucket, a rule or the history."
+- 52.5: "Each statement the bank sends is kept, so the statement before
+  is known from the second one on."
+
+Tests:
+- Server, statement.test.ts (by hand) and statement-random.test.ts (random
+  simulator books with made-up statements). The lines always add up to the
+  statement balance. "Not matched" is $0.00 on every simulated card whose
+  statement the simulator itself made. The by-bucket and by-paycheck
+  groups each add to the purchases' total. A purchase whose pending and
+  posted dates fall on either side of the closing day is counted once,
+  on the posted side, with a test for exactly the closing day. Refunds
+  and take-backs are covered.
+- Database: HER_STEPS step 2 (statements kept per closing date), and the
+  history still replays (it adds nothing to the book).
+- Browser (Chromium): the screen against the server's numbers, every
+  state, and the design rules.
+- Worked example H6: one statement by hand.
+- Read only. Normal bar, with the random statement test.
+- A check on her connection day: does each bank send the statement date,
+  balance, minimum and due date (Plaid liabilities)? Bank of America
+  left out the statement date (A52). If one of hers leaves out more,
+  that is a question before this PR is deployed.
+
+
+PIECE I. PAY SCHEDULE, SORTING RULES, BANK RULES: AS NOW.
+
+No change. Her rulebook keeps section 2's pay schedule, 4.2, 6.2, 13.2,
+13.6, 13.8, and the bank rules, word for word. Bank rules are per account,
+so they work across both connections without a change. Setup day's
+suggestions come from each bank's own labels.
+
+
+PIECE J. THE SIMULATED LIFE SHAPED LIKE HERS (in PR 3, grown in every
+money PR after).
+
+What: a second profile for the simulator (LifeOptions.profile 'her',
+upstream's life untouched). It covers two cards used every week, card
+payments from checking and sometimes savings, paid in full and in parts,
+landing a day or two late, from two banks whose reads come at different
+times. No mom and no old card. Wishlist purchases and refunds, paychecks
+confirmed on the day, a day late, or after "not a paycheck" first, and
+split changes mid-year. Every day it runs the self-check, a recount,
+set-aside against owed, Wishlist fill, statements, safe to spend and the
+alerts, each worked out from her rulebook.
+
+npm test lives a few her lives. `node scripts/simulate.mjs --profile her`
+lives 1,000 lives of 5 years. Upstream's lives still run unchanged.
+
+
+HER CLAUDE.md, RULEBOOK AND ROADMAP (PR 1)
+
+All three rewritten for her setup, with the same file names (tests and
+Claude Code read them by name).
+
+- CLAUDE.md: the same strict rules (correctness first, rulebook is the
+  truth, tests before code, never weaken a test, the testing bar, "test
+  only what changed", the safety rules, the design rules, how to talk).
+  New:
+  - "the owner" and "the developer". Decisions and OKs come from the
+    developer.
+  - The privacy rule in its own heading: the repo is public, so nothing
+    about the owner's real money goes in it, ever. No store names,
+    balances, amounts or account numbers in code, tests, logs, commits,
+    PR text or docs. Test data is made up.
+  - "Upstream": what it is, the switches-not-deletions rule, HER_STEPS,
+    rule numbers from 50, and how to merge from upstream (below).
+  - Her status section, starting empty.
+  - His Status section and his notes are not copied in. They stay in
+    upstream's history.
+- Rulebook: his draft 30 as the base, every number kept. The approved
+  texts of this plan go into one section, "Approved for her setup, not
+  built yet", indented so they are not yet counted as numbered rules. The
+  rulebook is the truth about what the code does ("if the code and the
+  rulebook disagree, the code is wrong"), and the code does not do them
+  yet. Each PR moves its own texts into place, with their tests, and
+  test/every-rule-has-a-test.test.ts then holds it to them. The same
+  goes for "Off in this setup" (PR 3) and sections 50 to 52. Headed "Her rulebook, draft H1".
+  Sections 15 to 42 (his dated answers) stay as they are, as upstream
+  history. Her own answers start at section 60 ("Answers, her setup").
+- Roadmap: hers. Phase 0 (this repo, done), Phase 1 (PRs 3 to 11, each
+  with its bar), Phase 2 (hosting on her own Fly app, test bank only,
+  PR 2 and her steps), Phase 3 (connection day: both banks), Phase 4
+  (trial: two pay periods, a weekly statement comparison, 30 days with no
+  self-check mismatch), Phase 5 (live).
+- Her own notes: docs/her-later.txt (her "come back to" list) and
+  docs/her-questions.txt (her A and B questions, numbered HA1, HB1, ...
+  so they never mix with his).
+- Upstream's QUESTIONS.md, docs/later.txt and phase reports are left as
+  they are, read-only history (rules cite them, B53 for example).
+  Editing them would only make merges harder.
+
+
+HER FLY APP, BACKUPS, AND SETUP (PR 2, and his steps)
+
+PR 2 (no code, no account):
+- fly.toml: her own app name, filled in once he creates it. Fly app names
+  are global, so a random suffix is picked at creation time, like his
+  budget-app-x7q2. Her own volume name (budget_h_data). APP_ORIGIN,
+  PLAID_ENV sandbox, region ewr unless she is nearer another (Q7).
+- litestream.yml: her own backup path.
+- test/hosting-config.test.ts: pointed at her app name.
+  test/sandbox-only.test.ts stays as it is (fly.toml alone may ever say
+  production).
+- docs/her-setup.txt: the steps below, in order, with every command.
+
+His steps (nothing is made until he says so):
+1. Plaid (Q3, his answer: her own Plaid team, already made). Its
+   sandbox keys go into her Fly secrets first and its production secret
+   only on connection day. He checks in that team's dashboard that it
+   says Trial, 0 of 10, and that Capital One and American Express both
+   take new connections, with transactions and liabilities (connection
+   availability). As on his day: never submit a Production application.
+   Her keys are never his, and his are never in her app.
+2. Cloudflare R2: a new bucket for her backups (budget-h), with its own
+   API token for that bucket only, so neither app's key can read the
+   other's books. A folder in his bucket would also work, but R2 tokens
+   cover a whole bucket.
+3. Fly: fly apps create <her app name>; fly volumes create budget_h_data
+   --size 1 --region ewr; her secrets written to .env.fly by a script
+   that prints no value, fly secrets import, then .env.fly deleted:
+   - BANK_TOKEN_KEY: new, never his.
+   - VAPID keys: a new pair (npm run push-keys), never his.
+   - PLAID_CLIENT_ID and PLAID_SECRET: the test bank's first.
+   - R2_ENDPOINT, R2_BUCKET, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY.
+   About $3.84 a month more (his Phase 6 figure).
+4. UptimeRobot: two monitors, /health and /health/backups.
+5. Deploy from main (fly deploy --ha=false), with the deploy check
+   (npm run deploy-check) from the first deploy on.
+6. Her phone (Q4): the one-time code (fly ssh console -C "node
+   /app/serve/login-code.mjs"), her passkey, the home-screen app,
+   notifications, and the test alert. She does these on her phone.
+7. The rehearsal on the test bank with two made-up banks (npm run
+   rehearsal, made to connect two).
+8. Connection day, after PR 12: PLAID_ENV production in fly.toml, the
+   switch PR, a fresh volume. She logs in to her own banks in Plaid's
+   window herself (her logins are never typed by him or by Claude).
+   Then the four picks and setup day with her split.
+
+
+KEEPING UPSTREAM: MERGING FIXES IN LATER
+
+- git fetch upstream, then merge upstream/main into a branch of hers
+  (never into main directly), as a pull request, with the full
+  "SKIP_BROWSER_TESTS=1 npm test" and CI.
+- CLAUDE.md, the rulebook, the roadmap, fly.toml and litestream.yml:
+  always hers. Written down in full in docs/her-merging.txt (PR 1). In
+  short:
+  - .gitattributes (in git) names the five files with "merge=ours".
+  - That line does nothing alone. Git only knows a merge driver called
+    "ours" from local config, which is never in git. So every machine
+    and every clone that merges upstream must run, once:
+      git config merge.ours.driver true
+    Without it, git ignores the line and merges or conflicts the files as
+    usual. A wrong merge would bring his CLAUDE.md, his rulebook, or
+    worse, his fly.toml (his app name) into her repo.
+  - Merge on a machine with that config, never with GitHub's web buttons.
+    GitHub's merge ignores local merge drivers.
+  - After every merge, check that the five files did not change:
+      git diff HEAD^1 HEAD -- CLAUDE.md budget-app-rulebook.md
+        budget-app-roadmap.md fly.toml litestream.yml
+    (empty means they are still hers).
+  - Then read upstream's own diff of those files: a rule he changed may
+    need the same change in hers, with the developer's OK.
+- Code: should merge cleanly while the switches rule holds. A conflict in
+  shared code means a hook grew too big. Fix it by moving her part into
+  her own file.
+- The Node update (PR #51, already in main): nothing to do now. The next
+  one merges the same way.
+- The push URL stays DISABLED. Nothing of hers ever goes to upstream.
+
+
+THE PR ORDER (smallest risk first)
+
+ 1. Docs: her CLAUDE.md, rulebook draft H1 (the rule texts of this plan
+    as OK'd), roadmap, her-later and her-questions, .gitattributes.
+    [skip ci]. No code.
+ 2. Hosting setup: fly.toml, litestream.yml, hosting-config test,
+    docs/her-setup.txt. No account made.
+ 3. Switches: mom reserve off, old card off, her-setup.ts, the her
+    simulated life (Piece A, J). Money: full bar.
+ 4. Ask before splitting a paycheck (Piece B). Money: full bar.
+ 5. The second card (Piece C). Money: full bar.
+ 6. Two bank connections (Piece D). Server. Normal bar plus the long
+    runs through the bank connection.
+ 7. Both cards on Home, set aside, per-card reminders (Piece G). The
+    money part is read-only: full bar for it.
+ 8. The statement view (Piece H). Read only. Random statement tests.
+ 9. The Wishlist bucket (Piece E). Money: full bar, the largest. Second
+    opinion recommended.
+10. Wishlist items (Piece F). Money: full bar.
+11. Trends for her setup: Wishlist's part, two cards, the old card's
+    parts hidden. Read only.
+12. The end check before connection day: the full break-it run on every
+    break new in PRs 3 to 11, 1,000 her lives of 5 years, 20 years
+    through the bank connection and the database with restarts, an agent
+    through a full pay period on the screens (agent-pay-period, her
+    version), the every-rule table, and docs/her-report.txt.
+
+Each PR stops for his review before merging, as upstream's did. 3, 4 and
+5 do not depend on each other, but they touch the same files (book.ts,
+settings, the simulator), so they go one at a time.
+
+
+QUESTIONS (his, or hers through him)
+
+Q1. ANSWERED Oct 23: in the savings account. Also, when she buys a
+    Wishlist item, the app tells her to move that amount from savings to
+    checking before the card is due (rule 50.4, Piece E).
+    Was: where is the Wishlist money kept, savings or checking?
+Q2. A Wishlist item bought for less or more than its price: is marking it
+    bought and charging the bucket what it really cost right
+    (recommended)? A refunded item: stay bought (recommended), or come
+    back on the list? Needed for PR 10.
+Q3. ANSWERED Oct 23: her own Plaid team, already made.
+Q4. Her phone: an iPhone? (Notifications need the home-screen app on an
+    iPhone, as for him.) Needed before step 6.
+Q5. Her home time zone and pay schedule (both settings; only the starting
+    values are needed). Before setup day.
+Q6. Two paychecks waiting at once: older first (recommended, 51.2), or
+    either order? Needed for PR 4.
+Q7. Fly region: ewr, like his, unless she lives far from the East Coast.
+    Before step 3.
+Q8. ANSWERED Oct 23: keep the bank names (Capital One, American
+    Express). Never account numbers, balances, her stores or her name.
+
+
+WHAT WAS NOT DONE WITH THE PLAN
+
+- No code.
+- No account anywhere, no Fly app, no Plaid call.
+- Nothing sent to upstream.
