@@ -6459,5 +6459,243 @@
     "find": "  askBeforeSplittingPaycheck: (v) => (typeof v === 'boolean' ? v : undefined),",
     "replace": "  askBeforeSplittingPaycheck: () => undefined,",
     "why": "[her-ask] section 2 the desk refuses the setting"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank/balances.ts",
+    "find": "    const second = accounts.some((a) => a.role === 'second-card') ? { secondCard: posted('second-card') } : {};",
+    "replace": "    const second = {};",
+    "why": "[her-second-card] 12.1 the second card left out of what the bank shows"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank/balances.ts",
+    "find": "everydayCard: balances.everydayCard, ...second };",
+    "replace": "everydayCard: balances.everydayCard };",
+    "why": "[her-second-card] 12.1 the second card left out of what the check counts"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank/balances.ts",
+    "find": "role === 'everyday-card' || role === 'second-card' ? role : null;",
+    "replace": "role === 'everyday-card' ? role : null;",
+    "why": "[her-second-card] 12.6 the second card's items left out of the check's accounts"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank/balances.ts",
+    "find": "  const second = posted.secondCard === undefined ? {} : { 'second-card': figures('second-card', posted.secondCard, withPending.secondCard ?? 0) };",
+    "replace": "  const second = {};",
+    "why": "[her-second-card] 12.6 a read keeps nothing of the second card"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank/why.ts",
+    "find": "const isCard = (account: CheckAccount): boolean => account === 'everyday-card' || account === 'second-card';",
+    "replace": "const isCard = (account: CheckAccount): boolean => account === 'everyday-card';",
+    "why": "[her-second-card] 12.6 the second card's move taken as a bank account's"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank/why.ts",
+    "find": "const ACCOUNTS: readonly CheckAccount[] = ['checking', 'savings', 'everyday-card', 'second-card'];",
+    "replace": "const ACCOUNTS: readonly CheckAccount[] = ['checking', 'savings', 'everyday-card'];",
+    "why": "[her-second-card] 12.6 no line for the second card"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank/reading.ts",
+    "find": "account === 'everyday-card' || account === 'old-card' || account === 'second-card';",
+    "replace": "account === 'everyday-card' || account === 'old-card';",
+    "why": "[her-second-card] 4.1 money onto the second card read as a deposit"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/sync/plan.ts",
+    "find": "        return role === 'everyday-card' || role === 'old-card' || role === 'second-card' ? { ...base, kind: 'card-charge'",
+    "replace": "        return role === 'everyday-card' || role === 'old-card' ? { ...base, kind: 'card-charge'",
+    "why": "[her-second-card] 4.8 a fee on the second card dropped"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank/statements.ts",
+    "find": "  if (card === 'second-card') return settings.secondCardClosingDay ?? null;",
+    "replace": "  if (card === 'second-card') return settings.everydayCardClosingDay;",
+    "why": "[her-second-card] 9.8 the second card read with the everyday card's closing day"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank/statements.ts",
+    "find": "export const CARD_ORDER: readonly ('everyday-card' | 'old-card' | 'second-card')[] = ['everyday-card', 'second-card', 'old-card'];",
+    "replace": "export const CARD_ORDER: readonly ('everyday-card' | 'old-card' | 'second-card')[] = ['second-card', 'everyday-card', 'old-card'];",
+    "why": "[her-second-card] 9.6 the second card listed before the everyday card"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "      if ((a.role !== 'everyday-card' && a.role !== 'old-card' && a.role !== 'second-card') || raw === undefined) continue;",
+    "replace": "      if ((a.role !== 'everyday-card' && a.role !== 'old-card') || raw === undefined) continue;",
+    "why": "[her-second-card] 9.1 the second card's statement never read"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "        ...(v.posted.secondCard === undefined ? [] : [{ account: 'second-card' as const, posted: v.posted.secondCard, available: null, counted: v.withPending.secondCard ?? 0 }]),\n",
+    "replace": "",
+    "why": "[her-second-card] 12.6 the check sheet leaves out the second card's figures"
+  },
+  {
+    "section": "alerts",
+    "file": "packages/server/src/alerts/plan.ts",
+    "find": "      const name = notice.card === 'old-card' ? undefined : world.cardNames?.[notice.card];",
+    "replace": "      const name = undefined;",
+    "why": "[her-second-card] 9.1 a reminder never names the card"
+  },
+  {
+    "section": "alerts",
+    "file": "packages/server/src/alerts/plan.ts",
+    "find": "          statementBalance: notice.card !== 'old-card' ? notice.statementBalance : null,",
+    "replace": "          statementBalance: notice.card === 'everyday-card' ? notice.statementBalance : null,",
+    "why": "[her-second-card] 9.1 the second card's reminder without its statement balance"
+  },
+  {
+    "section": "alerts",
+    "file": "packages/server/src/alerts/alerts.ts",
+    "find": "title: `${f.name ?? CARDS[f.card]} payment ${when}`",
+    "replace": "title: `${CARDS[f.card]} payment ${when}`",
+    "why": "[her-second-card] 9.1 a reminder's words leave out the card's name"
+  },
+  {
+    "section": "alerts",
+    "file": "packages/server/src/alerts/alerts.ts",
+    "find": "'old-card': 'Old card', 'second-card': 'Second card' };",
+    "replace": "'old-card': 'Old card', 'second-card': 'Everyday card' };",
+    "why": "[her-second-card] 9.1 the second card called the everyday card in an alert"
+  },
+  {
+    "section": "alerts",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": ", mismatchSince: this.mismatchSince(), cardNames: this.cardNames() };",
+    "replace": ", mismatchSince: this.mismatchSince() };",
+    "why": "[her-second-card] 9.1 the alerts never get the cards' names"
+  },
+  {
+    "section": "home",
+    "file": "packages/server/src/bank/card-names.ts",
+    "find": "  if (names['everyday-card'] !== null && names['everyday-card'] === names['second-card']) {",
+    "replace": "  if (names['everyday-card'] === null && names['everyday-card'] === names['second-card']) {",
+    "why": "[her-second-card] HB6 two cards named the same not told apart"
+  },
+  {
+    "section": "home",
+    "file": "packages/server/src/bank/card-names.ts",
+    "find": "  if (second === undefined) return null;\n",
+    "replace": "",
+    "why": "[her-second-card] HB6 upstream's setup gets names"
+  },
+  {
+    "section": "home",
+    "file": "packages/server/src/bank/card-names.ts",
+    "find": "    const name = (a?.raw.name ?? '').trim() || (a?.raw.official_name ?? '').trim();",
+    "replace": "    const name = (a?.raw.official_name ?? '').trim();",
+    "why": "[her-second-card] HB6 the bank's account name not used"
+  },
+  {
+    "section": "home",
+    "file": "packages/server/src/http/card-names.ts",
+    "find": "      return cardNames === null || typeof shown !== 'object' || shown === null ? shown : { ...shown, cardNames };",
+    "replace": "      return shown;",
+    "why": "[her-second-card] HB6 the screens get no names"
+  },
+  {
+    "section": "home",
+    "file": "packages/server/src/http/card-names.ts",
+    "find": "    ...(activity === undefined ? {} : { activity: named(activity) }),\n",
+    "replace": "",
+    "why": "[her-second-card] HB6 a bucket's list gets no names"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/db/store.ts",
+    "find": "  const sql = hasHerSteps(db)",
+    "replace": "  const sql = false",
+    "why": "[her-second-card] 1.2 the second card's pick never read"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/db/store.ts",
+    "find": "  if (Object.values(roles).includes('second-card')) migrateHer(db);\n",
+    "replace": "",
+    "why": "[her-second-card] 1.2 her steps not run before the second card is picked"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/db/store.ts",
+    "find": "run(second ? null : role, id);",
+    "replace": "run(role, id);",
+    "why": "[her-second-card] 1.2 the second card's pick written to upstream's table"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/db/her-steps.ts",
+    "find": ".run(step + 1);",
+    "replace": ".run(step);",
+    "why": "[her-second-card] her steps: the version kept one behind, so a step runs twice"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/db/her-steps.ts",
+    "find": "  if (version > HER_SCHEMA_VERSION) {",
+    "replace": "  if (version > HER_SCHEMA_VERSION + 1) {",
+    "why": "[her-second-card] her steps: a newer version of her setup is taken"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/bank-desk.ts",
+    "find": "'old-card': 'the old card', 'second-card': 'the second card' };",
+    "replace": "'old-card': 'the old card', 'second-card': 'the old card' };",
+    "why": "[her-second-card] 1.2 the picking words call the second card the old card"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/setup-view.ts",
+    "find": "    ...(base.posted.secondCard === undefined ? {} : { secondCard: line(base.posted.secondCard, 'second-card', withPending.secondCard ?? 0) }),\n",
+    "replace": "",
+    "why": "[her-second-card] 14.2 setup day does not show the second card"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/serve/test-bank.ts",
+    "find": "secondCard && TEST_BANK_MASKS[mask] === 'old-card' ? 'second-card'",
+    "replace": "secondCard && TEST_BANK_MASKS[mask] === 'savings' ? 'second-card'",
+    "why": "[her-second-card] 1.2 the test bank's second card not picked as hers"
+  },
+  {
+    "section": "bank-rules",
+    "file": "packages/server/src/bank-rules-desk.ts",
+    "find": "    if (this.#input.secondCardOff?.() === true && about('second-card')) return 'This setup has no second card.';\n",
+    "replace": "",
+    "why": "[her-second-card] a bank rule on the second card taken in upstream's setup"
+  },
+  {
+    "section": "bank-rules",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "      secondCardOff: () => this.#switches().secondCard === 'off',\n",
+    "replace": "",
+    "why": "[her-second-card] the bank rules never told the second card is off"
+  },
+  {
+    "section": "bank-rules",
+    "file": "packages/server/src/bank-rules.ts",
+    "find": "const isCard = (account: AccountId): boolean => account === 'everyday-card' || account === 'old-card' || account === 'second-card';",
+    "replace": "const isCard = (account: AccountId): boolean => account === 'everyday-card' || account === 'old-card';",
+    "why": "[her-second-card] 4.8 a fee rule on the second card refused"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/choices.ts",
+    "find": "  secondCardClosingDay: (v) => (v === null ? null : whole(v)),\n",
+    "replace": "",
+    "why": "[her-second-card] 9.8 the second card's closing day cannot be sent"
   }
 ]

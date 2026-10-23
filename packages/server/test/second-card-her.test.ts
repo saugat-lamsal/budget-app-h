@@ -10,6 +10,7 @@ import { readOutbox } from '../src/alerts/outbox.js';
 import { bankView } from '../src/bank/balances.js';
 import { cardNamesOf } from '../src/bank/card-names.js';
 import { checkBankRules } from '../src/bank/reading.js';
+import { parseSettingsRequest } from '../src/choices.js';
 import type { StoredAccount } from '../src/bank/stored-account.js';
 import { openDatabase } from '../src/db/database.js';
 import { HER_SCHEMA_VERSION, hasHerSteps, migrateHer } from '../src/db/her-steps.js';
@@ -298,6 +299,12 @@ describe('9.1, 9.3, 9.8 each card\'s statement', () => {
     expect(cardLines(life)).toEqual([{ kind: 'card-due', card: 'second-card', dueDate: '2026-10-26', daysLeft: 7, statementBalance: 81_240, minimumPayment: 3_500 }]);
     life.restart({ start: HER_START });
     expect(life.keeper.book()?.settings().secondCardClosingDay).toBe(30);
+  });
+
+  it("9.8 the screens can send the second card's closing day: a day of the month, or none", () => {
+    expect(parseSettingsRequest({ id: 'abcdefgh', settings: { secondCardClosingDay: 27 } })).toEqual({ id: 'abcdefgh', settings: { secondCardClosingDay: 27 } });
+    expect(parseSettingsRequest({ id: 'abcdefgh', settings: { secondCardClosingDay: null } })).toEqual({ id: 'abcdefgh', settings: { secondCardClosingDay: null } });
+    expect(parseSettingsRequest({ id: 'abcdefgh', settings: { secondCardClosingDay: 'soon' } })).toBeNull();
   });
 
   it('9.8 upstream\'s settings refuse a closing day for a second card', async () => {

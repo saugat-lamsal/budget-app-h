@@ -97,6 +97,8 @@ describe.each(ENGINES)('her second card on the screens, in %s', (_name, engine) 
       await open(page, base, '/home');
       const after = words(await page.locator('main').innerText());
       expect(after).toContain('Made-up Second Card due in 7 days');
+      // 9.1: like the everyday card, its statement balance and minimum.
+      expect(words(await page.getByTestId('attention-card-due-second-card').innerText())).toContain('Statement $812.40, minimum $35.00.');
       expect(after).not.toContain('Card reminders are off');
     });
   });

@@ -3470,5 +3470,117 @@
     "find": "  if (waiting > 0) parts.push(",
     "replace": "  if (waiting > 1) parts.push(",
     "why": "[her-ask] 13.2 one marked waiting is not said"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/ui/card-names.ts",
+    "find": "  return known !== null && (NAMED as readonly string[]).includes(account) ? known[account as NamedCard] : null;",
+    "replace": "  return null;",
+    "why": "[her-second-card] HB6 no card is ever named"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/ui/card-names.ts",
+    "find": "get: () => nameOf(card) ?? words[card]",
+    "replace": "get: () => words[card]",
+    "why": "[her-second-card] HB6 the maps keep the plain words"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/ui/card-names.ts",
+    "find": "  if (names !== undefined) known = names;",
+    "replace": "  if (names !== undefined && names !== null) known = names;",
+    "why": "[her-second-card] HB6 names never cleared"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/app/api.ts",
+    "find": "  if ('cardNames' in view) rememberCardNames(",
+    "replace": "  if (false) rememberCardNames(",
+    "why": "[her-second-card] HB6 the names the server sends are not kept"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/home-text.ts",
+    "find": "off.card === 'second-card' ? 'the second card' : 'the old card'",
+    "replace": "off.card === 'second-card' ? 'the old card' : 'the old card'",
+    "why": "[her-second-card] 9.8 the second card called the old card"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Home.tsx",
+    "find": "            item.card !== 'old-card' ? (",
+    "replace": "            item.card === 'everyday-card' ? (",
+    "why": "[her-second-card] 9.1 the second card's due line without its statement balance"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Setup.tsx",
+    "find": "          {view.secondCard !== undefined && <AccountFigure",
+    "replace": "          {false && <AccountFigure",
+    "why": "[her-second-card] 14.2 setup day does not show the second card"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Setup.tsx",
+    "find": "  return view.secondCard === undefined ? 'everyday card' : 'both cards';",
+    "replace": "  return 'everyday card';",
+    "why": "[her-second-card] 14.2 setup day says only the everyday card comes off"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Settings.tsx",
+    "find": "        {s.secondCardClosingDay !== undefined && textRow('closing-day-second'",
+    "replace": "        {false && textRow('closing-day-second'",
+    "why": "[her-second-card] 9.8 no row for the second card's closing day"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Settings.tsx",
+    "find": "'closing-day-second': 'secondCardClosingDay' } as const;",
+    "replace": "'closing-day-second': 'everydayCardClosingDay' } as const;",
+    "why": "[her-second-card] 9.8 the second card's sheet sets the everyday card's closing day"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/buckets-text.ts",
+    "find": "      return `Payment to ${nameOf(item.to) ?? 'the second card'}`;",
+    "replace": "      return `Payment to ${nameOf('everyday-card') ?? 'the second card'}`;",
+    "why": "[her-second-card] 12.5 a payment to the second card named as the everyday card"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/why-text.ts",
+    "find": "'second-card': \"The second card's\" };",
+    "replace": "'second-card': \"The everyday card's\" };",
+    "why": "[her-second-card] 12.6 the second card called the everyday card"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/setup-text.ts",
+    "find": "  if (named !== null) return named;\n",
+    "replace": "",
+    "why": "[her-second-card] HB6 a card in a sentence never named"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/settings-text.ts",
+    "find": "  return named === null ? SETTING_WORDS[card === 'everyday-card' ? 'everydayCardClosingDay' : 'secondCardClosingDay'] : `${named}: statement closing day`;",
+    "replace": "  return SETTING_WORDS[card === 'everyday-card' ? 'everydayCardClosingDay' : 'secondCardClosingDay'];",
+    "why": "[her-second-card] HB6 a card's closing day not called by its name"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/bank-rules-text.ts",
+    "find": "const isCard = (account: AccountId): boolean => account === 'everyday-card' || account === 'old-card' || account === 'second-card';",
+    "replace": "const isCard = (account: AccountId): boolean => account === 'everyday-card' || account === 'old-card';",
+    "why": "[her-second-card] 5.6 a bank rule on the second card can be with the other card"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/settings-text.ts",
+    "find": "  const second = accounts['second-card'] === undefined ? three : `${three}; second card: ${accounts['second-card']}`;",
+    "replace": "  const second = three;",
+    "why": "[her-second-card] 13.5 the change log leaves out the second card"
   }
 ]
