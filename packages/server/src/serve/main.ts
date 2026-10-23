@@ -5,6 +5,7 @@ import { rolesFor } from '@budget-app/money';
 import { BackupWatch } from '../backup/backup-watch.js';
 import { tokenBoxFromEnv, type TokenBox } from '../crypto/token-box.js';
 import { openDatabase } from '../db/database.js';
+import { migrateHer } from '../db/her-steps.js';
 import { readConnection } from '../db/store.js';
 import { HistoryDoesNotReplay } from '../history/history-db.js';
 import { Keeper } from '../history/keeper.js';
@@ -62,6 +63,8 @@ const log = consoleLog([keys.clientId, keys.secret, process.env['BANK_TOKEN_KEY'
 
 mkdirSync(dirname(options.db), { recursive: true });
 const db = openDatabase(options.db);
+// Her setup: her own database steps too, once upstream's have run (db/her-steps.ts).
+if (start.switches.secondCard === 'on') migrateHer(db);
 let keeper: Keeper;
 try {
   keeper = Keeper.open({ db, now: () => new Date(), log, origin: () => origin, push: { keys: push }, start });

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { ACCOUNTS, addDays, daysBetween, type AccountId, type Cents, type IsoDate } from '@budget-app/money';
+import { ALL_ACCOUNTS, addDays, daysBetween, type AccountId, type Cents, type IsoDate } from '@budget-app/money';
 import { labelOf, readPlaidItem, type BankLabel } from './bank/plaid-item.js';
 import { readBankItemWithRule, type BankRule } from './bank/reading.js';
 import { rolesOf, type StoredAccount } from './bank/stored-account.js';
@@ -39,7 +39,7 @@ export const EXAMPLES = 3;
 export const MAX_RULE_TEXT = 200;
 
 const MEANINGS: readonly BankMeaning[] = ['transfer', 'payment-to-person', 'card-fee', 'card-interest'];
-const isCard = (account: AccountId): boolean => account === 'everyday-card' || account === 'old-card';
+const isCard = (account: AccountId): boolean => account === 'everyday-card' || account === 'old-card' || account === 'second-card';
 
 // Every bank item kept, as the bank rules read it: not one removed, not one
 // that cannot be read, on one of his four accounts, with money that moved.
@@ -183,7 +183,7 @@ function meaningOfLabel(l: BankLine): LabelMeaning | null {
 // Null when the history has none.
 function pairOf(l: BankLine, kind: 'pair-card' | 'pair-bank', lines: readonly BankLine[]): AccountId | null {
   const candidates = lines.filter((o) => o.account !== l.account && o.amount === -l.amount && isCard(o.account) === (kind === 'pair-card'));
-  candidates.sort((a, b) => Math.abs(daysBetween(l.date, a.date)) - Math.abs(daysBetween(l.date, b.date)) || ACCOUNTS.indexOf(a.account) - ACCOUNTS.indexOf(b.account));
+  candidates.sort((a, b) => Math.abs(daysBetween(l.date, a.date)) - Math.abs(daysBetween(l.date, b.date)) || ALL_ACCOUNTS.indexOf(a.account) - ALL_ACCOUNTS.indexOf(b.account));
   return candidates[0]?.account ?? null;
 }
 
@@ -232,10 +232,10 @@ export function suggestBankRules(lines: readonly BankLine[], rules: readonly Ban
       });
     }
   }
-  const otherOrder = (a: AccountId | null): number => (a === null ? ACCOUNTS.length : ACCOUNTS.indexOf(a));
+  const otherOrder = (a: AccountId | null): number => (a === null ? ALL_ACCOUNTS.length : ALL_ACCOUNTS.indexOf(a));
   return suggestions.sort(
     (a, b) =>
-      ACCOUNTS.indexOf(a.account) - ACCOUNTS.indexOf(b.account) ||
+      ALL_ACCOUNTS.indexOf(a.account) - ALL_ACCOUNTS.indexOf(b.account) ||
       MEANINGS.indexOf(a.means) - MEANINGS.indexOf(b.means) ||
       otherOrder(a.other) - otherOrder(b.other) ||
       compareText(a.contains, b.contains),
@@ -332,17 +332,17 @@ export type BankRuleChanged =
   | { readonly ok: false; readonly why: string };
 
 // An account as it reads in a sentence.
-const ACCOUNT_WORDS: Readonly<Record<AccountId, string>> = { checking: 'checking', savings: 'savings', 'everyday-card': 'the everyday card', 'old-card': 'the old card' };
+const ACCOUNT_WORDS: Readonly<Record<AccountId, string>> = { checking: 'checking', savings: 'savings', 'everyday-card': 'the everyday card', 'old-card': 'the old card', 'second-card': 'the second card' };
 
 // Why a rule cannot be, in words; null when it can.
 export function bankRuleProblem(spec: BankRuleSpec): string | null {
   const contains = spec.contains.trim();
   if (contains === '') return 'Enter the text the bank’s description contains';
   if (contains.length > MAX_RULE_TEXT) return `That text is too long: ${MAX_RULE_TEXT} characters at most`;
-  if (!ACCOUNTS.includes(spec.account) || !MEANINGS.includes(spec.means)) return 'That is not a bank rule';
+  if (!ALL_ACCOUNTS.includes(spec.account) || !MEANINGS.includes(spec.means)) return 'That is not a bank rule';
   switch (spec.means) {
     case 'transfer':
-      if (spec.other === undefined || !ACCOUNTS.includes(spec.other)) return 'Pick the other account';
+      if (spec.other === undefined || !ALL_ACCOUNTS.includes(spec.other)) return 'Pick the other account';
       if (spec.other === spec.account) return 'A transfer is between two different accounts';
       if (isCard(spec.account) && isCard(spec.other)) return 'Money reaches a card from checking or savings';
       return null;

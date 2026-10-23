@@ -1,6 +1,6 @@
 import { subtractCents, type Cents, type InTransit, type Pots, type SelfCheck } from '@budget-app/money';
 import { bankView, type BankViewResult } from './bank/balances.js';
-import { cardStatement, type StatementResult } from './bank/statements.js';
+import { cardStatement, closingDayOf, type StatementResult } from './bank/statements.js';
 import type { Db } from './db/database.js';
 import { loadBook, readAccounts, readAttention, readConnection, readItems, readStatements } from './db/store.js';
 
@@ -22,7 +22,7 @@ export interface BankStatus {
   readonly inTransit: InTransit | null;
   readonly pots: Pots | null;
   readonly waitingInReview: number;
-  readonly statements: readonly { readonly card: 'everyday-card' | 'old-card'; readonly result: StatementResult }[];
+  readonly statements: readonly { readonly card: 'everyday-card' | 'old-card' | 'second-card'; readonly result: StatementResult }[];
   readonly attention: readonly { readonly sync: number; readonly transactionId: string | null; readonly what: string }[];
 }
 
@@ -34,9 +34,9 @@ export function bankStatus(db: Db): BankStatus {
   const stored = readStatements(db);
   const statements = accounts.flatMap((a) => {
     const raw = stored.get(a.plaidAccountId)?.raw;
-    if ((a.role !== 'everyday-card' && a.role !== 'old-card') || raw === undefined) return [];
+    if ((a.role !== 'everyday-card' && a.role !== 'old-card' && a.role !== 'second-card') || raw === undefined) return [];
     // 9.8: read with the statement closing day set for that card.
-    const closingDay = book === null ? null : a.role === 'everyday-card' ? book.settings().everydayCardClosingDay : book.settings().oldCardClosingDay;
+    const closingDay = book === null ? null : closingDayOf(a.role, book.settings());
     return [{ card: a.role, result: cardStatement(a.role, raw, closingDay) }];
   });
   const selfCheck = book !== null && bank !== null && bank.ok ? book.selfCheck(bank.view.withPending) : null;

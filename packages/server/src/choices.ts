@@ -304,6 +304,8 @@ const SETTING_READERS: { readonly [K in keyof Settings]: (value: unknown) => Set
   // 9.8: whole days, or none (not set); the range is the money math's to say.
   everydayCardClosingDay: (v) => (v === null ? null : whole(v)),
   oldCardClosingDay: (v) => (v === null ? null : whole(v)),
+  // Her rulebook, 9.8: her second card's, the same way.
+  secondCardClosingDay: (v) => (v === null ? null : whole(v)),
   // Her rulebook, section 2: on or off.
   askBeforeSplittingPaycheck: (v) => (typeof v === 'boolean' ? v : undefined),
 };

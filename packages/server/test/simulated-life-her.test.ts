@@ -5,7 +5,6 @@ import { HER_SWITCHES, bankSide, type BankTransaction, type SetupInput } from '@
 import { describe, expect, it } from 'vitest';
 import type { Posted } from '../../money/test/sim/bank.js';
 import { liveALife, type BookTotals, type RecordedAnswer, type RecordedBankDay } from '../../money/test/sim/life.js';
-import { checkBankRules } from '../src/bank/reading.js';
 import { openDatabase, type Db } from '../src/db/database.js';
 import { readAccounts } from '../src/db/store.js';
 import { bookOfSetup, replayCall, totalsOf, type BookCall } from '../src/history/history.js';
@@ -13,14 +12,14 @@ import { appendEvent, readHistory } from '../src/history/history-db.js';
 import { Keeper } from '../src/history/keeper.js';
 import { setUpTracking } from '../src/setup-day.js';
 import { bankStatus } from '../src/status.js';
-import { ACCOUNT, SIM_BANK_RULES, inPlaidFormat } from './sim-bank.js';
+import { ACCOUNT, inPlaidFormat, simBankRules } from './sim-bank.js';
 import { connected } from './harness.js';
 
 // Her rulebook, "Off in this setup": the simulated life shaped like hers (no
 // mom reserve, no old card) through the bank connection and through the
 // database, the way upstream's simulated lives go (simulated-life.test.ts,
 // simulated-life-restarts.test.ts), with what her setup adds:
-// - only her three accounts are picked; the made-up bank's old card account
+// - only her four accounts are picked (PR 5: with her second card); the made-up bank's old card account
 //   has its own made-up activity now and then, which is never read, so the
 //   self-check and the money stay the simulator's;
 // - every day her book has her switches, nothing in a mom reserve, and no
@@ -28,7 +27,8 @@ import { connected } from './harness.js';
 // SIM_HER_BANK_SEEDS, SIM_HER_BANK_FIRST_SEED, SIM_HER_BANK_YEARS and
 // SIM_HER_DB_SEEDS, SIM_HER_DB_FIRST_SEED, SIM_HER_DB_YEARS run more.
 
-const HER_SIM_BANK_RULES = checkBankRules(SIM_BANK_RULES.filter((r) => r.account !== 'old-card' && !(r.means === 'transfer' && r.other === 'old-card')));
+// PR 5: her second card's rules too (her rulebook, section 1).
+const HER_SIM_BANK_RULES = simBankRules(['checking', 'savings', 'everyday-card', 'second-card'], ['everyday-card', 'second-card']);
 
 interface Day extends RecordedBankDay {
   readonly answers: readonly RecordedAnswer[];
@@ -74,8 +74,9 @@ async function throughTheBankConnection(seed: number, years: number): Promise<{ 
     rules: HER_SIM_BANK_RULES,
     today: setup.input.date,
     herSetup: true,
+    secondCard: setup.start.secondCard ?? 0,
   });
-  expect(readAccounts(h.db).map((a) => a.role).filter((r) => r !== null).sort(), `seed ${seed}: her three accounts`).toEqual(['checking', 'everyday-card', 'savings']);
+  expect(readAccounts(h.db).map((a) => a.role).filter((r) => r !== null).sort(), `seed ${seed}: her four accounts`).toEqual(['checking', 'everyday-card', 'savings', 'second-card']);
   const outcome = setUpTracking(
     h.db,
     {

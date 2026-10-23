@@ -1,4 +1,4 @@
-import { ACCOUNTS, matchesTextRule, type AccountId, type Cents } from '@budget-app/money';
+import { ALL_ACCOUNTS, matchesTextRule, type AccountId, type Cents } from '@budget-app/money';
 
 // How the bank connection tells kinds of bank activity apart before the money
 // math sees them (it takes bank activity already sorted into kinds).
@@ -20,7 +20,7 @@ export type BankRule =
   // 8.1, QUESTIONS.md A16).
   | { readonly id: string; readonly account: 'checking' | 'savings'; readonly contains: string; readonly means: 'payment-to-person' }
   // A fee or interest on a card (4.8, 5.5).
-  | { readonly id: string; readonly account: 'everyday-card' | 'old-card'; readonly contains: string; readonly means: 'card-fee' | 'card-interest' };
+  | { readonly id: string; readonly account: 'everyday-card' | 'old-card' | 'second-card'; readonly contains: string; readonly means: 'card-fee' | 'card-interest' };
 
 export type Reading =
   | { readonly kind: 'purchase' }
@@ -33,7 +33,8 @@ export type Reading =
   // Zero: no money moved.
   | { readonly kind: 'nothing' };
 
-const isCard = (account: AccountId): account is 'everyday-card' | 'old-card' => account === 'everyday-card' || account === 'old-card';
+// Her second card (her rulebook, section 1) is a card like the others.
+const isCard = (account: AccountId): account is 'everyday-card' | 'old-card' | 'second-card' => account === 'everyday-card' || account === 'old-card' || account === 'second-card';
 const isBankAccount = (account: AccountId): account is 'checking' | 'savings' => account === 'checking' || account === 'savings';
 
 // amount uses Plaid's sign: positive is money out of the account.
@@ -89,13 +90,13 @@ export function checkBankRules(rules: unknown): readonly BankRule[] {
       ids.add(r['id'] as string);
       if (typeof r['contains'] !== 'string' || r['contains'].trim() === '') bad('it needs some text to match');
       const account = r['account'];
-      if (typeof account !== 'string' || !(ACCOUNTS as readonly string[]).includes(account)) bad('it must be for one of your four accounts');
+      if (typeof account !== 'string' || !(ALL_ACCOUNTS as readonly string[]).includes(account)) bad('it must be for one of your four accounts');
       const on = account as AccountId;
       const base = { id: r['id'] as string, contains: r['contains'] as string };
       switch (r['means']) {
         case 'transfer': {
           const other = r['other'];
-          if (typeof other !== 'string' || !(ACCOUNTS as readonly string[]).includes(other) || other === on) bad('a transfer is with another of your accounts');
+          if (typeof other !== 'string' || !(ALL_ACCOUNTS as readonly string[]).includes(other) || other === on) bad('a transfer is with another of your accounts');
           // Money only leaves checking or savings, so a card's half always comes from one of them.
           if (isCard(on) && !isBankAccount(other as AccountId)) bad('money reaches a card from checking or savings');
           return Object.freeze({ ...base, account: on, means: 'transfer' as const, other: other as AccountId });
@@ -106,7 +107,7 @@ export function checkBankRules(rules: unknown): readonly BankRule[] {
         case 'card-fee':
         case 'card-interest':
           if (!isCard(on)) bad('fees and interest are on a card');
-          return Object.freeze({ ...base, account: on as 'everyday-card' | 'old-card', means: r['means'] });
+          return Object.freeze({ ...base, account: on as 'everyday-card' | 'old-card' | 'second-card', means: r['means'] });
         default:
           return bad('it must mean a transfer, a payment to a person, a card fee, or card interest');
       }

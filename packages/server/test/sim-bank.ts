@@ -10,39 +10,46 @@ export const ACCOUNT: Record<AccountId, string> = {
   savings: ACCOUNT_IDS.savings,
   'everyday-card': ACCOUNT_IDS.everyday,
   'old-card': ACCOUNT_IDS.old,
+  'second-card': ACCOUNT_IDS.second,
 };
 
 const OWN = ['checking', 'savings'] as const;
-const ALL = ['checking', 'savings', 'everyday-card', 'old-card'] as const;
-const CARDS = ['everyday-card', 'old-card'] as const;
+const ALL: readonly AccountId[] = ['checking', 'savings', 'everyday-card', 'old-card'];
+const CARDS: readonly AccountId[] = ['everyday-card', 'old-card'];
 
 // How the made-up bank describes things, as bank rules. A transfer's
 // leaving half is in the simulator's own words, which say where it went
 // ("PAYMENT FROM checking TO old-card", "TRANSFER checking TO savings"), and
 // its arriving half says where it came from. Payments to people and card
 // charges use the simulator's own words too.
-export const SIM_BANK_RULES: readonly BankRule[] = checkBankRules([
-  ...OWN.flatMap((from) =>
-    ALL.filter((to) => to !== from).flatMap((to) => [
-      { id: `out-${from}-${to}`, account: from, contains: `${from} TO ${to}`, means: 'transfer', other: to },
-      { id: `in-${from}-${to}`, account: to, contains: `SIM TRANSFER FROM ${from}`, means: 'transfer', other: from },
+export const SIM_BANK_RULES: readonly BankRule[] = simBankRules(ALL, CARDS);
+
+// The same, for the accounts and cards of a setup: her setup's (her rulebook,
+// section 1) are checking, savings, the everyday card and her second card.
+export function simBankRules(all: readonly AccountId[], cards: readonly AccountId[]): readonly BankRule[] {
+  return checkBankRules([
+    ...OWN.flatMap((from) =>
+      all.filter((to) => to !== from).flatMap((to) => [
+        { id: `out-${from}-${to}`, account: from, contains: `${from} TO ${to}`, means: 'transfer', other: to },
+        { id: `in-${from}-${to}`, account: to, contains: `SIM TRANSFER FROM ${from}`, means: 'transfer', other: from },
+      ]),
+    ),
+    // The transfers the simulator's bank shows as spending and a deposit (5.6).
+    ...OWN.flatMap((from) => {
+      const to = from === 'checking' ? 'savings' : 'checking';
+      return [
+        { id: `online-out-${from}`, account: from, contains: `ONLINE BANKING TRANSFER TO ${to.toUpperCase()}`, means: 'transfer', other: to },
+        { id: `online-in-${to}`, account: to, contains: `ONLINE BANKING TRANSFER FROM ${from.toUpperCase()}`, means: 'transfer', other: from },
+      ];
+    }),
+    // Payments to people leave checking or savings (A16).
+    ...OWN.map((account) => ({ id: `zelle-${account}`, account, contains: 'ZELLE TO ', means: 'payment-to-person' })),
+    ...cards.flatMap((card) => [
+      { id: `${card}-fee`, account: card, contains: 'LATE FEE', means: 'card-fee' },
+      { id: `${card}-interest`, account: card, contains: 'INTEREST CHARGE', means: 'card-interest' },
     ]),
-  ),
-  // The transfers the simulator's bank shows as spending and a deposit (5.6).
-  ...OWN.flatMap((from) => {
-    const to = from === 'checking' ? 'savings' : 'checking';
-    return [
-      { id: `online-out-${from}`, account: from, contains: `ONLINE BANKING TRANSFER TO ${to.toUpperCase()}`, means: 'transfer', other: to },
-      { id: `online-in-${to}`, account: to, contains: `ONLINE BANKING TRANSFER FROM ${from.toUpperCase()}`, means: 'transfer', other: from },
-    ];
-  }),
-  // Payments to people leave checking or savings (A16).
-  ...OWN.map((account) => ({ id: `zelle-${account}`, account, contains: 'ZELLE TO ', means: 'payment-to-person' })),
-  ...CARDS.flatMap((card) => [
-    { id: `${card}-fee`, account: card, contains: 'LATE FEE', means: 'card-fee' },
-    { id: `${card}-interest`, account: card, contains: 'INTEREST CHARGE', means: 'card-interest' },
-  ]),
-]);
+  ]);
+}
 
 // One of the simulator's bank transactions, as Plaid would show it: signed
 // amounts (positive is money out), a pending charge posting as the pending

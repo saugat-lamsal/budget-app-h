@@ -1,4 +1,4 @@
-import { MoneyError, assertIsoDate, daysBetween, type CardStatement, type IsoDate } from '@budget-app/money';
+import { MoneyError, assertIsoDate, daysBetween, type CardStatement, type IsoDate, type Settings } from '@budget-app/money';
 import { BankDataError } from '../errors.js';
 import type { PlaidCreditCard } from '../plaid/types.js';
 import { centsFromPlaid } from './amounts.js';
@@ -12,7 +12,7 @@ import { centsFromPlaid } from './amounts.js';
 // date wins when it sends one.
 export type StatementResult = { readonly ok: true; readonly statement: CardStatement } | { readonly ok: false; readonly why: string };
 
-export function cardStatement(card: 'everyday-card' | 'old-card', raw: PlaidCreditCard, closingDay: number | null = null): StatementResult {
+export function cardStatement(card: 'everyday-card' | 'old-card' | 'second-card', raw: PlaidCreditCard, closingDay: number | null = null): StatementResult {
   try {
     const dueDate = date(raw.next_payment_due_date, 'due date');
     const closingDate = raw.last_statement_issue_date === null && closingDay !== null ? closingDateBefore(dueDate, closingDay) : date(raw.last_statement_issue_date, 'statement date');
@@ -28,6 +28,15 @@ export function cardStatement(card: 'everyday-card' | 'old-card', raw: PlaidCred
     throw error;
   }
 }
+
+// 9.8: the closing day set for a card (section 2); her second card has its own.
+export function closingDayOf(card: 'everyday-card' | 'old-card' | 'second-card', settings: Settings): number | null {
+  if (card === 'second-card') return settings.secondCardClosingDay ?? null;
+  return card === 'everyday-card' ? settings.everydayCardClosingDay : settings.oldCardClosingDay;
+}
+
+// The order the cards are listed in: the everyday card, her second card, the old card.
+export const CARD_ORDER: readonly ('everyday-card' | 'old-card' | 'second-card')[] = ['everyday-card', 'second-card', 'old-card'];
 
 // 9.8 (A53): the last day before the due date that falls on the closing
 // day; in a month too short for that day, the month's last day. month is

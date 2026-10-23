@@ -112,6 +112,9 @@ export interface AlertWorld {
   // 10.4 (A47): when the totals stopped matching the bank, as an instant (the
   // read that first showed it); null while they match, or when not known.
   readonly mismatchSince?: string | null;
+  // Her setup (HB6): each card's name as its bank gives it; null or left out
+  // in upstream's, whose alerts keep their own words.
+  readonly cardNames?: Readonly<Record<'everyday-card' | 'second-card', string>> | null;
 }
 
 const HOUR = 3_600_000;
@@ -263,8 +266,10 @@ function eveningAlerts(world: AlertWorld, ledger: AlertLedger, date: IsoDate): A
   const settings = book.settings();
   for (const statement of world.statements) {
     for (const notice of cardNotices(date, statement, book.cardPayments(statement.card), settings)) {
+      const name = notice.card === 'old-card' ? undefined : world.cardNames?.[notice.card];
+      const named = name === undefined ? {} : { name };
       if (notice.kind === 'overdue') {
-        facts.push({ kind: 'card-overdue', card: notice.card, dueDate: notice.dueDate, minimumPayment: notice.minimumPayment, date });
+        facts.push({ kind: 'card-overdue', card: notice.card, dueDate: notice.dueDate, minimumPayment: notice.minimumPayment, date, ...named });
       } else {
         facts.push({
           kind: 'card-reminder',
@@ -272,7 +277,8 @@ function eveningAlerts(world: AlertWorld, ledger: AlertLedger, date: IsoDate): A
           dueDate: notice.dueDate,
           daysBefore: notice.daysBefore,
           minimumPayment: notice.minimumPayment,
-          statementBalance: notice.card === 'everyday-card' ? notice.statementBalance : null,
+          statementBalance: notice.card !== 'old-card' ? notice.statementBalance : null,
+          ...named,
         });
       }
     }

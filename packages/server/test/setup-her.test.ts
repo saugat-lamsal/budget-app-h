@@ -10,7 +10,7 @@ import { PlaidClient } from '../src/plaid/client.js';
 import { plaidKeysFromEnv } from '../src/plaid/sandbox-lock.js';
 import { connectLikeHis } from '../src/serve/test-bank.js';
 import { HER_START, UPSTREAM_START, setupStartOf } from '../src/setup-start.js';
-import { ACCOUNT_IDS, FakePlaid, fourAccounts } from './fake-plaid.js';
+import { ACCOUNT_IDS, FakePlaid, fourAccounts, secondCardAccount } from './fake-plaid.js';
 import { POSTED_AT_START, TOKEN_KEY } from './harness.js';
 import { herLife, setUpHer } from './her-harness.js';
 import { choose, decision, lifeInAFile, noonInNewYork, type Life } from './keeper-harness.js';
@@ -43,8 +43,9 @@ describe('Off in this setup: what setup day starts from', () => {
     expect(() => setupStartOf('hers')).toThrow(/BUDGET_SETUP/);
   });
 
-  it('1.2 her setup: three accounts are picked; the old card is never asked about', () => {
-    expect(rolesFor(HER_SWITCHES)).toEqual(['checking', 'savings', 'everyday-card']);
+  // PR 5: her four (her rulebook, 1.2): the second card is picked too.
+  it('1.2 her setup: four accounts are picked, with the second card; the old card is never asked about', () => {
+    expect(rolesFor(HER_SWITCHES)).toEqual(['checking', 'savings', 'everyday-card', 'second-card']);
     expect(rolesFor(UPSTREAM_SWITCHES)).toEqual(['checking', 'savings', 'everyday-card', 'old-card']);
   });
 });
@@ -52,7 +53,7 @@ describe('Off in this setup: what setup day starts from', () => {
 describe('1.2 her setup: which account is which', () => {
   async function connectedHer() {
     const db = openDatabase(':memory:');
-    const fake = new FakePlaid(fourAccounts(POSTED_AT_START));
+    const fake = new FakePlaid([...fourAccounts(POSTED_AT_START), secondCardAccount(25_000)]);
     const lines: LogLine[] = [];
     const log = memoryLog(lines, [fake.clientId, fake.secret]);
     const plaid = new PlaidClient(plaidKeysFromEnv({ PLAID_ENV: 'sandbox', PLAID_CLIENT_ID: fake.clientId, PLAID_SECRET: fake.secret }), { fetch: fake.fetch, log });
@@ -64,22 +65,33 @@ describe('1.2 her setup: which account is which', () => {
     return { db, desk };
   }
 
-  it('1.2 her setup: the screen asks for three; with them picked the bank is read, and the fourth account never is', async () => {
+  it("1.2 her setup: the screen asks for four; with them picked the bank is read, and the old card's account never is", async () => {
     const { db, desk } = await connectedHer();
     const view = desk.view();
-    expect(view.state === 'connected' && view.roles).toEqual(['checking', 'savings', 'everyday-card']);
-    const picks = { checking: C, savings: ACCOUNT_IDS.savings, 'everyday-card': E };
+    expect(view.state === 'connected' && view.roles).toEqual(['checking', 'savings', 'everyday-card', 'second-card']);
+    const picks = { checking: C, savings: ACCOUNT_IDS.savings, 'everyday-card': E, 'second-card': ACCOUNT_IDS.second };
     expect(desk.roles({ roles: picks, yes: true })).toMatchObject({ ok: true });
     expect(readAccounts(db).find((a) => a.plaidAccountId === OLD)?.role).toBeNull();
+    expect(readAccounts(db).find((a) => a.plaidAccountId === ACCOUNT_IDS.second)?.role).toBe('second-card');
     const after = desk.view();
     expect(after.state === 'connected' && after.rolesSet).toBe(true);
   });
 
-  it('1.2 her setup: picking an old card is refused, and so is a pick of four', async () => {
+  it('1.2 her setup: picking an old card is refused, and so is a pick without the second card', async () => {
     const { db, desk } = await connectedHer();
-    const refused = desk.roles({ roles: { checking: C, savings: ACCOUNT_IDS.savings, 'everyday-card': E, 'old-card': OLD }, yes: true });
-    expect(refused).toMatchObject({ ok: false, code: 'not-roles' });
-    expect(refused.ok ? '' : refused.why).toBe('Pick each of the three: checking, savings, and the everyday card.');
+    const pickEach = 'Pick each of the four: checking, savings, the everyday card, and the second card.';
+    for (const roles of [
+      { checking: C, savings: ACCOUNT_IDS.savings, 'everyday-card': E, 'old-card': OLD },
+      { checking: C, savings: ACCOUNT_IDS.savings, 'everyday-card': E },
+      { checking: C, savings: ACCOUNT_IDS.savings, 'everyday-card': E, 'second-card': ACCOUNT_IDS.second, 'old-card': OLD },
+    ]) {
+      const refused = desk.roles({ roles, yes: true });
+      expect(refused).toMatchObject({ ok: false, code: 'not-roles' });
+      expect(refused.ok ? '' : refused.why).toBe(pickEach);
+    }
+    // One account cannot be both cards.
+    const twice = desk.roles({ roles: { checking: C, savings: ACCOUNT_IDS.savings, 'everyday-card': E, 'second-card': E }, yes: true });
+    expect(twice).toMatchObject({ ok: false, code: 'not-roles', why: 'An account can be only one of the four.' });
     expect(readAccounts(db).every((a) => a.role === null)).toBe(true);
   });
 });
@@ -112,7 +124,7 @@ describe('Off in this setup: setup day and after, through the real server', () =
   });
 
   it('Off in this setup: each switch is its own: with only the mom reserve off, a bank rule on the old card is taken', async () => {
-    const switches = { momReserve: 'off', oldCard: 'on' } as const;
+    const switches = { momReserve: 'off', oldCard: 'on', secondCard: 'off' } as const;
     const life = await lifeInAFile({ start: { settings: validateSettings({ ...DEFAULT_SETTINGS, ...settingsWhenOff(switches) }), switches } });
     lives.push(life);
     const rule = { account: 'old-card' as const, contains: 'MADE UP LATE FEE', means: 'card-fee' as const };
@@ -173,7 +185,8 @@ describe('Off in this setup: setup day and after, through the real server', () =
     expect(book.switches()).toEqual(UPSTREAM_SWITCHES);
   });
 
-  it("1.2 her setup: her app's first start connects the test bank and picks her three accounts; the old card's is left unpicked", async () => {
+  // PR 5: on its one connection, the test bank's second card (4444) is hers.
+  it("1.2 her setup: her app's first start connects the test bank and picks her four accounts, its second card as hers", async () => {
     const fake = new FakePlaid(fourAccounts(POSTED_AT_START));
     const db = openDatabase(':memory:');
     const log = memoryLog([]);
@@ -184,7 +197,7 @@ describe('Off in this setup: setup day and after, through the real server', () =
       ['1111', 'checking'],
       ['2222', 'savings'],
       ['3333', 'everyday-card'],
-      ['4444', null],
+      ['4444', 'second-card'],
     ]);
     db.close();
   });

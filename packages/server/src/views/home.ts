@@ -115,10 +115,11 @@ export type WhyLine =
   // No earlier read of the bank that matched is kept to compare with.
   | { readonly kind: 'no-match-kept'; readonly amount: Cents };
 
-export type WhyAccount = 'checking' | 'savings' | 'everyday-card';
+// Her second card is checked like the everyday card (her rulebook, 12.1, 12.6).
+export type WhyAccount = 'checking' | 'savings' | 'everyday-card' | 'second-card';
 
 export interface BankAccountFigures {
-  readonly account: 'checking' | 'savings' | 'everyday-card';
+  readonly account: WhyAccount;
   readonly posted: Cents;
   readonly available: Cents | null;
   readonly counted: Cents;
@@ -128,7 +129,7 @@ export interface BankAccountFigures {
 // statement date and the statement closing day is not set for it
 // (section 2), or the statement cannot be read for another reason.
 export interface CardRemindersOff {
-  readonly card: 'everyday-card' | 'old-card';
+  readonly card: 'everyday-card' | 'old-card' | 'second-card';
   readonly why: 'no-statement-date' | 'unreadable';
 }
 
@@ -189,7 +190,7 @@ export type Attention =
   // 10.5
   | { readonly kind: 'bank-login' }
   // 9.4: the due date passed with less than the minimum paid.
-  | { readonly kind: 'card-overdue'; readonly card: 'everyday-card' | 'old-card'; readonly dueDate: IsoDate; readonly minimumPayment: Cents }
+  | { readonly kind: 'card-overdue'; readonly card: 'everyday-card' | 'old-card' | 'second-card'; readonly dueDate: IsoDate; readonly minimumPayment: Cents }
   // 9.8 (A52): no reminders, no due line and no overdue alert for this card
   // until its statement can be read.
   | ({ readonly kind: 'card-reminders-off' } & CardRemindersOff)
@@ -215,10 +216,11 @@ export type Attention =
       // B46: already on its way to the account, which counts as moved.
       readonly onItsWay: Cents;
     }
-  // 9.1, 9.6: the everyday card is due, from the first reminder day until paid.
+  // 9.1, 9.6: the everyday card (or her second card) is due, from the first
+  // reminder day until paid.
   | {
       readonly kind: 'card-due';
-      readonly card: 'everyday-card';
+      readonly card: 'everyday-card' | 'second-card';
       readonly dueDate: IsoDate;
       readonly daysLeft: number;
       readonly statementBalance: Cents;
@@ -281,7 +283,7 @@ export function homeView(input: HomeInput): HomeView {
   for (const c of cards) {
     if (c.kind !== 'due') continue;
     attention.push(
-      c.card === 'everyday-card'
+      c.card !== 'old-card'
         ? { kind: 'card-due', card: c.card, dueDate: c.dueDate, daysLeft: c.daysLeft, statementBalance: c.statementBalance, minimumPayment: c.minimumPayment }
         : { kind: 'card-due', card: c.card, dueDate: c.dueDate, daysLeft: c.daysLeft, minimumPayment: c.minimumPayment },
     );

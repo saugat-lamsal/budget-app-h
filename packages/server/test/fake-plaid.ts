@@ -385,7 +385,13 @@ export class FakePlaid {
 }
 
 // His four accounts, as the made-up test bank shows them.
-export const ACCOUNT_IDS = { checking: 'acct-checking', savings: 'acct-savings', everyday: 'acct-everyday', old: 'acct-old' } as const;
+// And her second card (her rulebook, section 1), which only her setup's tests have.
+export const ACCOUNT_IDS = { checking: 'acct-checking', savings: 'acct-savings', everyday: 'acct-everyday', old: 'acct-old', second: 'acct-second' } as const;
+
+// Her second card, as the made-up test bank shows it.
+export function secondCardAccount(posted: Cents): FakeAccountInput {
+  return { id: ACCOUNT_IDS.second, name: 'Made-up Second Card', mask: '5555', kind: 'credit card', posted, limit: 600_000 };
+}
 
 export function fourAccounts(posted: { checking: Cents; savings: Cents; everyday: Cents; old: Cents }): FakeAccountInput[] {
   return [

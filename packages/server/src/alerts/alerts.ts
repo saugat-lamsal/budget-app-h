@@ -6,7 +6,7 @@ import { daysBetween, formatDollars, type Cents, type IsoDate } from '@budget-ap
 // come only as often as its rule says, and its words. Nothing here uses Node:
 // the list on the phone (views/alerts.ts) shares these types.
 
-export type Card = 'everyday-card' | 'old-card';
+export type Card = 'everyday-card' | 'old-card' | 'second-card';
 
 export type AlertFacts =
   // 10.1: once per bucket per pay period. What is left, and what the bucket
@@ -17,10 +17,13 @@ export type AlertFacts =
   // 10.3: at the review time, only if something waits; once a day.
   | { readonly kind: 'daily-review'; readonly date: IsoDate; readonly waiting: number }
   // 9.1 to 9.3: on each reminder day while not enough is paid. The everyday
-  // card shows its statement balance; the old card does not (null).
-  | { readonly kind: 'card-reminder'; readonly card: Card; readonly dueDate: IsoDate; readonly daysBefore: number; readonly minimumPayment: Cents; readonly statementBalance: Cents | null }
+  // card shows its statement balance; the old card does not (null). Her
+  // second card is reminded about like the everyday card (her rulebook, 9.1).
+  // name: in her setup, the card's name as its bank gives it (HB6); left out
+  // in upstream's, which keeps its own words. It is not part of the key.
+  | { readonly kind: 'card-reminder'; readonly card: Card; readonly dueDate: IsoDate; readonly daysBefore: number; readonly minimumPayment: Cents; readonly statementBalance: Cents | null; readonly name?: string }
   // 9.4: every day after the due date until the minimum is paid (B30).
-  | { readonly kind: 'card-overdue'; readonly card: Card; readonly dueDate: IsoDate; readonly minimumPayment: Cents; readonly date: IsoDate }
+  | { readonly kind: 'card-overdue'; readonly card: Card; readonly dueDate: IsoDate; readonly minimumPayment: Cents; readonly date: IsoDate; readonly name?: string }
   // 10.4 and 10.5 (A37): when it starts (the time-th time it starts, on its
   // day), then again (again: true) once each day it lasts, at the review time.
   | { readonly kind: 'totals-mismatch'; readonly time: number; readonly difference: Cents; readonly day: IsoDate; readonly again: boolean }
@@ -121,7 +124,7 @@ export function alertRecord(facts: AlertFacts, dueAt: string): AlertRecord {
 }
 
 const BUCKETS = { needs: 'Needs', wants: 'Wants' } as const;
-const CARDS: Readonly<Record<Card, string>> = { 'everyday-card': 'Everyday card', 'old-card': 'Old card' };
+const CARDS: Readonly<Record<Card, string>> = { 'everyday-card': 'Everyday card', 'old-card': 'Old card', 'second-card': 'Second card' };
 
 // "Fri, Oct 23".
 export function dayWords(date: IsoDate): string {
@@ -158,11 +161,11 @@ export function alertWords(f: AlertFacts, options: { readonly amounts?: boolean;
       // Only one the phone could not be given until after the due date goes then (B181).
       const when = left < 0 ? `was due ${left === -1 ? 'yesterday' : `${-left} days ago`}` : `due ${left === 0 ? 'today' : left === 1 ? 'tomorrow' : `in ${left} days`}`;
       const owed = f.statementBalance === null ? `Minimum ${formatDollars(f.minimumPayment)}.` : `Statement balance ${formatDollars(f.statementBalance)}, minimum ${formatDollars(f.minimumPayment)}.`;
-      return { title: `${CARDS[f.card]} payment ${when}`, body: amounts ? `${owed} Due ${dayWords(f.dueDate)}.` : `Due ${dayWords(f.dueDate)}.` };
+      return { title: `${f.name ?? CARDS[f.card]} payment ${when}`, body: amounts ? `${owed} Due ${dayWords(f.dueDate)}.` : `Due ${dayWords(f.dueDate)}.` };
     }
     case 'card-overdue':
       return {
-        title: `${CARDS[f.card]} payment is overdue`,
+        title: `${f.name ?? CARDS[f.card]} payment is overdue`,
         body: amounts
           ? `The minimum, ${formatDollars(f.minimumPayment)}, was due ${dayWords(f.dueDate)}, and less than that has been paid since the statement.`
           : `The minimum was due ${dayWords(f.dueDate)}, and less than that has been paid since the statement.`,

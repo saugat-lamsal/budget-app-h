@@ -29,8 +29,9 @@ export interface MadeUpItem {
 const PRIMARY_LABELS = ['TRANSFER_IN', 'TRANSFER_OUT', 'LOAN_PAYMENTS', 'BANK_FEES', 'INCOME', 'FOOD_AND_DRINK', 'GENERAL_MERCHANDISE', 'TRANSPORTATION', 'RENT_AND_UTILITIES', 'ENTERTAINMENT'];
 
 export interface MadeUpBank {
-  // What each account holds, posted; for a card, what it owes.
-  readonly balances: Readonly<Record<AccountId, Cents>>;
+  // What each account holds, posted; for a card, what it owes. Her second
+  // card is there only in a made-up bank shaped like hers.
+  readonly balances: Readonly<Record<Exclude<AccountId, 'second-card'>, Cents>> & { readonly 'second-card'?: Cents };
   readonly items: readonly MadeUpItem[];
   readonly rules: readonly BankRule[];
   // False while Plaid is still sending the history.
@@ -42,9 +43,10 @@ const ACCOUNT_IDS: Readonly<Record<AccountId, string>> = {
   savings: 'made-up-savings',
   'everyday-card': 'made-up-everyday-card',
   'old-card': 'made-up-old-card',
+  'second-card': 'made-up-second-card',
 };
-const MASKS: Readonly<Record<AccountId, string>> = { checking: '1111', savings: '2222', 'everyday-card': '3333', 'old-card': '4444' };
-const NAMES: Readonly<Record<AccountId, string>> = { checking: 'Made Up Checking', savings: 'Made Up Savings', 'everyday-card': 'Made Up Everyday Card', 'old-card': 'Made Up Old Card' };
+const MASKS: Readonly<Record<AccountId, string>> = { checking: '1111', savings: '2222', 'everyday-card': '3333', 'old-card': '4444', 'second-card': '5555' };
+const NAMES: Readonly<Record<AccountId, string>> = { checking: 'Made Up Checking', savings: 'Made Up Savings', 'everyday-card': 'Made Up Everyday Card', 'old-card': 'Made Up Old Card', 'second-card': 'Made Up Second Card' };
 
 // Cents as the dollars Plaid sends: 6412 is 64.12. Read back exactly by
 // centsFromPlaid (bank/amounts.ts).
@@ -54,11 +56,12 @@ function dollars(cents: Cents): number {
 }
 
 export function madeUpHistory(bank: MadeUpBank): BankHistory {
-  const accounts: StoredAccount[] = (Object.keys(ACCOUNT_IDS) as AccountId[]).map((role) => {
-    const card = role === 'everyday-card' || role === 'old-card';
+  const roles = (Object.keys(ACCOUNT_IDS) as AccountId[]).filter((role) => bank.balances[role] !== undefined);
+  const accounts: StoredAccount[] = roles.map((role) => {
+    const card = role === 'everyday-card' || role === 'old-card' || role === 'second-card';
     const raw: PlaidAccount = {
       account_id: ACCOUNT_IDS[role],
-      balances: { current: dollars(bank.balances[role]), available: null, limit: null, iso_currency_code: 'USD', unofficial_currency_code: null },
+      balances: { current: dollars(bank.balances[role] ?? 0), available: null, limit: null, iso_currency_code: 'USD', unofficial_currency_code: null },
       mask: MASKS[role],
       name: NAMES[role],
       official_name: null,

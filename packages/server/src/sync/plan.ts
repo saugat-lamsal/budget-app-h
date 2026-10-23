@@ -378,7 +378,7 @@ class Planner {
       case 'refund':
         return role === 'savings' ? null : { ...base, kind: 'refund', account: role, date: item.date };
       case 'card-charge':
-        return role === 'everyday-card' || role === 'old-card' ? { ...base, kind: 'card-charge', account: role, date: item.date, charge: reading.charge } : null;
+        return role === 'everyday-card' || role === 'old-card' || role === 'second-card' ? { ...base, kind: 'card-charge', account: role, date: item.date, charge: reading.charge } : null;
       case 'payment-to-person':
         return role === 'checking' || role === 'savings' ? { ...base, kind: 'payment-to-person', account: role, date: item.day } : null;
       case 'transfer-sent':

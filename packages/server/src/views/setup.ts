@@ -65,10 +65,12 @@ export interface SetupReadyView {
   readonly checking: AccountLine;
   readonly savings: AccountLine;
   readonly everydayCard: AccountLine;
+  // Her second card; not there in upstream's setup.
+  readonly secondCard?: AccountLine;
   readonly pendingCharges: readonly PendingChargeLine[];
   // 12.4: the old card, apart. Its pending charges are debt too (A10).
   readonly oldCard: { readonly posted: Cents; readonly pending: Cents; readonly debt: Cents };
-  // 12.1: checking + savings - everyday card, pending charges included.
+  // 12.1: checking + savings - everyday card (and her second card), pending charges included.
   readonly bankSide: Cents;
   // Step 2, 20a: bank rules suggested from the bank's labels, with his
   // answers, and how many still wait for one.
