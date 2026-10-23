@@ -3068,8 +3068,8 @@
   {
     "section": "4",
     "file": "packages/money/src/book.ts",
-    "find": "olderThanLastPaycheck: older, likely: likely.map((p) => p.id) });\n        if (options.type !== 'sort') throw new MoneyError('broken-book', 'money in has no choices');",
-    "replace": "olderThanLastPaycheck: false, likely: likely.map((p) => p.id) });\n        if (options.type !== 'sort') throw new MoneyError('broken-book', 'money in has no choices');",
+    "find": "olderThanLastPaycheck: older, likely: likely.map((p) => p.id), ...(txn.kind === 'deposit' && this.#olderWaitingFor(txn.date) ? { olderPaycheckWaiting: true } : {}) });\n        if (options.type !== 'sort') throw new MoneyError('broken-book', 'money in has no choices');",
+    "replace": "olderThanLastPaycheck: false, likely: likely.map((p) => p.id), ...(txn.kind === 'deposit' && this.#olderWaitingFor(txn.date) ? { olderPaycheckWaiting: true } : {}) });\n        if (options.type !== 'sort') throw new MoneyError('broken-book', 'money in has no choices');",
     "why": "[activity] B54 a deposit older than the last paycheck is offered to be your paycheck"
   },
   {
@@ -3341,7 +3341,7 @@
   {
     "section": "0",
     "file": "packages/money/src/settings.ts",
-    "find": "check(Object.hasOwn(DEFAULT_SETTINGS, key), ",
+    "find": "check(Object.hasOwn(DEFAULT_SETTINGS, key) || (HER_SETTING_KEYS as readonly string[]).includes(key), ",
     "replace": "check(key !== '', ",
     "why": "[settings] 0.2 accept a setting that does not exist"
   },
@@ -4247,5 +4247,124 @@
     "find": "    const resort = this.#resortShown(id, entry);",
     "replace": "    const resort = this.#resortOf(id, entry);",
     "why": "[her-switches] Off in this setup: 12.4 a bucket's list offers what is off when sorting again"
+  },
+  {
+    "section": "3",
+    "file": "packages/money/src/book.ts",
+    "find": "    if (s.askBeforeSplittingPaycheck === true) return this.#holdMoneyIn(txn, 'paycheck');",
+    "replace": "    if (s.askBeforeSplittingPaycheck === false) return this.#holdMoneyIn(txn, 'paycheck');",
+    "why": "[her-ask] 3.1 a paycheck is split by itself while asking"
+  },
+  {
+    "section": "3",
+    "file": "packages/money/src/book.ts",
+    "find": "    if (s.askBeforeSplittingPaycheck === true) return this.#holdMoneyIn(txn, 'paycheck');",
+    "replace": "    if (s.askBeforeSplittingPaycheck === true) return this.#holdMoneyIn(txn, 'deposit');",
+    "why": "[her-ask] 3.1 a paycheck waiting for her yes waits as a plain deposit"
+  },
+  {
+    "section": "51",
+    "file": "packages/money/src/book.ts",
+    "find": "    return Object.freeze(found.sort((a, b) => daysBetween(b.date, a.date)));",
+    "replace": "    return Object.freeze(found.sort((a, b) => daysBetween(a.date, b.date)));",
+    "why": "[her-ask] 51.1 the paychecks waiting, newest first"
+  },
+  {
+    "section": "51",
+    "file": "packages/money/src/book.ts",
+    "find": "!(entry.reason === 'paycheck' || (ask && entry.reason === 'early-paycheck'))",
+    "replace": "!(entry.reason === 'paycheck' || entry.reason === 'early-paycheck')",
+    "why": "[her-ask] 51.3 an early paycheck counts as waiting for a yes with the setting off"
+  },
+  {
+    "section": "51",
+    "file": "packages/money/src/book.ts",
+    "find": "!(entry.reason === 'paycheck' || (ask && entry.reason === 'early-paycheck'))",
+    "replace": "!(entry.reason === 'paycheck')",
+    "why": "[her-ask] 51.3 an early paycheck is not one waiting for her yes"
+  },
+  {
+    "section": "51",
+    "file": "packages/money/src/book.ts",
+    "find": "wouldGet: older ? null : this.#splitIfPaycheck(amount) }",
+    "replace": "wouldGet: this.#splitIfPaycheck(amount) }",
+    "why": "[her-ask] 51.1 one older than the last paycheck says what it would get"
+  },
+  {
+    "section": "51",
+    "file": "packages/money/src/book.ts",
+    "find": "      if (older !== null) refuseYesWhileOlderWaits(older);",
+    "replace": "",
+    "why": "[her-ask] 51.2 a yes to the newer one while the older one waits"
+  },
+  {
+    "section": "51",
+    "file": "packages/money/src/book.ts",
+    "find": "    if (this.#settings.askBeforeSplittingPaycheck === true) {\n      const older",
+    "replace": "    if (true) {\n      const older",
+    "why": "[her-ask] 51.2 the older-first order holds with the setting off"
+  },
+  {
+    "section": "51",
+    "file": "packages/money/src/book.ts",
+    "find": "    return this.#settings.askBeforeSplittingPaycheck === true && olderPaycheckWaiting(this.paychecksWaiting(), this.#lastPaycheckDate, date) !== null;",
+    "replace": "    return false;",
+    "why": "[her-ask] 51.2 Review offers the yes on the newer one"
+  },
+  {
+    "section": "51",
+    "file": "packages/money/src/paycheck-ask.ts",
+    "find": "daysBetween(w.date, date) > 0",
+    "replace": "daysBetween(w.date, date) >= 0",
+    "why": "[her-ask] 51.2 a paycheck of the same day counts as older"
+  },
+  {
+    "section": "51",
+    "file": "packages/money/src/paycheck-ask.ts",
+    "find": "daysBetween(lastPaycheckDate, w.date) >= 0 && ",
+    "replace": "",
+    "why": "[her-ask] 51.2 one older than the last paycheck holds a newer one up"
+  },
+  {
+    "section": "51",
+    "file": "packages/money/src/review-options.ts",
+    "find": "    } else if (f.olderPaycheckWaiting === true) {",
+    "replace": "    } else if (false) {",
+    "why": "[her-ask] 51.2 Review does not say the older one is answered first"
+  },
+  {
+    "section": "13",
+    "file": "packages/money/src/book.ts",
+    "find": "      } else if (this.#settings.askBeforeSplittingPaycheck === true) {",
+    "replace": "      } else if (false) {",
+    "why": "[her-ask] 13.2 setting the paycheck rule while asking splits the waiting paycheck"
+  },
+  {
+    "section": "13",
+    "file": "packages/money/src/book.ts",
+    "find": "        entry.reason = 'paycheck';",
+    "replace": "        entry.reason = 'deposit';",
+    "why": "[her-ask] 13.2 marked by the paycheck rule, it still waits as a plain deposit"
+  },
+  {
+    "section": "2",
+    "file": "packages/money/src/settings.ts",
+    "find": "!('askBeforeSplittingPaycheck' in s) || typeof s.askBeforeSplittingPaycheck === 'boolean'",
+    "replace": "true",
+    "why": "[her-ask] section 2 a setting that is neither on nor off is let through"
+  },
+  {
+    "section": "2",
+    "file": "packages/money/src/settings.ts",
+    "find": "const HER_SETTING_KEYS: readonly (keyof Settings)[] = ['askBeforeSplittingPaycheck'];",
+    "replace": "const HER_SETTING_KEYS: readonly (keyof Settings)[] = [];",
+    "why": "[her-ask] section 2 the setting cannot be changed"
+  },
+  {
+    "section": "2",
+    "file": "packages/money/src/her-setup.ts",
+    "find": "askBeforeSplittingPaycheck: true });",
+    "replace": "askBeforeSplittingPaycheck: false });",
+    "why": "[her-ask] section 2 her setup starts with it off"
   }
 ]

@@ -351,7 +351,7 @@ function CheckFigures({ check, detail, timeZone }: { readonly check: SelfCheck; 
 
 function rowKey(item: Attention): string {
   if (item.kind === 'card-due' || item.kind === 'card-overdue' || item.kind === 'card-reminders-off') return `${item.kind}-${item.card}`;
-  if (item.kind === 'bank-took-back') return `${item.kind}-${item.id}`;
+  if (item.kind === 'bank-took-back' || item.kind === 'paycheck-waiting') return `${item.kind}-${item.id}`;
   return item.kind;
 }
 
@@ -400,6 +400,22 @@ function AttentionRow({ item, onSavings, onTakeBack }: { readonly item: Attentio
       const words = cardsOffText(item);
       return <ListRow icon="alert" tone="warning" title={words.title} detail={words.detail} {...(item.why === 'no-statement-date' ? { href: pathOf('settings') } : {})} testId={testId} />;
     }
+    // Her rulebook, 51.1: nothing is split until she says yes in Review.
+    case 'paycheck-waiting':
+      return (
+        <ListRow
+          icon="review"
+          title="Paycheck waiting for your yes"
+          detail={
+            <>
+              <Money cents={item.amount} testId="paycheck-waiting-amount" /> came in {shortDate(item.date)}
+              {item.early ? ', less than 10 days after your last one' : ''}. Nothing is split until you say yes.
+            </>
+          }
+          href={pathOf('review')}
+          testId={testId}
+        />
+      );
     case 'review':
       return (
         <ListRow

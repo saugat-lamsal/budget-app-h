@@ -48,4 +48,40 @@ Plan Q8, Oct 23: the bank names stay (Capital One, American Express).
 
 PART B. READINGS FOR HIM TO CHECK
 
-(none yet)
+HB1 (PR 4). Turning "Ask before splitting a paycheck" off while a paycheck
+    waits for her yes: it keeps waiting for her yes. Only paychecks that
+    post after the change are split by themselves. Turning it on changes
+    nothing already split or waiting. Why: section 2 says what on and off
+    do, not what happens to one already waiting, and splitting it without
+    her yes would be a money change she did not make. Settings says so
+    under the setting.
+
+HB2 (PR 4). 51.2's "older" is an earlier day. Two that came on the same
+    day can be answered in either order (neither makes the other older than
+    the last paycheck, B54). One older than the last paycheck, which can no
+    longer be her paycheck (B54), holds no newer one up. While the setting
+    is on, an early paycheck (3.7) is waiting for her yes too (51.3), so it
+    is answered in order as well; and "This is my paycheck" on any other
+    deposit (B52) dated after a waiting paycheck is refused the same way.
+    With the setting off, the order is upstream's: any.
+
+HB3 (PR 4). The 10.15 alert also comes for a deposit that setting the
+    paycheck rule marks as a paycheck waiting (13.2), once, right after the
+    change, though it posted earlier; and for an early one while the
+    setting is on, saying it came early (51.3). Its words: "Paycheck
+    waiting for your yes", "$2,500.00 came in Fri, Oct 9. Nothing is split
+    until you say yes in Review." (made-up amount; words only on the lock
+    screen with that setting off, 10.10).
+
+HB4 (PR 4). The setting is not in upstream's DEFAULT_SETTINGS: upstream's
+    own test 0.2 lists every starting setting exactly, and every upstream
+    test keeps passing unchanged (CLAUDE.md). So the setting may be
+    missing, and missing means off, as upstream (B242). Her setup day
+    starts with it on (her-setup.ts). A history saved before it opens with
+    it off, as it always worked, with nothing filled in.
+
+HB5 (PR 4). "Not a paycheck" keeps every other choice money in has: other
+    income, payback into a bucket, not mine, and, as for any money in, a
+    transfer from her other account (5.6). A paycheck waiting gets no
+    sorting rule ("always do this"), as an early paycheck gets none (6.2,
+    B55).

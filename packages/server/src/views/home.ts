@@ -196,6 +196,9 @@ export type Attention =
   // 10.6: the bank took back a transaction the app had counted (4.10). It
   // stays until he marks it seen (B84). id is the change log's.
   | { readonly kind: 'bank-took-back'; readonly id: string; readonly date: IsoDate; readonly description: string; readonly amount: Cents }
+  // Her rulebook, 51.1: a paycheck waiting for her yes, with its amount and a
+  // way to Review; early: less than 10 days after the last one (51.3).
+  | { readonly kind: 'paycheck-waiting'; readonly id: string; readonly date: IsoDate; readonly amount: Cents; readonly early: boolean }
   // 10.3: something waits in review. heldBack is the unsorted spending kept
   // out of safe to spend (4.3).
   | { readonly kind: 'review'; readonly waiting: number; readonly heldBack: Cents }
@@ -255,6 +258,8 @@ export function homeView(input: HomeInput): HomeView {
       attention.push({ kind: 'bank-took-back', id: entry.id, date: entry.date, description: entry.description, amount: entry.amount });
     }
   }
+  // Her rulebook, 51.1: each paycheck waiting for her yes, oldest first.
+  for (const p of book.paychecksWaiting()) attention.push({ kind: 'paycheck-waiting', id: p.id, date: p.date, amount: p.amount, early: p.early });
   const waitingInReview = book.reviewItems().length;
   if (waitingInReview > 0) attention.push({ kind: 'review', waiting: waitingInReview, heldBack: pots.unsortedOut });
   // With the mom reserve off there is no mom rule to set ("Off in this setup").

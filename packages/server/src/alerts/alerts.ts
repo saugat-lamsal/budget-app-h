@@ -38,7 +38,11 @@ export type AlertFacts =
   // the savings account (3.8), null when the bank cannot be read;
   // extraInSavings: what it holds over what it should. oldCard: the old
   // card's share this payday (9.5), null while the payoff countdown is off.
-  | { readonly kind: 'payday'; readonly period: number; readonly date: IsoDate; readonly toSavings: Cents | null; readonly extraInSavings: Cents; readonly oldCard: Cents | null };
+  | { readonly kind: 'payday'; readonly period: number; readonly date: IsoDate; readonly toSavings: Cents | null; readonly extraInSavings: Cents; readonly oldCard: Cents | null }
+  // Her rulebook, 10.15: a paycheck waiting for her yes (3.1, 51.1), once,
+  // when it posts. date: the day it arrived; early: less than 10 days after
+  // the last paycheck (3.7, 51.3).
+  | { readonly kind: 'paycheck-waiting'; readonly id: string; readonly date: IsoDate; readonly amount: Cents; readonly early: boolean };
 
 export type AlertKind = AlertFacts['kind'];
 
@@ -82,6 +86,8 @@ export function alertKey(f: AlertFacts): string {
       return `bank-permission ends ${f.ends}`;
     case 'payday':
       return `payday pay period ${f.period}`;
+    case 'paycheck-waiting':
+      return `paycheck-waiting ${f.id}`;
   }
 }
 
@@ -102,6 +108,9 @@ export function alertScreen(f: AlertFacts | null): string {
     // 10.14: what the paycheck did, and what to move.
     case 'payday':
       return '/payday';
+    // Her rulebook, 10.15: where she says yes.
+    case 'paycheck-waiting':
+      return '/review';
     default:
       return '/home';
   }
@@ -184,6 +193,13 @@ export function alertWords(f: AlertFacts, options: { readonly amounts?: boolean;
       };
     case 'payday':
       return { title: 'Payday', body: amounts ? paydayAmounts(f) : `Open Payday to see what to move to savings${f.oldCard === null ? '' : ' and pay on the old card'}.` };
+    case 'paycheck-waiting': {
+      const early = f.early ? ' It came less than 10 days after your last one.' : '';
+      return {
+        title: 'Paycheck waiting for your yes',
+        body: `${amounts ? `${formatDollars(f.amount)} came in` : 'A paycheck came in'} ${dayWords(f.date)}. Nothing is split until you say yes in Review.${early}`,
+      };
+    }
   }
 }
 

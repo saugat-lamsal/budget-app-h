@@ -674,22 +674,22 @@
   {
     "section": "home",
     "file": "packages/web/src/screens/choose.tsx",
-    "find": "const picks = always ? options.picks.filter((p) => options.always.includes(p.to)) : options.picks;",
-    "replace": "const picks = options.picks;",
+    "find": "const picks = always ? shownPicks.filter((p) => options.always.includes(p.to)) : shownPicks;",
+    "replace": "const picks = shownPicks;",
     "why": "[review] 13.6 with a rule on, choices a rule cannot make are offered"
   },
   {
     "section": "home",
     "file": "packages/web/src/screens/choose.tsx",
-    "find": "{!always && options.split !== null && <SplitForm",
-    "replace": "{options.split !== null && <SplitForm",
+    "find": "{!asking && !always && options.split !== null && <SplitForm",
+    "replace": "{!asking && options.split !== null && <SplitForm",
     "why": "[review] 13.6 with a rule on, splitting is offered"
   },
   {
     "section": "home",
     "file": "packages/web/src/screens/choose.tsx",
-    "find": "{!always && options.transfer.length > 0 && (",
-    "replace": "{options.transfer.length > 0 && (",
+    "find": "{!asking && !always && options.transfer.length > 0 && (",
+    "replace": "{!asking && options.transfer.length > 0 && (",
     "why": "[review] 13.6 with a rule on, marking a transfer is offered"
   },
   {
@@ -716,8 +716,8 @@
   {
     "section": "home",
     "file": "packages/web/src/screens/Review.tsx",
-    "find": "                  disabled={busy}\n                  testId={`pick-${pick.to}`}",
-    "replace": "                  testId={`pick-${pick.to}`}",
+    "find": "                    disabled={busy}\n                    testId={`pick-${pick.to}`}",
+    "replace": "                    testId={`pick-${pick.to}`}",
     "why": "[review] other buttons can be tapped while a choice is being saved"
   },
   {
@@ -849,8 +849,8 @@
   {
     "section": "home",
     "file": "packages/web/src/screens/choose.tsx",
-    "find": "  const openSheet = (id: string): void => {\n    setSaid(null);\n",
-    "replace": "  const openSheet = (id: string): void => {\n",
+    "find": "  const openSheet = (id: string, options: { readonly notAPaycheck?: true } = {}): void => {\n    setSaid(null);\n",
+    "replace": "  const openSheet = (id: string, options: { readonly notAPaycheck?: true } = {}): void => {\n",
     "why": "[review] a sheet opened later shows what was said about the last thing"
   },
   {
@@ -3407,5 +3407,68 @@
     "find": "{...(view.accounts === undefined ? {} : { accounts: view.accounts })}",
     "replace": "",
     "why": "[her-switches] Off in this setup: setup day: a bank rule on the old card is offered"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Review.tsx",
+    "find": "    const asking = subject?.paycheckAsk === true;",
+    "replace": "    const asking = false;",
+    "why": "[her-ask] 3.1 Review's card shows no parts and no \"Not a paycheck\""
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Review.tsx",
+    "find": "{ final: true, ask: askFor(detail.paycheckPreview, item.date, 'paycheck') }",
+    "replace": "{ final: false }",
+    "why": "[her-ask] 3.1 her yes is sent without asking first"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/choose.tsx",
+    "find": "  const shownPicks = subject.paycheckAsk === true && notAPaycheck ? options.picks.filter((p) => p.to !== 'paycheck') : options.picks;",
+    "replace": "  const shownPicks = options.picks;",
+    "why": "[her-ask] 3.1 \"Not a paycheck\" still offers the paycheck"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/choose.tsx",
+    "find": "  const [notAPaycheck, setNotAPaycheck] = useState(startNotAPaycheck);",
+    "replace": "  const [notAPaycheck, setNotAPaycheck] = useState(false);",
+    "why": "[her-ask] 3.1 \"Not a paycheck\" on the card opens the yes again"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Home.tsx",
+    "find": "<Money cents={item.amount} testId=\"paycheck-waiting-amount\" />",
+    "replace": "<Money cents={0} testId=\"paycheck-waiting-amount\" />",
+    "why": "[her-ask] 51.1 Home shows the wrong amount waiting"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Review.tsx",
+    "find": "            {notYet !== undefined ? notYet.why : 'Nothing is split until you say yes.'}",
+    "replace": "            {'Nothing is split until you say yes.'}",
+    "why": "[her-ask] 51.2 the newer one does not say the older is answered first"
+  },
+  {
+    "section": "words",
+    "file": "packages/web/src/screens/settings-text.ts",
+    "find": "  return on === true ? 'On: every paycheck waits for your yes' : 'Off: a paycheck is split by itself';",
+    "replace": "  return on === false ? 'On: every paycheck waits for your yes' : 'Off: a paycheck is split by itself';",
+    "why": "[her-ask] section 2 Settings says on for off"
+  },
+  {
+    "section": "words",
+    "file": "packages/web/src/screens/review-text.ts",
+    "find": "            ? 'Paycheck waiting for your yes'",
+    "replace": "            ? 'Deposit'",
+    "why": "[her-ask] 3.1 Review calls a paycheck waiting a deposit"
+  },
+  {
+    "section": "words",
+    "file": "packages/web/src/screens/settings-text.ts",
+    "find": "  if (waiting > 0) parts.push(",
+    "replace": "  if (waiting > 1) parts.push(",
+    "why": "[her-ask] 13.2 one marked waiting is not said"
   }
 ]

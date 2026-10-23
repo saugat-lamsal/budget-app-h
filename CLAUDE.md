@@ -258,3 +258,18 @@ or "Due" on Wishlist items and cards, never color alone.
   Her simulated life: node scripts/simulate.mjs --profile her, and
   packages/server/test/simulated-life-her.test.ts. Rulebook: "Off in this
   setup" after section 1, section 2, 12.2, 40.2, 40.4.
+- PR 3 merged (Oct 23, 2026).
+- PR 4, "Ask before splitting a paycheck" (branch her-paycheck-ask). The
+  setting askBeforeSplittingPaycheck is optional: upstream's
+  DEFAULT_SETTINGS do not have it (upstream's 0.2 test lists them all), and
+  missing means off, as upstream; HER_SETTINGS has it on. While on, a
+  deposit the paycheck rule matches waits in review with reason 'paycheck';
+  yes is "This is my paycheck" (6.1, B53). Book.paychecksWaiting() (51.1),
+  packages/money/src/paycheck-ask.ts (51.2, older first), the 13.2 recheck,
+  review-options (51.2's why). Server: the 10.15 alert (paycheck-waiting),
+  Home's paycheck-waiting row, the setting's reader. Web: Review's paycheck
+  card (the parts, "Yes, split it", "Not a paycheck"), Home's row, Settings'
+  row. Her simulated life says yes on the day, days late, or two weeks
+  late, and sometimes "not a paycheck" first, then her paycheck after all.
+  Rulebook: section 2, 3.1, 10.15, 13.2, section 51. Readings HB1 to HB5 in
+  docs/her-questions.txt, for his check.

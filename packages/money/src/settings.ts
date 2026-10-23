@@ -69,6 +69,12 @@ export interface Settings {
   // these, for the server that reads the bank's statements.
   readonly everydayCardClosingDay: number | null;
   readonly oldCardClosingDay: number | null;
+  // Her rulebook, section 2 and 3.1: while on, every paycheck waits in review
+  // for a yes before it is split. Upstream's settings do not have it, and
+  // without it, it is off, as upstream: a deposit the paycheck rule matches
+  // is split by itself. So upstream's DEFAULT_SETTINGS stay as they are, and
+  // a history saved before it opens as upstream (B242).
+  readonly askBeforeSplittingPaycheck?: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = deepFreeze({
@@ -96,6 +102,9 @@ export const DEFAULT_SETTINGS: Settings = deepFreeze({
   oldCardClosingDay: null,
 });
 
+// Her settings, which upstream's DEFAULT_SETTINGS do not have (see each in Settings).
+const HER_SETTING_KEYS: readonly (keyof Settings)[] = ['askBeforeSplittingPaycheck'];
+
 const LEFTOVER_CHOICES: readonly LeftoverChoice[] = ['ask', 'roll-over', 'move-to-savings'];
 
 // Rule 13.1: a change to these waits for the next paycheck; every other
@@ -103,7 +112,7 @@ const LEFTOVER_CHOICES: readonly LeftoverChoice[] = ['ask', 'roll-over', 'move-t
 export const FROM_NEXT_PAYCHECK = Object.freeze(['split', 'momReservePerPaycheck', 'momReserveCap'] as const);
 
 export function changeSettings(current: Settings, patch: Partial<Settings>): Settings {
-  for (const key of Object.keys(patch)) check(Object.hasOwn(DEFAULT_SETTINGS, key), `there is no setting called ${key}`);
+  for (const key of Object.keys(patch)) check(Object.hasOwn(DEFAULT_SETTINGS, key) || (HER_SETTING_KEYS as readonly string[]).includes(key), `there is no setting called ${key}`);
   return validateSettings({ ...current, ...patch });
 }
 
@@ -146,6 +155,7 @@ export function validateSettings(settings: Settings): Settings {
   check(isWholeInRange(s.bankPermissionWarnDays, 1, 60), 'the warning before the bank permission runs out must be a whole number of days from 1 to 60');
   check(s.everydayCardClosingDay === null || isWholeInRange(s.everydayCardClosingDay, 1, 31), "the everyday card's statement closing day must be a day of the month from 1 to 31");
   check(s.oldCardClosingDay === null || isWholeInRange(s.oldCardClosingDay, 1, 31), "the old card's statement closing day must be a day of the month from 1 to 31");
+  check(!('askBeforeSplittingPaycheck' in s) || typeof s.askBeforeSplittingPaycheck === 'boolean', 'ask before splitting a paycheck must be on or off');
   return deepFreeze(copySettings(s));
 }
 

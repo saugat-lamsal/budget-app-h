@@ -29,6 +29,7 @@ import {
   leftoverText,
   recheckedText,
   retotaledText,
+  askPaycheckText,
   lockAmountsText,
   notReadText,
   permissionWarnText,
@@ -115,7 +116,7 @@ function SettingsLoading() {
 
 // What is being changed in the sheet.
 type Editing =
-  | { readonly what: 'split' | 'reserve' | 'target' | 'low-alert' | 'reminders' | 'review-time' | 'time-zone' | 'quiet-hours' | 'not-read' | 'mismatch-wait' | 'permission-warn' | 'lock-amounts' | 'leftover' | 'promo' | 'paycheck-rule' | 'pay-schedule' | 'mom-rule' | 'early-days' | 'closing-day-everyday' | 'closing-day-old' }
+  | { readonly what: 'split' | 'reserve' | 'target' | 'low-alert' | 'reminders' | 'review-time' | 'time-zone' | 'quiet-hours' | 'not-read' | 'mismatch-wait' | 'permission-warn' | 'lock-amounts' | 'ask-paycheck' | 'leftover' | 'promo' | 'paycheck-rule' | 'pay-schedule' | 'mom-rule' | 'early-days' | 'closing-day-everyday' | 'closing-day-old' }
   // A sorting rule: null to add one.
   | { readonly what: 'rule'; readonly rule: RuleRow | null };
 
@@ -233,6 +234,8 @@ function SettingsReady({ view, reload, onChanged }: { readonly view: Tracking; r
         {textRow('paycheck-rule', 'Paycheck rule', textRuleText(s.paycheckRule), 'Text the bank shows on your paycheck')}
         {row('pay-schedule', 'Pay schedule', payScheduleText(s), `Next payday ${next}`)}
         {row('early-days', 'Early paycheck check', daysText(s.earlyPaycheckDays), 'A paycheck sooner than this after the last one waits in Review')}
+        {/* Her rulebook, section 2: only a setup that has the setting shows it. */}
+        {s.askBeforeSplittingPaycheck !== undefined && textRow('ask-paycheck', 'Ask before splitting a paycheck', askPaycheckText(s.askBeforeSplittingPaycheck), 'Nothing is split until you say yes in Review')}
         {textRow('leftover', 'Leftover at payday', leftoverText(s.leftoverAtPayday), 'What happens to what is left in needs and wants')}
       </Card>
 
@@ -547,6 +550,8 @@ function startFields(editing: Editing, s: SettingsValuesShown): Fields {
       return { days: String(s.bankPermissionWarnDays) };
     case 'lock-amounts':
       return { on: s.amountsOnLockScreen ? 'on' : 'off' };
+    case 'ask-paycheck':
+      return { on: s.askBeforeSplittingPaycheck === true ? 'on' : 'off' };
     case 'leftover':
       return { needs: s.leftoverAtPayday.needs, wants: s.leftoverAtPayday.wants };
     case 'promo':
@@ -629,6 +634,8 @@ function readSettings(editing: Editing, f: Fields): Reading<Partial<Settings>> {
     }
     case 'lock-amounts':
       return { value: { amountsOnLockScreen: get('on') === 'on' } };
+    case 'ask-paycheck':
+      return { value: { askBeforeSplittingPaycheck: get('on') === 'on' } };
     case 'leftover':
       return { value: { leftoverAtPayday: { needs: get('needs') as LeftoverChoice, wants: get('wants') as LeftoverChoice } } };
     case 'promo':
@@ -678,6 +685,7 @@ const TITLES: Readonly<Record<Editing['what'], string>> = {
   'mismatch-wait': 'Totals do not match',
   'permission-warn': 'Bank permission ending',
   'lock-amounts': 'Amounts on the lock screen',
+  'ask-paycheck': 'Ask before splitting a paycheck',
   leftover: 'Leftover at payday',
   promo: 'Old card promo end date',
   'paycheck-rule': 'Paycheck rule',
@@ -931,6 +939,22 @@ function SheetFields({ editing, get, set, view, kind }: { readonly editing: Edit
           ]}
           testId="field-lock-amounts"
         />
+      );
+    case 'ask-paycheck':
+      return (
+        <>
+          <SelectField
+            label="When a paycheck comes in"
+            value={get('on')}
+            onChange={set('on')}
+            options={[
+              { value: 'on', label: 'Wait for my yes in Review, showing what each bucket would get' },
+              { value: 'off', label: 'Split it by itself' },
+            ]}
+            testId="field-ask-paycheck"
+          />
+          <p className="sheet__note">Turning it off splits only the paychecks that come in after. One already waiting still waits for your yes.</p>
+        </>
       );
     case 'leftover':
       return (

@@ -58,6 +58,7 @@ export const SETTING_NAMES: Readonly<Record<keyof Settings, string>> = {
   bankPermissionWarnDays: 'Bank permission ending',
   everydayCardClosingDay: 'Everyday card: statement closing day',
   oldCardClosingDay: 'Old card: statement closing day',
+  askBeforeSplittingPaycheck: 'Ask before splitting a paycheck',
 };
 
 // Section 2: the home time zones offered on Settings, his first, and how each
@@ -140,6 +141,11 @@ export function lockAmountsText(on: boolean): string {
   return on ? 'On' : 'Off, words only';
 }
 
+// Her rulebook, section 2 and 3.1. Not set is off, as upstream.
+export function askPaycheckText(on: boolean | undefined): string {
+  return on === true ? 'On: every paycheck waits for your yes' : 'Off: a paycheck is split by itself';
+}
+
 export function textRuleText(rule: Settings['paycheckRule']): string {
   return rule === null ? 'Not set' : `“${rule.contains}”`;
 }
@@ -199,6 +205,8 @@ export function settingValueText<K extends keyof Settings>(key: K, value: Settin
     case 'everydayCardClosingDay':
     case 'oldCardClosingDay':
       return closingDayText(v as number | null);
+    case 'askBeforeSplittingPaycheck':
+      return askPaycheckText(v as boolean | undefined);
     default:
       return String(v);
   }
@@ -211,6 +219,9 @@ export function recheckedText(item: RecheckedItem, earlyDays: number): string {
       return 'Becomes your paycheck, and a new pay period starts that day.';
     case 'early-paycheck':
       return `Still waits in review, as a paycheck that came early: less than ${daysText(earlyDays)} after the last one.`;
+    // Her rulebook, 13.2.
+    case 'paycheck-waiting':
+      return 'Becomes a paycheck waiting for your yes in Review. Nothing is split until you say yes.';
     case 'still-waiting':
       return 'Still waits in Review: part of it was refunded, so it cannot come out of the mom reserve. Sort it there.';
     case 'mom':
@@ -226,9 +237,11 @@ export function settingsDoneText(done: SettingsDone, nextPayday: string): string
   const count = (kind: RecheckedItem['kind']): number => done.rechecked.filter((i) => i.kind === kind).length;
   const paychecks = count('paycheck');
   const early = count('early-paycheck');
+  const waiting = count('paycheck-waiting');
   const mom = count('mom');
   if (paychecks > 0) parts.push(paychecks === 1 ? 'A deposit that was waiting is now your paycheck.' : `${paychecks} deposits that were waiting are now paychecks.`);
   if (early > 0) parts.push(early === 1 ? 'One waits in review as an early paycheck.' : `${early} wait in review as early paychecks.`);
+  if (waiting > 0) parts.push(waiting === 1 ? 'A deposit that was waiting is now a paycheck waiting for your yes in Review.' : `${waiting} deposits that were waiting are now paychecks waiting for your yes in Review.`);
   if (mom > 0) parts.push(mom === 1 ? 'A payment that was waiting came out of the mom reserve.' : `${mom} payments that were waiting came out of the mom reserve.`);
   const still = done.rechecked.filter((i) => i.kind === 'still-waiting');
   if (still.length > 0) parts.push(`${still.map((i) => i.description).join(', ')} still ${still.length === 1 ? 'waits' : 'wait'} in Review: part of it was refunded, so it cannot come out of the mom reserve.`);

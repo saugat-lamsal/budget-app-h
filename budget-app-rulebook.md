@@ -9,7 +9,8 @@ with every number, because the code is upstream's and its tests are named
 after those numbers. Today the code does exactly what sections 0 to 42 say,
 for upstream's setup (one bank, the old card, the mom reserve), with the
 texts already moved here from section H in their places (PR 3: "Off in this
-setup" after section 1, section 2, 12.2, 40.2 and 40.4). The rest of her
+setup" after section 1, section 2, 12.2, 40.2 and 40.4; PR 4: section 2,
+3.1, 10.15, 13.2 and section 51). The rest of her
 setup is in section "H. Approved for her setup, not built yet" at the end:
 the texts he approved on Oct 23, 2026 (docs/her-plan.txt). A text there is not in
 force until the pull request named above it moves it into its place here,
@@ -125,6 +126,9 @@ offered anywhere.
 - Leftover at payday: ask each time (other options: always roll over,
   always move to savings)
 - Paycheck rule: how your pay shows up on the statement (set after first sync)
+- Ask before splitting a paycheck: on. While on, every paycheck waits for
+  your yes before it is split (3.1). Off: a deposit the paycheck rule
+  matches is split by itself, as soon as it posts.
 - Pay schedule: twice a month, on the 15th and on the last day of the
   month; when that day is a Saturday or Sunday, the Friday before. The
   other choice: every 14 days, counted from the last paycheck (the app
@@ -149,8 +153,15 @@ offered anywhere.
 
 ## 3. Payday
 
-3.1  A deposit that matches the paycheck rule is a paycheck and starts a new
-     pay period.
+3.1  A deposit that matches the paycheck rule is a paycheck. With "Ask
+     before splitting a paycheck" on, it first waits in review: it shows the
+     amount and what each bucket would get (3.3, with the split the next
+     paycheck uses, 13.1), and nothing moves until you say yes. Yes splits it
+     and starts the new pay period on the day it arrived, not the day you
+     answer, exactly as "This is my paycheck" does (6.1). "Not a paycheck"
+     gives it the other choices of 6.1 (other income, payback, not mine).
+     With the setting off, a matching deposit is split by itself and starts
+     a new pay period.
 3.2  The mom reserve comes off first. If the reserve is already at its cap,
      the part that does not fit goes to savings instead.
 3.3  The rest is split by the percentages. Needs and wants are each rounded
@@ -415,6 +426,10 @@ offered anywhere.
       to savings (3.8) and, with the payoff countdown on, the old card's
       share this payday (9.5). At once; quiet hours apply (10.8); a tap
       opens Payday; amounts only if the lock-screen setting allows (10.10).
+10.15 A paycheck is waiting for your yes: you are told once, when it posts.
+      Quiet hours apply (10.8), a tap opens Review, and the amount is shown
+      only if the lock screen setting allows it (10.10). The payday alert
+      (10.14) comes at your yes, not before.
 
 
 ## 11. Safe to spend
@@ -515,6 +530,9 @@ offered anywhere.
       out of the mom reserve (8.1). A waiting item the rule matches but
       cannot sort (a partly refunded payment cannot be for mom, for
       example) stays waiting exactly as it was, and you are told which.
+      Setting the paycheck rule while "Ask before splitting a paycheck" is
+      on marks matching deposits as paychecks waiting for your yes; it
+      splits none of them.
       You can move a sorting rule up or down in its list (only rules of
       the same kind compete, so the first of them that matches wins). Each
       move is logged (13.5), and what is waiting in review that a moved rule
@@ -1096,6 +1114,20 @@ a.  Future and Habits on the Trends tab, as 40.10 to 40.17: Needs and Wants
     numbers are not settings (QUESTIONS.md A59).
 
 
+## 51. A paycheck waiting for your yes
+
+51.1  A paycheck waiting for your yes is money in waiting in review: it
+      counts in the self-check (12.2) and not in safe to spend (11.3).
+      Home says "Paycheck waiting for your yes" with its amount and a way
+      to Review. If the split it would get changes while it waits (a split
+      change, 13.1), Review shows the new parts. A yes about parts that are
+      no longer what it would get is refused, and nothing changes (13.7).
+51.2  Two paychecks waiting: the older one is answered first. A yes to the
+      newer one is refused while the older one waits, and says so. (60c)
+51.3  The early paycheck check (3.7) still applies: a paycheck less than
+      10 days after the last one says so on its card.
+
+
 ## 60. Answers on her setup (Oct 23, 2026)
 
 a.  A Wishlist item bought for less or more than its price is marked
@@ -1131,42 +1163,7 @@ change with the answer.
 
 ### PR 4. Ask before splitting a paycheck
 
-  Section 2, a new line: Ask before splitting a paycheck: on. While on,
-  every paycheck waits for your yes before it is split (3.1). Off: a
-  deposit the paycheck rule matches is split by itself, as soon as it
-  posts.
-
-  3.1   A deposit that matches the paycheck rule is a paycheck. With "Ask
-        before splitting a paycheck" on, it first waits in review: it
-        shows the amount and what each bucket would get (3.3, with the
-        split the next paycheck uses, 13.1), and nothing moves until you
-        say yes. Yes splits it and starts the new pay period on the day it
-        arrived, not the day you answer, exactly as "This is my paycheck"
-        does (6.1). "Not a paycheck" gives it the other choices of 6.1
-        (other income, payback, not mine). With the setting off, a
-        matching deposit is split by itself and starts a new pay period.
-
-  51.1  A paycheck waiting for your yes is money in waiting in review: it
-        counts in the self-check (12.2) and not in safe to spend (11.3).
-        Home says "Paycheck waiting for your yes" with its amount and a way
-        to Review. If the split it would get changes while it waits (a
-        split change, 13.1), Review shows the new parts. A yes about parts
-        that are no longer what it would get is refused, and nothing
-        changes (13.7).
-  51.2  Two paychecks waiting: the older one is answered first. A yes to
-        the newer one is refused while the older one waits, and says so.
-        (60c)
-  51.3  The early paycheck check (3.7) still applies: a paycheck less than
-        10 days after the last one says so on its card.
-
-  10.15 A paycheck is waiting for your yes: you are told once, when it
-        posts. Quiet hours apply (10.8), a tap opens Review, and the amount
-        is shown only if the lock screen setting allows it (10.10). The
-        payday alert (10.14) comes at your yes, not before.
-
-  13.2, a sentence added: Setting the paycheck rule while "Ask before
-  splitting a paycheck" is on marks matching deposits as paychecks waiting
-  for your yes; it splits none of them.
+  In place: section 2, 3.1, 10.15, 13.2 and section 51.
 
 ### PR 5. The second card
 

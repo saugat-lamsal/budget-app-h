@@ -51,6 +51,8 @@ export interface Subject {
   readonly ruleWhat: 'deposits' | 'payments to people' | 'purchases';
   // A store refund the app could not match to its purchase (4.5, A18).
   readonly refund: boolean;
+  // Her rulebook, 3.1: a paycheck waiting for her yes.
+  readonly paycheckAsk?: boolean;
 }
 
 // One decision, made once: its number stays the same for every retry of it.
@@ -84,7 +86,8 @@ export interface Extra {
 export type Choose = (target: Target, choice: ChoiceOf, extra?: Extra) => void;
 
 export type Sheet =
-  | { readonly item: string; readonly step: 'choose' }
+  // notAPaycheck: opened from "Not a paycheck" on a paycheck waiting for her yes (her rulebook, 3.1).
+  | { readonly item: string; readonly step: 'choose'; readonly notAPaycheck?: true }
   | { readonly item: string; readonly step: 'confirm'; readonly pending: Pending }
   // 13.8: making the rule offered after a sort.
   | { readonly item: string; readonly step: 'offer'; readonly offer: Offered };
@@ -124,6 +127,7 @@ export function subjectOfReview(detail: KeyedDetail): Subject | null {
     ruleText: detail.ruleText,
     ruleWhat: item.type === 'money-in' ? 'deposits' : item.reason === 'person-payment' ? 'payments to people' : 'purchases',
     refund: item.type === 'money-in' && item.reason === 'refund',
+    paycheckAsk: item.type === 'money-in' && item.reason === 'paycheck',
   };
 }
 
@@ -189,9 +193,9 @@ export function useChoiceFlow(options: { readonly resort: boolean; readonly relo
   };
 
   // A sheet opened later does not show what was said about the last thing.
-  const openSheet = (id: string): void => {
+  const openSheet = (id: string, options: { readonly notAPaycheck?: true } = {}): void => {
     setSaid(null);
-    setSheet({ item: id, step: 'choose' });
+    setSheet({ item: id, step: 'choose', ...options });
   };
 
   // 13.8: "Make it a rule" on the notice that offered one.
@@ -516,7 +520,7 @@ export function ChoiceSheet({
           {said !== null && <SaidNotice said={said} sending={sending} onRetry={submit} onDismiss={() => setSaid(null)} />}
           {children}
           <div hidden={sheet.step !== 'choose'} style={sheet.step === 'choose' ? { display: 'contents' } : undefined}>
-            {subject !== undefined && <Choices subject={subject} busy={sending} onChoose={choose} />}
+            {subject !== undefined && <Choices subject={subject} busy={sending} onChoose={choose} startNotAPaycheck={sheet.step === 'choose' && sheet.notAPaycheck === true} />}
             {subject !== undefined && likely && (subject.refund || subject.likely.length > 0) && <LikelyPurchases subject={subject} busy={sending} onChoose={choose} />}
           </div>
           {sheet.step === 'confirm' && <Confirm pending={sheet.pending} busy={sending} onYes={() => submit({ ...sheet.pending, confirmed: true })} onBack={() => setSheet({ item: itemId, step: 'choose' })} />}
@@ -529,37 +533,43 @@ export function ChoiceSheet({
 // What "are you sure" says for a final pick: for my paycheck, the split it would get.
 export function askFor(preview: PaycheckSplitShown | null, date: IsoDate, to: PickTo): ReactNode {
   if (to !== 'paycheck' || preview === null) return undefined;
-  const p = preview;
   return (
     <>
       <p>
         This starts a new pay period on {shortDate(date)}, the day it arrived. A paycheck can't be undone here.
       </p>
       <div className="card">
-        <dl className="figures" data-testid="paycheck-preview">
-          {p.momReserve !== undefined && (
-            <>
-              <dt>Mom reserve</dt>
-              <dd>
-                <Money cents={p.momReserve} testId="preview-mom" />
-              </dd>
-            </>
-          )}
-          <dt>Savings</dt>
-          <dd>
-            <Money cents={p.savings} testId="preview-savings" />
-          </dd>
-          <dt>Needs</dt>
-          <dd>
-            <Money cents={p.needs} testId="preview-needs" />
-          </dd>
-          <dt>Wants</dt>
-          <dd>
-            <Money cents={p.wants} testId="preview-wants" />
-          </dd>
-        </dl>
+        <PaycheckParts preview={preview} prefix="preview" testId="paycheck-preview" />
       </div>
     </>
+  );
+}
+
+// What each bucket gets from a paycheck (3.3); test ids start with prefix.
+export function PaycheckParts({ preview: p, prefix, testId }: { readonly preview: PaycheckSplitShown; readonly prefix: string; readonly testId: string }) {
+  return (
+    <dl className="figures" data-testid={testId}>
+      {p.momReserve !== undefined && (
+        <>
+          <dt>Mom reserve</dt>
+          <dd>
+            <Money cents={p.momReserve} testId={`${prefix}-mom`} />
+          </dd>
+        </>
+      )}
+      <dt>Savings</dt>
+      <dd>
+        <Money cents={p.savings} testId={`${prefix}-savings`} />
+      </dd>
+      <dt>Needs</dt>
+      <dd>
+        <Money cents={p.needs} testId={`${prefix}-needs`} />
+      </dd>
+      <dt>Wants</dt>
+      <dd>
+        <Money cents={p.wants} testId={`${prefix}-wants`} />
+      </dd>
+    </dl>
   );
 }
 
@@ -625,14 +635,21 @@ export function LikelyPurchases({ subject, busy, onChoose }: { readonly subject:
 
 // ----- All the choices, in a sheet -----
 
-function Choices({ subject, busy, onChoose }: { readonly subject: Subject; readonly busy: boolean; readonly onChoose: Choose }) {
+function Choices({ subject, busy, onChoose, startNotAPaycheck = false }: { readonly subject: Subject; readonly busy: boolean; readonly onChoose: Choose; readonly startNotAPaycheck?: boolean }) {
   const { options, target } = subject;
   const [always, setAlways] = useState(false);
   const [text, setText] = useState(subject.ruleText);
   const kind = target.kind;
   const ruleText = text.trim();
   const rule = always ? { contains: ruleText } : undefined;
-  const picks = always ? options.picks.filter((p) => options.always.includes(p.to)) : options.picks;
+  // Her rulebook, 3.1: a paycheck waiting for her yes shows what each bucket
+  // would get, and yes asks first. "Not a paycheck" opens the other choices
+  // of 6.1 (other income, payback, not mine).
+  const [notAPaycheck, setNotAPaycheck] = useState(startNotAPaycheck);
+  const asking = subject.paycheckAsk === true && subject.now === null && !notAPaycheck;
+  const yes = options.picks.find((p) => p.to === 'paycheck');
+  const shownPicks = subject.paycheckAsk === true && notAPaycheck ? options.picks.filter((p) => p.to !== 'paycheck') : options.picks;
+  const picks = always ? shownPicks.filter((p) => options.always.includes(p.to)) : shownPicks;
   // Sorting it where it already is does nothing, unless it makes a rule (B101).
   const here = (to: PickTo): boolean => !always && subject.now !== null && 'to' in subject.now && subject.now.to === to;
 
@@ -667,7 +684,43 @@ function Choices({ subject, busy, onChoose }: { readonly subject: Subject; reado
         </Notice>
       ))}
 
-      {options.always.length > 0 && (
+      {asking && (
+        <>
+          <Card title="What each bucket would get" testId="paycheck-ask">
+            {subject.paycheckPreview === null ? (
+              <p className="sheet__note">The parts can't be worked out for this one. Say what it is instead.</p>
+            ) : (
+              <div style={{ padding: 'var(--space-2) var(--space-4)' }}>
+                <PaycheckParts preview={subject.paycheckPreview} prefix="ask" testId="paycheck-ask-parts" />
+              </div>
+            )}
+          </Card>
+          <p className="sheet__note">Nothing is split until you say yes. Yes starts the new pay period on {shortDate(subject.date)}, the day it arrived.</p>
+          {yes !== undefined && (
+            <Button
+              wide
+              disabled={busy}
+              testId="paycheck-yes"
+              onClick={() => {
+                if (!busy) onChoose(target, { to: 'paycheck' }, { final: true, ask: askFor(subject.paycheckPreview, subject.date, 'paycheck') });
+              }}
+            >
+              Yes, split it
+            </Button>
+          )}
+          <Button variant="secondary" wide disabled={busy} testId="not-a-paycheck" onClick={() => setNotAPaycheck(true)}>
+            Not a paycheck
+          </Button>
+        </>
+      )}
+
+      {!asking && subject.paycheckAsk === true && subject.now === null && (
+        <Button variant="secondary" wide disabled={busy} testId="a-paycheck-after-all" onClick={() => setNotAPaycheck(false)}>
+          It is a paycheck after all
+        </Button>
+      )}
+
+      {!asking && options.always.length > 0 && (
         <div className="card">
           <ToggleRow label="Always do this" detail="Make a rule so the next one sorts itself." checked={always} onChange={setAlways} testId="always-toggle" />
           {always && (
@@ -678,33 +731,35 @@ function Choices({ subject, busy, onChoose }: { readonly subject: Subject; reado
         </div>
       )}
 
-      <Card title={always ? 'Always put it in' : subject.now === null ? 'Put it in' : 'Put it in instead'} testId="sheet-picks">
-        {picks.map((pick) =>
-          here(pick.to) ? (
-            <ListRow key={pick.to} title={pickLabel(kind, pick.to)} detail="It is here now." testId={`choice-${pick.to}`} />
-          ) : (
-            <ListRow
-              key={pick.to}
-              title={pickLabel(kind, pick.to)}
-              detail={pick.final ? "This can't be undone here, so you'll be asked to confirm." : undefined}
-              onClick={() => {
-                if (busy) return;
-                if (always && ruleText === '') return;
-                onChoose(target, { to: pick.to }, {
-                  ...(rule === undefined ? {} : { always: rule }),
-                  final: pick.final,
-                  ask: always ? <p>{ruleSentence(subject, ruleText, pickLabel(kind, pick.to))}</p> : askFor(subject.paycheckPreview, subject.date, pick.to),
-                });
-              }}
-              testId={`choice-${pick.to}`}
-            />
-          ),
-        )}
-      </Card>
+      {!asking && (
+        <Card title={always ? 'Always put it in' : subject.now === null ? (subject.paycheckAsk === true ? 'What is it, then?' : 'Put it in') : 'Put it in instead'} testId="sheet-picks">
+          {picks.map((pick) =>
+            here(pick.to) ? (
+              <ListRow key={pick.to} title={pickLabel(kind, pick.to)} detail="It is here now." testId={`choice-${pick.to}`} />
+            ) : (
+              <ListRow
+                key={pick.to}
+                title={pickLabel(kind, pick.to)}
+                detail={pick.final ? "This can't be undone here, so you'll be asked to confirm." : undefined}
+                onClick={() => {
+                  if (busy) return;
+                  if (always && ruleText === '') return;
+                  onChoose(target, { to: pick.to }, {
+                    ...(rule === undefined ? {} : { always: rule }),
+                    final: pick.final,
+                    ask: always ? <p>{ruleSentence(subject, ruleText, pickLabel(kind, pick.to))}</p> : askFor(subject.paycheckPreview, subject.date, pick.to),
+                  });
+                }}
+                testId={`choice-${pick.to}`}
+              />
+            ),
+          )}
+        </Card>
+      )}
 
-      {!always && options.split !== null && <SplitForm subject={subject} buckets={options.split} busy={busy} onChoose={onChoose} />}
+      {!asking && !always && options.split !== null && <SplitForm subject={subject} buckets={options.split} busy={busy} onChoose={onChoose} />}
 
-      {!always && options.transfer.length > 0 && (
+      {!asking && !always && options.transfer.length > 0 && (
         <Card title="Transfer between my accounts" testId="sheet-transfer">
           {options.transfer.map((account) => {
             // What it does comes from the money math (5.1 to 5.3).

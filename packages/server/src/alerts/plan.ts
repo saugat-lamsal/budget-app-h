@@ -28,7 +28,8 @@ import { alertRecord, type AlertFacts, type AlertRecord, type LastingKind } from
 //   wanting a new login (10.5) when they start, and the bank not read for the
 //   hours of the setting (10.7, A38), due at the moment the last good read
 //   became that old, and a paycheck counted since the last look (10.14, A49,
-//   once per pay period). Made only when it gives or clears something, or
+//   once per pay period), and (her rulebook, 10.15) each paycheck waiting
+//   for her yes, once. Made only when it gives or clears something, or
 //   notes the pay period of a history kept before the payday alert.
 // Quiet hours (10.8, A35) and the lock screen (10.10, A39) are about sending:
 // the alerts are kept at the moment they come due all the same (keeper.ts).
@@ -345,6 +346,9 @@ export function stillTrueNow(world: AlertWorld, ledger: AlertLedger, f: AlertFac
     // 10.14: its pay period still lasts.
     case 'payday':
       return f.period === book.period().number;
+    // Her rulebook, 10.15: it still waits for her yes.
+    case 'paycheck-waiting':
+      return book.paychecksWaiting().some((p) => p.id === f.id);
   }
 }
 
@@ -380,6 +384,8 @@ function changeEvent(world: AlertWorld, ledger: AlertLedger, at: string): Alerts
   for (const line of book.changeLog()) {
     if (line.kind === 'bank-took-back' && !ledger.known.has(line.id)) give({ kind: 'bank-took-back', id: line.id, date: line.date, description: line.description, amount: line.amount });
   }
+  // Her rulebook, 10.15: each paycheck waiting for her yes, once, when it posts.
+  for (const p of book.paychecksWaiting()) give({ kind: 'paycheck-waiting', id: p.id, date: p.date, amount: p.amount, early: p.early });
   // 10.4 and 10.5: told when they start, cleared when they stop.
   const today = todayIn(world.zone, world.now);
   const cleared: LastingKind[] = [];

@@ -311,8 +311,11 @@ export const STAT_NAMES = [
   'refundsTakenBack',
 ] as const;
 // What only a life shaped like hers counts: answers about the mom reserve or
-// the old card refused, and items in review checked to offer nothing about them.
-export const HER_STAT_NAMES = ['offRefused', 'offersChecked'] as const;
+// the old card refused, and items in review checked to offer nothing about
+// them; and (PR 4) paychecks that waited for her yes, yeses on a later day,
+// "not a paycheck" first and her paycheck after all, and a yes to a newer
+// paycheck refused while an older one waited (51.2).
+export const HER_STAT_NAMES = ['offRefused', 'offersChecked', 'paychecksWaitedForYes', 'yesLate', 'notAPaycheckFirst', 'yesAfterNotAPaycheck', 'olderPaycheckFirst'] as const;
 // What a life shaped like hers never has.
 export const OFF_IN_HER_LIFE: readonly (typeof STAT_NAMES)[number][] = [
   'momPayments',
@@ -482,6 +485,14 @@ class Life {
   #momLeftWaiting: { readonly txn: PersonPayment; readonly refunded: Cents }[] = [];
   // The same for the paycheck rule: the paycheck that waits for it, if any.
   #paycheckWaitingForRule: string | null = null;
+  // Her rulebook, 3.1 and 51.2 (her life, "Ask before splitting a paycheck"
+  // on): the paychecks waiting for her yes, with the day each arrived; when
+  // she will answer each, and whether she says "not a paycheck" first; and
+  // the ones she said were not a paycheck, as other income, with what that
+  // gave each bucket and the day she makes it her paycheck after all.
+  readonly #waitingForYes = new Map<string, IsoDate>();
+  readonly #yesPlans = new Map<string, { readonly on: IsoDate; readonly notFirst: boolean }>();
+  readonly #notAPaycheck = new Map<string, { readonly date: IsoDate; readonly amount: Cents; readonly parts: Change; readonly on: IsoDate }>();
 
   // Things already set to happen on a later day, such as a pending charge
   // posting or a card payment landing.
@@ -906,13 +917,25 @@ class Life {
     const txn = this.#bank.deposit(this.#date, 'checking', amount, description);
     this.#intents.set(txn.id, { type: 'money-in', choice: meant });
     const outcome = this.#receive(txn);
+    const asks = this.#settings.askBeforeSplittingPaycheck === true;
     if (early) {
       if (outcome !== 'review') throw new CheckFailed('3.7 an early paycheck waits in review', `${txn.id}, ${daysBetween(this.#lastPaycheckDate, this.#date)} days after the last paycheck, came back as ${outcome}`);
       this.#expectChange(before, { unsortedIn: amount }, '3.7 an early paycheck waits in review', txn.id);
       this.#stats.earlyPaychecksInReview++;
+      // 51.3: while asking, an early one is a paycheck waiting for her yes too.
+      if (asks) this.#waitingForYes.set(txn.id, this.#date);
+    } else if (asks) {
+      // Her rulebook, 3.1: with "Ask before splitting a paycheck" on, it waits
+      // for her yes, and nothing is split.
+      if (outcome !== 'review') throw new CheckFailed('3.1 with asking on, a paycheck waits for her yes', `${txn.id} came back as ${outcome}`);
+      this.#expectChange(before, { unsortedIn: amount }, '3.1 with asking on, a paycheck waits for her yes', txn.id);
+      const item = this.#book.reviewItems().find((i) => i.id === txn.id);
+      if (item?.type !== 'money-in' || item.reason !== 'paycheck') throw new CheckFailed('3.1 with asking on, a paycheck waits for her yes', `${txn.id} waits as ${JSON.stringify(item)}`);
+      this.#waitingForYes.set(txn.id, this.#date);
+      this.#stats.paychecksWaitedForYes++;
     } else {
       if (outcome !== 'paycheck') throw new CheckFailed('3.1 a paycheck starts a pay period', `${txn.id}, ${daysBetween(this.#lastPaycheckDate, this.#date)} days after the last paycheck, came back as ${outcome}`);
-      this.#onPaycheck(before, asked, amount, this.#date, false);
+      this.#onPaycheck(before, asked, amount, this.#date, 'bank');
     }
   }
 
@@ -935,8 +958,12 @@ class Life {
   }
 
   // `asked` is which buckets had a leftover question open before payday;
-  // `fromReview` is a deposit you called your paycheck (6.1).
-  #onPaycheck(before: Pots, asked: Set<'needs' | 'wants'>, amount: Cents, date: IsoDate, fromReview: boolean): void {
+  // `how`: the bank's paycheck split by itself, a deposit waiting in review
+  // you called your paycheck (6.1, or a yes, 3.1), or one already sorted as
+  // other income made your paycheck after all (B52; `before` is then the
+  // buckets with that other income taken back out).
+  #onPaycheck(before: Pots, asked: Set<'needs' | 'wants'>, amount: Cents, date: IsoDate, how: 'bank' | 'review' | 'resort'): void {
+    const fromReview = how === 'review';
     const record = this.#book.paychecks().at(-1);
     const expected = this.#expectedSplit(amount, before.momReserve);
     const got = record && { momReserve: record.split.momReserve, savings: record.split.savings, needs: record.split.needs, wants: record.split.wants };
@@ -977,7 +1004,7 @@ class Life {
     // 10.14: a paycheck from review (6.1) or from setting the paycheck rule
     // (13.2) was counted by an answer, whose step is already made: the payday
     // alert is due at it. One the bank sent is told at the next sync's step.
-    if (fromReview) this.#paydayAtTheAnswer();
+    if (how !== 'bank') this.#paydayAtTheAnswer();
     this.#periodSplit = this.#settings.split;
     this.#stats.paychecks++;
     const month = date.slice(0, 7);
@@ -1800,6 +1827,23 @@ class Life {
     const patch = { paycheckRule: { contains: PAYROLL } };
     const preview = this.#book.previewSettingsChange(patch, this.#date);
     const first = preview.items[0];
+    // Her rulebook, 13.2: while asking, it becomes a paycheck waiting for her
+    // yes, showing what it would get, and nothing is split.
+    if (this.#settings.askBeforeSplittingPaycheck === true) {
+      const wouldGet = this.#expectedSplit(txn.amount, before.momReserve);
+      const got = first?.kind === 'paycheck-waiting' ? first.wouldGet : null;
+      if (preview.items.length !== 1 || first?.kind !== 'paycheck-waiting' || first.id !== txn.id || first.amount !== txn.amount || first.date !== txn.date || got === null || !same({ momReserve: got.momReserve, savings: got.savings, needs: got.needs, wants: got.wants }, wouldGet)) {
+        throw new CheckFailed('13.2 with asking on, setting the paycheck rule makes it a paycheck waiting for her yes', `${txn.id} waits; the preview says ${JSON.stringify(preview.items)}`);
+      }
+      const { rechecked } = this.#changeSettings(patch);
+      if (!same(rechecked, preview.items) || !same(this.#book.pots(), preview.potsAfter)) throw new CheckFailed('13.2 A9 the change is what the preview said', JSON.stringify({ rechecked, preview }));
+      this.#expectChange(before, {}, '13.2 with asking on, setting the paycheck rule splits nothing', txn.id);
+      this.#paycheckWaitingForRule = null;
+      this.#waitingForYes.set(txn.id, txn.date);
+      this.#stats.paycheckRuleSetWhileWaiting++;
+      this.#note(`paycheck rule set again: ${txn.id} waits for her yes`);
+      return;
+    }
     if (preview.items.length !== 1 || first?.kind !== 'paycheck' || first.id !== txn.id || first.amount !== txn.amount || first.date !== txn.date) {
       throw new CheckFailed('13.2 A9 what setting the paycheck rule would do', `${txn.id} waits; the preview says ${JSON.stringify(preview.items)}`);
     }
@@ -1810,7 +1854,7 @@ class Life {
     const { rechecked } = this.#changeSettings(patch);
     if (!same(rechecked, preview.items) || !same(this.#book.pots(), preview.potsAfter)) throw new CheckFailed('13.2 A9 the change is what the preview said', JSON.stringify({ rechecked, preview }));
     this.#paycheckWaitingForRule = null;
-    this.#onPaycheck(before, asked, txn.amount, txn.date, true);
+    this.#onPaycheck(before, asked, txn.amount, txn.date, 'review');
     this.#stats.paycheckRuleSetWhileWaiting++;
     this.#note(`paycheck rule set again: ${txn.id} is the paycheck`);
   }
@@ -1837,6 +1881,7 @@ class Life {
         if (!this.#book.reviewItems().some((i) => i.id === item.id)) this.#momLeftWaiting = this.#momLeftWaiting.filter((w) => w.txn.id !== item.id);
       }
     }
+    if (this.#her) this.#myPaycheckAfterAll();
     if (r.chance(1, 40)) this.#resort();
     if (!this.#her && r.chance(1, 150)) this.#notForMom();
     this.#handMoves();
@@ -1885,10 +1930,15 @@ class Life {
           return;
         }
         let choice = this.#moneyInChoice(item);
-        // Now and then the person leaves an early paycheck for a while. By
-        // then a newer paycheck may have come, and this one can no longer
-        // start a pay period (B54), so it becomes other income.
-        if (choice === 'paycheck') {
+        const meant = choice;
+        if (choice === 'paycheck' && this.#her) {
+          const hers = this.#herAnswer(item, before);
+          if (hers === null) return;
+          choice = hers;
+        } else if (choice === 'paycheck') {
+          // Now and then the person leaves an early paycheck for a while. By
+          // then a newer paycheck may have come, and this one can no longer
+          // start a pay period (B54), so it becomes other income.
           let on = this.#waitUntil.get(item.id);
           if (on === undefined) {
             on = r.chance(1, 4) ? addDays(today, r.int(1, 20)) : today;
@@ -1903,21 +1953,99 @@ class Life {
         }
         const asked = this.#openLeftovers();
         this.#book.sort(item.id, { to: choice }, today);
+        this.#waitingForYes.delete(item.id);
         this.#note(`sort money in ${item.id} -> ${choice}`);
         if (choice === 'paycheck') {
           this.#stats.myPaycheckChoices++;
-          this.#onPaycheck(before, asked, item.amount, item.date, true);
+          this.#onPaycheck(before, asked, item.amount, item.date, 'review');
           return;
         }
         if (choice === 'other-income') this.#stats.otherIncome++;
         const change: Change = choice === 'other-income' ? this.#otherIncome(item.amount) : choice === 'not-mine' ? { heldForOthers: item.amount } : { [choice]: item.amount };
         this.#expectChange(before, { ...change, unsortedIn: -item.amount }, '6.1 sorting money in', item.id);
+        // Her rulebook, 3.1: "not a paycheck" first; her paycheck after all, a few days on.
+        if (meant === 'paycheck' && this.#yesPlans.get(item.id)?.notFirst === true) {
+          this.#notAPaycheck.set(item.id, { date: item.date, amount: item.amount, parts: change, on: addDays(today, r.int(1, 5)) });
+          this.#stats.notAPaycheckFirst++;
+        }
         return;
       }
       case 'spending':
         this.#tryMistake(item, before);
         this.#sortSpending(item, before);
         return;
+    }
+  }
+
+  // Her rulebook, 3.1 and 51.2: when she answers a paycheck waiting for her
+  // yes: the day it comes, a few days late, or now and then two weeks or
+  // more late; now and then "not a paycheck" first (as other income), and "This is my paycheck" a few days after that
+  // (#myPaycheckAfterAll). The older paycheck is answered first: a yes to a
+  // newer one while an older one that can still be her paycheck waits is
+  // refused with nothing changed, and she leaves it for another evening.
+  // Null: not today.
+  #herAnswer(item: Extract<ReviewItem, { type: 'money-in' }>, before: Pots): 'paycheck' | 'other-income' | null {
+    const r = this.#random;
+    const today = this.#date;
+    let plan = this.#yesPlans.get(item.id);
+    if (plan === undefined) {
+      // Now and then she is away for a while, and the next paycheck comes
+      // while this one still waits.
+      const when = r.int(1, 100);
+      plan = { on: when <= 55 ? today : when <= 80 || when > 85 ? addDays(today, r.int(1, 4)) : addDays(today, r.int(12, 18)), notFirst: when > 85 };
+      this.#yesPlans.set(item.id, plan);
+    }
+    if (daysBetween(plan.on, today) < 0) return null;
+    if (plan.notFirst) return 'other-income';
+    // One older than the last paycheck is refused as any is (B54), in #handle.
+    if (daysBetween(this.#lastPaycheckDate, item.date) >= 0 && this.#olderWaiting(item.id, item.date)) {
+      this.#expectRefused(() => this.#book.sort(item.id, { to: 'paycheck' }, today), before, item.id, 'a yes to a newer paycheck while an older one waits (51.2)');
+      this.#stats.olderPaycheckFirst++;
+      return null;
+    }
+    if (daysBetween(item.date, today) > 0) this.#stats.yesLate++;
+    return 'paycheck';
+  }
+
+  // 51.2, worked out here: a paycheck waiting for her yes from a day before
+  // this one, which can still be her paycheck (not older than the last, B54).
+  #olderWaiting(id: string, date: IsoDate): boolean {
+    for (const [other, arrived] of this.#waitingForYes) {
+      if (other !== id && daysBetween(this.#lastPaycheckDate, arrived) >= 0 && daysBetween(arrived, date) > 0) return true;
+    }
+    return false;
+  }
+
+  // Her rulebook, 3.1 and B52: a paycheck she said was not one, as other
+  // income, made her paycheck after all on the day she planned, from the day
+  // it arrived. Other income's parts come back out of the buckets first. If a
+  // newer paycheck was counted since, it cannot be (B54) and stays other
+  // income; while an older paycheck waits for her yes, it is refused (51.2)
+  // and she tries another evening. Either refusal changes nothing.
+  #myPaycheckAfterAll(): void {
+    for (const [id, was] of [...this.#notAPaycheck]) {
+      if (daysBetween(was.on, this.#date) < 0) continue;
+      const before = this.#book.pots();
+      const attempt = (): void => this.#book.sort(id, { to: 'paycheck' }, this.#date);
+      if (daysBetween(this.#lastPaycheckDate, was.date) < 0) {
+        this.#expectRefused(attempt, before, null, 'making a deposit older than the last paycheck her paycheck (B54)');
+        this.#notAPaycheck.delete(id);
+        continue;
+      }
+      if (this.#olderWaiting(id, was.date)) {
+        this.#expectRefused(attempt, before, null, 'her paycheck after all while an older paycheck waits (51.2)');
+        this.#stats.olderPaycheckFirst++;
+        continue;
+      }
+      const asked = this.#openLeftovers();
+      attempt();
+      this.#notAPaycheck.delete(id);
+      this.#note(`${id}: her paycheck after all`);
+      const base: Record<PotName, Cents> = { ...before };
+      for (const [pot, part] of Object.entries(was.parts) as [PotName, Cents][]) base[pot] -= part;
+      this.#stats.yesAfterNotAPaycheck++;
+      this.#stats.myPaycheckChoices++;
+      this.#onPaycheck(base, asked, was.amount, was.date, 'resort');
     }
   }
 

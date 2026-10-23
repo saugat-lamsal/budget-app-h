@@ -1,0 +1,53 @@
+WORKED EXAMPLES, HER SETUP: THE SCREENS
+
+Made-up numbers, worked out step by step, so you can check by hand what the
+screens of her setup show. Every amount is in dollars and cents. Upstream's
+examples are in worked-examples.txt, unchanged. The money math of her setup
+is in packages/money/worked-examples-h.txt.
+
+Each example is also a test (packages/server/test/worked-examples-h.test.ts).
+The test reads the "Check:" line straight from this file and compares it
+with what the server works out from the made-up bank.
+
+
+========================================================================
+EXAMPLE 1. A paycheck waits for her yes, on Home, then Payday
+           (3.1, 51.1, 11.1, 12.1 to 12.3, 3.8)
+========================================================================
+
+Setup day, Oct 1. The made-up bank shows:
+
+Checking                                         3,000.00
+Savings                                          5,000.00
+Everyday card, owed                                450.00
+
+The starting money (14.2): 3,000.00 + 5,000.00 - 450.00 = 7,550.00
+She assigns it: savings 4,000.00, wants 200.00, and needs the rest:
+        7,550.00 - 4,000.00 - 200.00 = 3,350.00
+Then she sets the paycheck rule. "Ask before splitting a paycheck" is on.
+
+Oct 9: her paycheck of 2,500.00 posts to checking. It waits for her yes.
+
+Home, while it waits:
+        "Paycheck waiting for your yes", 2,500.00.
+        Safe to spend (11.1) = wants - unsorted spending
+                             = 200.00 - 0.00 = 200.00
+        (The waiting paycheck is not part of it, 51.1.)
+        App side (12.2) = 4,000.00 + 3,350.00 + 200.00 + 2,500.00 waiting
+                        = 10,050.00
+        Bank side (12.1) = checking 5,500.00 + savings 5,000.00
+                           - card 450.00 = 10,050.00
+        They match (12.3), so safe to spend is shown.
+
+Oct 11: she says yes. The pay period starts Oct 9 (B53). The paycheck
+splits 50/30/20:
+        Savings 4,000.00 + 1,250.00 = 5,250.00
+        Needs   3,350.00 +   750.00 = 4,100.00
+        Wants     200.00 +   500.00 =   700.00
+The leftover questions (3.4) wait in Review and move nothing yet.
+
+Home: safe to spend = 700.00.
+Payday (3.8): the savings account should hold the savings bucket,
+5,250.00. It holds 5,000.00, so 250.00 is still to move.
+
+Check: waiting on home 2,500.00 | safe to spend while waiting 200.00 | app side while waiting 10,050.00 | bank side while waiting 10,050.00 | savings after yes 5,250.00 | needs after yes 4,100.00 | wants after yes 700.00 | safe to spend after yes 700.00 | still to move 250.00

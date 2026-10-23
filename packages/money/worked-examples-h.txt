@@ -11,7 +11,8 @@ the app disagrees with it, the test fails.
 
 Her setup has no mom reserve and no old card (rulebook, "Off in this
 setup"). Unless an example says otherwise, the settings are her starting
-ones: split 50% savings / 30% needs / 20% wants.
+ones: split 50% savings / 30% needs / 20% wants, and "Ask before splitting
+a paycheck" on, so a paycheck waits for her yes before it is split (3.1).
 
 Rounding: each share is rounded DOWN to the cent. Any cents left over from
 rounding go to savings (rule 3.3).
@@ -24,6 +25,7 @@ EXAMPLE 1. Her paycheck: nothing comes off first (3.3; 3.2 is off)
 Before payday: every bucket is at $0.00.
 
 Paycheck                                         2,345.67
+It waits for her yes (3.1), and she says yes the day it arrives.
 
 Step 1. No mom reserve in this setup: nothing comes off the top.
         Rest to split                            2,345.67
@@ -48,6 +50,7 @@ EXAMPLE 2. A paycheck of one cent (3.3; 3.2 is off)
 Before payday: every bucket is at $0.00.
 
 Paycheck                                             0.01
+It waits for her yes (3.1), and she says yes the day it arrives.
 
 Step 1. Split it.
         Savings 50% of 0.01 = 0.005  ->  0.00
@@ -76,3 +79,85 @@ App side = savings + needs + wants + held for others
          = 5,247.50
 
 Check: app side 5,247.50 | unsorted money in 60.00 | unsorted spending 12.50 | mom reserve 0.00
+
+
+========================================================================
+EXAMPLE 4. A paycheck waiting for her yes (3.1, 51.1)
+========================================================================
+
+Setup day: savings $3,000.00, needs $400.00, wants $150.00. Nothing is
+waiting. Her last paycheck was 14 days before Oct 9.
+
+Oct 9: a paycheck of $1,987.65 posts. The paycheck rule matches it.
+
+It waits in review. Nothing is split yet, so no bucket changes. It is
+money in waiting in review (51.1): it counts on the app side of the
+self-check, and not in safe to spend.
+
+App side = savings + needs + wants + held for others
+           + unsorted money in - unsorted spending
+         = 3,000.00 + 400.00 + 150.00 + 0.00 + 1,987.65 - 0.00
+         = 5,537.65
+(The bank shows the $1,987.65 in checking too, so the two still match.)
+
+Safe to spend = wants left - unsorted spending = 150.00 - 0.00 = 150.00
+
+What Review shows it would get (3.3, with the split the next paycheck
+uses):
+        Savings 50% of 1,987.65 = 993.825  ->  993.82
+        Needs   30% of 1,987.65 = 596.295  ->  596.29
+        Wants   20% of 1,987.65 = 397.53   ->  397.53
+        Rounded shares add to 1,987.64, so 0.01 goes to savings: 993.83
+
+Check: savings 3,000.00 | needs 400.00 | wants 150.00 | unsorted money in 1,987.65 | app side 5,537.65 | safe to spend 150.00
+
+
+========================================================================
+EXAMPLE 5. She says yes three days later, after spending (3.1, B53)
+========================================================================
+
+The same as Example 4, then:
+
+Oct 10: gas, $41.20, on the everyday card. She sorts it to needs.
+        Needs: 400.00 - 41.20 = 358.80
+
+Oct 12: she says yes to the paycheck.
+
+Step 1. The new pay period starts on Oct 9, the day the paycheck
+        arrived, not Oct 12 (B53). So the next payday is 14 days after
+        Oct 9: Oct 23. On Oct 12 that is 11 days away.
+
+Step 2. The leftover question for needs (3.4) asks about what needs held
+        at her yes, before the paycheck: 358.80. (Wants: 150.00.)
+
+Step 3. The paycheck is split as Example 4 showed:
+        Savings 3,000.00 + 993.83 = 3,993.83
+        Needs     358.80 + 596.29 =   955.09
+        Wants     150.00 + 397.53 =   547.53
+        The money waiting leaves review: unsorted money in 0.00.
+
+Step 4. App side = 3,993.83 + 955.09 + 547.53 = 5,496.45
+        That is Example 4's 5,537.65 less the gas, 41.20. No cent was
+        made or lost.
+
+(The test reads "days to the next payday" as 11.00: 11 days.)
+
+Check: savings 3,993.83 | needs 955.09 | wants 547.53 | unsorted money in 0.00 | app side 5,496.45 | needs question 358.80 | days to the next payday 11.00
+
+
+========================================================================
+EXAMPLE 6. "Not a paycheck": other income instead (3.1, 6.1)
+========================================================================
+
+The same as Example 4, then on Oct 10 she says it is not a paycheck, and
+picks other income. Other income is split by this pay period's
+percentages (6.1), the same 50/30/20 here, and no new pay period starts.
+
+        Savings 3,000.00 + 993.83 = 3,993.83
+        Needs     400.00 + 596.29 =   996.29
+        Wants     150.00 + 397.53 =   547.53
+
+App side = 3,993.83 + 996.29 + 547.53 = 5,537.65, as before: the money
+only moved from "waiting" into the buckets.
+
+Check: savings 3,993.83 | needs 996.29 | wants 547.53 | unsorted money in 0.00 | app side 5,537.65

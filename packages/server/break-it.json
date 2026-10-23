@@ -6396,5 +6396,68 @@
     "find": "BUDGET_SETUP = \"her\"",
     "replace": "BUDGET_SETUP = \"upstream\"",
     "why": "[her-switches] Off in this setup: her app starts upstream"
+  },
+  {
+    "section": "alerts",
+    "file": "packages/server/src/alerts/plan.ts",
+    "find": "  for (const p of book.paychecksWaiting()) give({ kind: 'paycheck-waiting', id: p.id, date: p.date, amount: p.amount, early: p.early });",
+    "replace": "",
+    "why": "[her-ask] 10.15 no alert when a paycheck waits for her yes"
+  },
+  {
+    "section": "alerts",
+    "file": "packages/server/src/alerts/plan.ts",
+    "find": "      return book.paychecksWaiting().some((p) => p.id === f.id);",
+    "replace": "      return true;",
+    "why": "[her-ask] 10.15 10.9 still sent once she has answered it"
+  },
+  {
+    "section": "alerts",
+    "file": "packages/server/src/alerts/alerts.ts",
+    "find": "    case 'paycheck-waiting':\n      return '/review';",
+    "replace": "    case 'paycheck-waiting':\n      return '/home';",
+    "why": "[her-ask] 10.15 a tap opens Home, not Review"
+  },
+  {
+    "section": "alerts",
+    "file": "packages/server/src/alerts/alerts.ts",
+    "find": "${amounts ? `${formatDollars(f.amount)} came in` : 'A paycheck came in'}",
+    "replace": "${true ? `${formatDollars(f.amount)} came in` : 'A paycheck came in'}",
+    "why": "[her-ask] 10.15 10.10 the amount on the lock screen with the setting off"
+  },
+  {
+    "section": "alerts",
+    "file": "packages/server/src/alerts/alerts.ts",
+    "find": "const early = f.early ? ' It came less than 10 days after your last one.' : '';",
+    "replace": "const early = '';",
+    "why": "[her-ask] 10.15 51.3 an early one does not say so"
+  },
+  {
+    "section": "alerts",
+    "file": "packages/server/src/alerts/sending.ts",
+    "find": "      return `paycheck-waiting ${f.id}`;",
+    "replace": "      return f.kind;",
+    "why": "[her-ask] 10.15 a newer waiting paycheck replaces the older one's alert"
+  },
+  {
+    "section": "home",
+    "file": "packages/server/src/views/home.ts",
+    "find": "  for (const p of book.paychecksWaiting()) attention.push({ kind: 'paycheck-waiting', id: p.id, date: p.date, amount: p.amount, early: p.early });",
+    "replace": "",
+    "why": "[her-ask] 51.1 Home says nothing about a paycheck waiting"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/choices.ts",
+    "find": "  askBeforeSplittingPaycheck: (v) => (typeof v === 'boolean' ? v : undefined),",
+    "replace": "  askBeforeSplittingPaycheck: (v) => v as boolean,",
+    "why": "[her-ask] section 2 the desk takes anything as the setting"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/choices.ts",
+    "find": "  askBeforeSplittingPaycheck: (v) => (typeof v === 'boolean' ? v : undefined),",
+    "replace": "  askBeforeSplittingPaycheck: () => undefined,",
+    "why": "[her-ask] section 2 the desk refuses the setting"
   }
 ]
