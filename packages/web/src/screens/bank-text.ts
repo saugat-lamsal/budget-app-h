@@ -4,6 +4,7 @@ import type { BankAccountLine } from '@budget-app/server/views';
 // The Bank connection screen's words (rules 1.1 to 1.3). The server decides
 // everything; these only say it.
 
+// Upstream's four. Her setup's four come from the server (BankConnectionView.roles).
 export const ROLE_ORDER: readonly AccountId[] = ['checking', 'savings', 'everyday-card', 'old-card'];
 
 export const ROLE_NAMES: Readonly<Record<AccountId, string>> = {
@@ -11,6 +12,7 @@ export const ROLE_NAMES: Readonly<Record<AccountId, string>> = {
   savings: 'Savings',
   'everyday-card': 'Everyday card',
   'old-card': 'Old card',
+  'second-card': 'Second card',
 };
 
 export const ROLE_HINTS: Readonly<Record<AccountId, string>> = {
@@ -18,6 +20,7 @@ export const ROLE_HINTS: Readonly<Record<AccountId, string>> = {
   savings: 'Your savings account',
   'everyday-card': 'The credit card you use normally',
   'old-card': 'The house card you no longer use',
+  'second-card': 'Your other credit card, also used day to day',
 };
 
 // How one of the bank's accounts is named: its name and last digits.
@@ -25,8 +28,8 @@ export function accountLabel(a: Pick<BankAccountLine, 'name' | 'mask'>): string 
   return a.mask === null ? a.name : `${a.name} ••${a.mask}`;
 }
 
-// "Off in this setup": her setup picks three accounts, not four, and the
-// words count what is asked.
+// "Off in this setup": a setup that picks three accounts, not four, has words
+// that count what is asked. Her setup picks four again (PR 5: the second card).
 export function counted(text: string, roles: readonly AccountId[]): string {
   return roles.length === ROLE_ORDER.length ? text : text.replaceAll('four', 'three');
 }

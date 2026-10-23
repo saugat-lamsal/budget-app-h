@@ -370,13 +370,14 @@ describe('HB6 each card named by its bank, on the screens of her setup only', ()
     expect(cardNamesOf([stored('everyday-card', '  ', '3333'), stored('second-card', 'Made Up Second', '5555')])).toEqual({ 'everyday-card': 'Everyday card', 'second-card': 'Made Up Second' });
   });
 
-  it('HB6 the names go with Home, Buckets, Review, Settings and Setup day; nothing is added without them', async () => {
+  it("HB6 the names go with Home, Buckets, Review, a bucket's list, Settings and Setup day; nothing is added without them", async () => {
     const names = { 'everyday-card': 'A', 'second-card': 'B' } as const;
     const view = { state: 'tracking' };
-    const options = { webRoot: '', gate: {}, home: () => view, buckets: () => view, review: () => view, settings: () => view, setupView: () => view, trends: () => view } as unknown as AppServerOptions;
+    const options = { webRoot: '', gate: {}, home: () => view, buckets: () => view, review: () => view, activity: (_r: unknown, pot: string) => ({ ...view, pot }), settings: () => view, setupView: () => view, trends: () => view } as unknown as AppServerOptions;
     const named = cardsNamed(() => names, options);
     const request = {} as never;
     for (const key of ['home', 'buckets', 'review', 'settings', 'setupView'] as const) expect(await named[key]?.(request)).toEqual({ state: 'tracking', cardNames: names });
+    expect(await named.activity?.(request, 'needs')).toEqual({ state: 'tracking', pot: 'needs', cardNames: names });
     expect(await named.trends?.(request)).toEqual(view);
     const plain = cardsNamed(() => null, options);
     expect(await plain.home(request)).toEqual(view);

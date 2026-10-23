@@ -51,3 +51,40 @@ Payday (3.8): the savings account should hold the savings bucket,
 5,250.00. It holds 5,000.00, so 250.00 is still to move.
 
 Check: waiting on home 2,500.00 | safe to spend while waiting 200.00 | app side while waiting 10,050.00 | bank side while waiting 10,050.00 | savings after yes 5,250.00 | needs after yes 4,100.00 | wants after yes 700.00 | safe to spend after yes 700.00 | still to move 250.00
+
+
+========================================================================
+EXAMPLE 2. Her two cards: setup day, and a payment to the second card
+           landing a day late (12.1, 12.5, 14.2)
+========================================================================
+
+Her four accounts as the made-up bank shows them on setup day, Oct 1:
+        Checking                                  3,000.00
+        Savings                                   5,000.00
+        The everyday card owes                      450.00
+        The second card owes                        250.00
+        A charge still pending on the second card    12.50
+
+Step 1. Starting money (14.2) = checking + savings - both cards, with the
+        pending charge (12.1):
+        3,000.00 + 5,000.00 - 450.00 - (250.00 + 12.50) = 7,287.50
+
+Step 2. She assigns savings 4,000.00 and wants 200.00, and the rest to
+        needs: 7,287.50 - 4,000.00 - 200.00 = 3,087.50.
+
+Oct 5: the pending 12.50 posts at the same amount, so nothing more is
+counted (A10). And 100.00 leaves checking to pay the second card; it has
+not reached the card yet.
+        The bank: checking 2,900.00, savings 5,000.00, the everyday card
+        450.00, the second card 262.50.
+        Bank side = 2,900.00 + 5,000.00 - 450.00 - 262.50 = 7,187.50
+        In transit: 100.00. 7,187.50 + 100.00 = 7,287.50 = app side.
+        Difference 0.00.
+
+Oct 6: the 100.00 reaches the second card, a day late. It owes
+262.50 - 100.00 = 162.50.
+        Bank side = 2,900.00 + 5,000.00 - 450.00 - 162.50 = 7,287.50
+        Nothing in transit. Difference 0.00. Needs is still 3,087.50:
+        paying a card is not spending (5.1).
+
+Check: starting money 7,287.50 | needs 3,087.50 | in transit after it leaves 100.00 | difference after it leaves 0.00 | bank side after it lands 7,287.50 | difference after it lands 0.00 | second card counted after it lands 162.50 | needs after it lands 3,087.50

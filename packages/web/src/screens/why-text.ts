@@ -1,12 +1,18 @@
 import { formatDollars } from '@budget-app/money';
 import type { WhyAccount, WhyLine } from '@budget-app/server/views';
+import { nameOf, withCardNames } from '../ui/card-names.js';
 
 // Rule 12.6 (QUESTIONS.md A57): each line of why the totals do not match, in
 // the rulebook's words. The server works out every line and its amount; this
 // only says them.
 
-const NAMES: Readonly<Record<WhyAccount, string>> = { checking: 'Checking', savings: 'Savings', 'everyday-card': 'Everyday card' };
-const WHOSE: Readonly<Record<WhyAccount, string>> = { checking: "Checking's", savings: "Savings'", 'everyday-card': "The everyday card's" };
+// Her second card, and in her setup each card as its bank names it (HB6).
+const NAMES: Readonly<Record<WhyAccount, string>> = withCardNames({ checking: 'Checking', savings: 'Savings', 'everyday-card': 'Everyday card', 'second-card': 'Second card' });
+const PLAIN_WHOSE: Readonly<Record<WhyAccount, string>> = { checking: "Checking's", savings: "Savings'", 'everyday-card': "The everyday card's", 'second-card': "The second card's" };
+const whose = (account: WhyAccount): string => {
+  const named = nameOf(account);
+  return named === null ? PLAIN_WHOSE[account] : `${named}'s`;
+};
 
 export function whyText(line: WhyLine): { readonly title: string; readonly detail?: string } {
   switch (line.kind) {
@@ -22,7 +28,7 @@ export function whyText(line: WhyLine): { readonly title: string; readonly detai
     case 'posted-and-pending':
       return { title: itemTitle(line.account, line.description), detail: 'Posted, and Plaid still lists the pending one too.' };
     case 'balance-moved':
-      return { title: `${WHOSE[line.account]} ${line.balance === 'available' ? 'available balance' : 'balance'} went ${line.went} ${formatDollars(line.by)} with no transaction from the bank yet.` };
+      return { title: `${whose(line.account)} ${line.balance === 'available' ? 'available balance' : 'balance'} went ${line.went} ${formatDollars(line.by)} with no transaction from the bank yet.` };
     case 'rest':
       return { title: "The rest, which the bank's balances and transactions do not account for." };
     case 'no-match-kept':

@@ -116,7 +116,7 @@ function SettingsLoading() {
 
 // What is being changed in the sheet.
 type Editing =
-  | { readonly what: 'split' | 'reserve' | 'target' | 'low-alert' | 'reminders' | 'review-time' | 'time-zone' | 'quiet-hours' | 'not-read' | 'mismatch-wait' | 'permission-warn' | 'lock-amounts' | 'ask-paycheck' | 'leftover' | 'promo' | 'paycheck-rule' | 'pay-schedule' | 'mom-rule' | 'early-days' | 'closing-day-everyday' | 'closing-day-old' }
+  | { readonly what: 'split' | 'reserve' | 'target' | 'low-alert' | 'reminders' | 'review-time' | 'time-zone' | 'quiet-hours' | 'not-read' | 'mismatch-wait' | 'permission-warn' | 'lock-amounts' | 'ask-paycheck' | 'leftover' | 'promo' | 'paycheck-rule' | 'pay-schedule' | 'mom-rule' | 'early-days' | 'closing-day-everyday' | 'closing-day-old' | 'closing-day-second' }
   // A sorting rule: null to add one.
   | { readonly what: 'rule'; readonly rule: RuleRow | null };
 
@@ -271,7 +271,9 @@ function SettingsReady({ view, reload, onChanged }: { readonly view: Tracking; r
         )}
         {row('low-alert', 'Low-bucket alert', `${s.lowBucketAlertPercent}%`, 'Of what needs or wants started the pay period with')}
         {textRow('reminders', 'Card reminders', reminderText(s.cardReminderDaysBefore), 'Before each card is due')}
-        {textRow('closing-day-everyday', 'Everyday card: statement closing day', closingDayText(s.everydayCardClosingDay), 'Used only when the bank does not send the statement date')}
+        {textRow('closing-day-everyday', SETTING_NAMES.everydayCardClosingDay, closingDayText(s.everydayCardClosingDay), 'Used only when the bank does not send the statement date')}
+        {/* Her second card's own closing day (her rulebook, 9.8); only her setup has the setting. */}
+        {s.secondCardClosingDay !== undefined && textRow('closing-day-second', SETTING_NAMES.secondCardClosingDay, closingDayText(s.secondCardClosingDay), 'Used only when the bank does not send the statement date')}
         {s.oldCardClosingDay !== undefined && textRow('closing-day-old', 'Old card: statement closing day', closingDayText(s.oldCardClosingDay), 'Used only when the bank does not send the statement date')}
         {row('review-time', 'Daily review', timeText(s.dailyReviewTime), 'Only when something waits in Review')}
         {textRow('time-zone', 'Home time zone', zoneText(s.homeTimeZone), 'Today is the date here, and the daily review time is in it')}
@@ -568,6 +570,8 @@ function startFields(editing: Editing, s: SettingsValuesShown): Fields {
       return { day: s.everydayCardClosingDay === null ? '' : String(s.everydayCardClosingDay) };
     case 'closing-day-old':
       return { day: s.oldCardClosingDay === null || s.oldCardClosingDay === undefined ? '' : String(s.oldCardClosingDay) };
+    case 'closing-day-second':
+      return { day: s.secondCardClosingDay === null || s.secondCardClosingDay === undefined ? '' : String(s.secondCardClosingDay) };
     case 'rule':
       return editing.rule === null ? { kind: 'purchase', text: '', to: 'needs' } : { kind: editing.rule.for, text: editing.rule.contains, to: editing.rule.to };
   }
@@ -656,10 +660,11 @@ function readSettings(editing: Editing, f: Fields): Reading<Partial<Settings>> {
       return 'problem' in r ? r : { value: { earlyPaycheckDays: r.value[0] ?? 0 } };
     }
     case 'closing-day-everyday':
-    case 'closing-day-old': {
+    case 'closing-day-old':
+    case 'closing-day-second': {
       const r = wholes(['day']);
       if ('problem' in r) return r;
-      return { value: editing.what === 'closing-day-everyday' ? { everydayCardClosingDay: r.value[0] ?? 0 } : { oldCardClosingDay: r.value[0] ?? 0 } };
+      return { value: { [CLOSING_DAY_KEY[editing.what]]: r.value[0] ?? 0 } };
     }
     case 'rule':
       return { problem: 'not a setting' };
@@ -694,8 +699,19 @@ const TITLES: Readonly<Record<Editing['what'], string>> = {
   'early-days': 'Early paycheck check',
   'closing-day-everyday': 'Everyday card: statement closing day',
   'closing-day-old': 'Old card: statement closing day',
+  'closing-day-second': 'Second card: statement closing day',
   rule: 'Sorting rule',
 };
+
+// Which setting each card's closing day is.
+const CLOSING_DAY_KEY = { 'closing-day-everyday': 'everydayCardClosingDay', 'closing-day-old': 'oldCardClosingDay', 'closing-day-second': 'secondCardClosingDay' } as const;
+
+// A card's closing day is called by its name in her setup (HB6).
+function titleOf(what: Editing['what']): string {
+  if (what === 'closing-day-everyday') return SETTING_NAMES.everydayCardClosingDay;
+  if (what === 'closing-day-second') return SETTING_NAMES.secondCardClosingDay;
+  return TITLES[what];
+}
 
 // What is being sent: a settings change or a rule change, without its decision number.
 type Change = Omit<SettingsRequest, 'id'> | Omit<RuleRequest, 'id'>;
@@ -775,7 +791,7 @@ function SettingSheet({ editing, view, onClose, onDone }: { readonly editing: Ed
   const kind = (get('kind') || 'purchase') as RuleSpec['for'];
 
   return (
-    <BottomSheet open={editing !== null} title={asked !== null ? 'Are you sure?' : TITLES[e.what]} onClose={onClose} testId="settings-sheet">
+    <BottomSheet open={editing !== null} title={asked !== null ? 'Are you sure?' : titleOf(e.what)} onClose={onClose} testId="settings-sheet">
       {asked === null && (
         <>
           {problem !== null && (
@@ -799,8 +815,8 @@ function SettingSheet({ editing, view, onClose, onDone }: { readonly editing: Ed
               Clear the rule
             </Button>
           ) : null}
-          {((e.what === 'closing-day-everyday' && view.settings.everydayCardClosingDay !== null) || (e.what === 'closing-day-old' && view.settings.oldCardClosingDay !== null)) && (
-            <Button variant="secondary" wide disabled={sending} testId="sheet-clear" onClick={() => send({ settings: e.what === 'closing-day-everyday' ? { everydayCardClosingDay: null } : { oldCardClosingDay: null } })}>
+          {(e.what === 'closing-day-everyday' || e.what === 'closing-day-old' || e.what === 'closing-day-second') && (view.settings[CLOSING_DAY_KEY[e.what]] ?? null) !== null && (
+            <Button variant="secondary" wide disabled={sending} testId="sheet-clear" onClick={() => send({ settings: { [CLOSING_DAY_KEY[e.what as keyof typeof CLOSING_DAY_KEY]]: null } })}>
               Clear the day
             </Button>
           )}
@@ -993,6 +1009,7 @@ function SheetFields({ editing, get, set, view, kind }: { readonly editing: Edit
       return <TextField label="Days" kind="whole" value={get('days')} onChange={set('days')} testId="field-early-days" />;
     case 'closing-day-everyday':
     case 'closing-day-old':
+    case 'closing-day-second':
       return (
         <TextField
           label="Day of the month the statement closes"

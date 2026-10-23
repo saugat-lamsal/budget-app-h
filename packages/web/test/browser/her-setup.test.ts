@@ -120,14 +120,15 @@ describe.each(ENGINES)('Off in this setup: her setup, in %s', (_name, engine) =>
       expect(sheets.some((k) => k.includes('row-add-bank-rule'))).toBe(true);
       expect(sheets.some((k) => k.startsWith('/review'))).toBe(true);
       expect(sheets.some((k) => k.startsWith('/buckets'))).toBe(true);
-      // A bank rule is on one of her three accounts.
+      // A bank rule is on one of her four accounts.
       const bankRule = read[sheets.find((k) => k.includes('row-add-bank-rule')) ?? ''] ?? '';
       expect(bankRule).toContain('everyday card');
       expectNothingOff(read);
     });
   });
 
-  it('Off in this setup: before setup day, her setup asks for three accounts, and setup day says nothing about a mom reserve or an old card', async () => {
+  // PR 5: her four accounts, with her second card (her rulebook, 1.2).
+  it('Off in this setup: before setup day, her setup asks for four accounts with the second card, and setup day says nothing about a mom reserve or an old card', async () => {
     await served(await herLife(), async (page, base) => {
       const read: Record<string, string> = {};
       for (const step of SETUP_STEPS) {
@@ -137,14 +138,15 @@ describe.each(ENGINES)('Off in this setup: her setup, in %s', (_name, engine) =>
       Object.assign(read, await sheetsOn(page, base, '/setup/rules', 'main [data-testid="row-add-bank-rule"]'));
       await open(page, base, '/bank');
       read['/bank'] = await readOf(page, 'main');
-      // The accounts she picks, three of them.
+      // The accounts she picks, four of them: the second card, never the old card.
       const change = page.getByTestId('bank-change-picks');
       if ((await change.count()) > 0) await change.click();
       await page.getByTestId('bank-pick').waitFor();
       read['/bank picking'] = await readOf(page, 'main');
-      expect(read['/bank picking']).toContain('three');
-      expect(read['/bank picking']).not.toContain('four');
-      expect(await page.locator('[data-testid^="bank-pick-"][data-testid$="card"], [data-testid="bank-pick-checking"], [data-testid="bank-pick-savings"]').count()).toBe(3);
+      expect(read['/bank picking']).toContain('four');
+      expect(read['/bank picking']).not.toContain('three');
+      expect(read['/bank picking']).toContain('second card');
+      expect(await page.locator('[data-testid^="bank-pick-"][data-testid$="card"], [data-testid="bank-pick-checking"], [data-testid="bank-pick-savings"]').count()).toBe(4);
       expectNothingOff(read);
     });
   });

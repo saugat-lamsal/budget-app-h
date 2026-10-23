@@ -6,6 +6,7 @@ import { activityPath, pathOf, setupPath } from '../app/routes.js';
 import { Banner, BottomSheet, BucketTile, Button, Card, CountTile, LinkButton, ListRow, MadeUpPill, Money, PeriodRing, ScrollHero, Skeleton, StateMessage, StatusLabel, Tiles } from '../ui/blocks.js';
 import { asOfText, checkedAtText, longDate, shortDate } from '../ui/dates.js';
 import { Icon } from '../ui/Icon.js';
+import { cardNames, withCardNames } from '../ui/card-names.js';
 import { cardsOffText, dueText, onItsWayInText, paydayText, stillToSetText, waitingText } from './home-text.js';
 import { WhyList } from './why.js';
 
@@ -278,14 +279,16 @@ function TakeBackSheet({ item, open, onClose, onSeen }: { readonly item: TakeBac
 }
 
 // 12.3: bank side plus money in transit, minus app side.
-const ACCOUNT_WORDS = { checking: 'Checking', savings: 'Savings', 'everyday-card': 'Everyday card owes' } as const;
+// Her second card, and in her setup each card as its bank names it (HB6).
+const ACCOUNT_NAMES = withCardNames({ checking: 'Checking', savings: 'Savings', 'everyday-card': 'Everyday card', 'second-card': 'Second card' } as const);
+const accountWords = (account: BankDetail['accounts'][number]['account']): string => (account === 'checking' || account === 'savings' ? ACCOUNT_NAMES[account] : `${ACCOUNT_NAMES[account]} owes`);
 
 function CheckFigures({ check, detail, timeZone }: { readonly check: SelfCheck; readonly detail: BankDetail | null; readonly timeZone: string }) {
   return (
     <>
       <div className="card">
         <dl className="figures">
-          <dt>The bank: checking + savings − everyday card</dt>
+          <dt>The bank: checking + savings − {cardNames() === null ? 'everyday card' : 'both cards'}</dt>
           <dd>
             <Money cents={check.bankSide} testId="check-bank" />
           </dd>
@@ -315,19 +318,19 @@ function CheckFigures({ check, detail, timeZone }: { readonly check: SelfCheck; 
             <dl className="figures">
               {detail.accounts.map((a) => (
                 <Fragment key={a.account}>
-                  <dt>{ACCOUNT_WORDS[a.account]}, posted</dt>
+                  <dt>{accountWords(a.account)}, posted</dt>
                   <dd>
                     <Money cents={a.posted} testId={`check-${a.account}-posted`} />
                   </dd>
                   {a.available !== null && (
                     <>
-                      <dt>{ACCOUNT_WORDS[a.account]}, available</dt>
+                      <dt>{accountWords(a.account)}, available</dt>
                       <dd>
                         <Money cents={a.available} testId={`check-${a.account}-available`} />
                       </dd>
                     </>
                   )}
-                  <dt className="figures__total">{ACCOUNT_WORDS[a.account]}, counted</dt>
+                  <dt className="figures__total">{accountWords(a.account)}, counted</dt>
                   <dd className="figures__total">
                     <Money cents={a.counted} testId={`check-${a.account}-counted`} />
                   </dd>
@@ -355,7 +358,7 @@ function rowKey(item: Attention): string {
   return item.kind;
 }
 
-const CARD_NAMES = { 'everyday-card': 'Everyday card', 'old-card': 'Old card' } as const;
+const CARD_NAMES = withCardNames({ 'everyday-card': 'Everyday card', 'old-card': 'Old card', 'second-card': 'Second card' } as const);
 
 function AttentionRow({ item, onSavings, onTakeBack }: { readonly item: Attention; readonly onSavings: () => void; readonly onTakeBack: (item: TakeBack) => void }) {
   const testId = `attention-${rowKey(item)}`;
@@ -458,7 +461,7 @@ function AttentionRow({ item, onSavings, onTakeBack }: { readonly item: Attentio
           icon="card"
           title={`${CARD_NAMES[item.card]} ${dueText(item.daysLeft)}`}
           detail={
-            item.card === 'everyday-card' ? (
+            item.card !== 'old-card' ? (
               <>
                 {shortDate(item.dueDate)}. Statement <Money cents={item.statementBalance} />, minimum <Money cents={item.minimumPayment} />.
               </>

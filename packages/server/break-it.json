@@ -289,8 +289,8 @@
   {
     "section": "bank",
     "file": "packages/server/src/status.ts",
-    "find": "    if ((a.role !== 'everyday-card' && a.role !== 'old-card') || raw === undefined) return [];",
-    "replace": "    if (a.role !== 'everyday-card' || raw === undefined) return [];",
+    "find": "    if ((a.role !== 'everyday-card' && a.role !== 'old-card' && a.role !== 'second-card') || raw === undefined) return [];",
+    "replace": "    if ((a.role !== 'everyday-card' && a.role !== 'second-card') || raw === undefined) return [];",
     "why": "9.2 leave out the old card statement"
   },
   {
@@ -4069,8 +4069,8 @@
   {
     "section": "sync",
     "file": "packages/server/src/history/keeper.ts",
-    "find": "permissionEnds: connection?.permissionEnds ?? null, mismatchSince: this.mismatchSince() };",
-    "replace": "permissionEnds: null, mismatchSince: this.mismatchSince() };",
+    "find": "permissionEnds: connection?.permissionEnds ?? null, mismatchSince: this.mismatchSince(), cardNames: this.cardNames() };",
+    "replace": "permissionEnds: null, mismatchSince: this.mismatchSince(), cardNames: this.cardNames() };",
     "why": "[a45] 10.13 the alerts never see the date"
   },
   {
@@ -4880,9 +4880,9 @@
   },
   {
     "section": "bank",
-    "file": "packages/server/src/history/keeper.ts",
-    "find": "a.role === 'everyday-card' ? settings.everydayCardClosingDay : settings.oldCardClosingDay;",
-    "replace": "a.role === 'everyday-card' ? settings.oldCardClosingDay : settings.everydayCardClosingDay;",
+    "file": "packages/server/src/bank/statements.ts",
+    "find": "  return card === 'everyday-card' ? settings.everydayCardClosingDay : settings.oldCardClosingDay;",
+    "replace": "  return card === 'everyday-card' ? settings.oldCardClosingDay : settings.everydayCardClosingDay;",
     "why": "[a52] [a53] 9.8 each card read with the other card's closing day"
   },
   {
@@ -4930,8 +4930,8 @@
   {
     "section": "bank",
     "file": "packages/server/src/status.ts",
-    "find": "a.role === 'everyday-card' ? book.settings().everydayCardClosingDay : book.settings().oldCardClosingDay;",
-    "replace": "null;",
+    "find": "    const closingDay = book === null ? null : closingDayOf(a.role, book.settings());",
+    "replace": "    const closingDay = null;",
     "why": "[a52] [a53] 9.8 the status report reads no closing day"
   },
   {
@@ -5056,15 +5056,15 @@
   {
     "section": "bank",
     "file": "packages/server/src/bank/why.ts",
-    "find": "    const move = addCents(account === 'everyday-card' ? -counted : counted, subtractCents(after.items, before.items));",
+    "find": "    const move = addCents(isCard(account) ? -counted : counted, subtractCents(after.items, before.items));",
     "replace": "    const move = addCents(counted, subtractCents(after.items, before.items));",
     "why": "[layer1] 12.6 the card's move taken the same way as a bank account's"
   },
   {
     "section": "bank",
     "file": "packages/server/src/bank/why.ts",
-    "find": "    const move = addCents(account === 'everyday-card' ? -counted : counted, subtractCents(after.items, before.items));",
-    "replace": "    const move = account === 'everyday-card' ? -counted : counted;",
+    "find": "    const move = addCents(isCard(account) ? -counted : counted, subtractCents(after.items, before.items));",
+    "replace": "    const move = isCard(account) ? -counted : counted;",
     "why": "[layer1] 12.6 an account's own transactions left out of its move"
   },
   {
@@ -5140,15 +5140,15 @@
   {
     "section": "bank",
     "file": "packages/server/src/bank/why.ts",
-    "find": "    const up = account === 'everyday-card' ? move < 0 : move > 0;",
+    "find": "    const up = isCard(account) ? move < 0 : move > 0;",
     "replace": "    const up = move > 0;",
     "why": "[layer1] 12.6 a card's balance going up said as going down"
   },
   {
     "section": "bank",
     "file": "packages/server/src/bank/why.ts",
-    "find": "    const balance = account !== 'everyday-card' && after.available !== null ? 'available' : 'posted';",
-    "replace": "    const balance = after.available !== null || account === 'everyday-card' ? 'available' : 'posted';",
+    "find": "    const balance = !isCard(account) && after.available !== null ? 'available' : 'posted';",
+    "replace": "    const balance = after.available !== null || isCard(account) ? 'available' : 'posted';",
     "why": "[layer1] 12.6 the card said to have an available balance"
   },
   {
@@ -5196,8 +5196,8 @@
   {
     "section": "bank",
     "file": "packages/server/src/bank/balances.ts",
-    "find": "      counted: view.withPending[key],",
-    "replace": "      counted: view.posted[key],",
+    "find": "    counted,\n    items: view.items[account],\n  });",
+    "replace": "    counted: posted,\n    items: view.items[account],\n  });",
     "why": "[layer1] 12.6 a read keeps the posted balance as what the check counted"
   },
   {
@@ -6267,8 +6267,8 @@
   {
     "section": "settings",
     "file": "packages/server/src/history/keeper.ts",
-    "find": "return createAppServer(offTakenOut(() => this.#switches(), {",
-    "replace": "return createAppServer(offTakenOut(() => ({ momReserve: 'on', oldCard: 'on' }), {",
+    "find": "return createAppServer(cardsNamed(() => this.cardNames(), offTakenOut(() => this.#switches(), {",
+    "replace": "return createAppServer(cardsNamed(() => this.cardNames(), offTakenOut(() => ({ momReserve: 'on', oldCard: 'on', secondCard: 'off' }), {",
     "why": "[her-switches] Off in this setup: the server sends every view whole"
   },
   {
@@ -6337,15 +6337,15 @@
   {
     "section": "bank-rules",
     "file": "packages/server/src/bank-rules-desk.ts",
-    "find": "return rule.account === 'old-card' || (rule.means === 'transfer' && rule.other === 'old-card') ? 'This setup has no old card.' : null;",
-    "replace": "return rule.account === 'old-card' ? 'This setup has no old card.' : null;",
+    "find": "    return about('old-card') ? 'This setup has no old card.' : null;",
+    "replace": "    return rule.account === 'old-card' ? 'This setup has no old card.' : null;",
     "why": "[her-switches] Off in this setup: 5.6 a bank rule for a transfer with the old card"
   },
   {
     "section": "bank-rules",
     "file": "packages/server/src/bank-rules-desk.ts",
-    "find": "return rule.account === 'old-card' || (rule.means === 'transfer' && rule.other === 'old-card') ? 'This setup has no old card.' : null;",
-    "replace": "return rule.means === 'transfer' && rule.other === 'old-card' ? 'This setup has no old card.' : null;",
+    "find": "    return about('old-card') ? 'This setup has no old card.' : null;",
+    "replace": "    return rule.means === 'transfer' && rule.other === 'old-card' ? 'This setup has no old card.' : null;",
     "why": "[her-switches] Off in this setup: 5.6 a bank rule on the old card"
   },
   {

@@ -2389,8 +2389,8 @@
   {
     "section": "home",
     "file": "packages/web/src/screens/Settings.tsx",
-    "find": "editing.what === 'closing-day-everyday' ? { everydayCardClosingDay: r.value[0] ?? 0 } : { oldCardClosingDay: r.value[0] ?? 0 }",
-    "replace": "editing.what === 'closing-day-everyday' ? { oldCardClosingDay: r.value[0] ?? 0 } : { everydayCardClosingDay: r.value[0] ?? 0 }",
+    "find": "      return { value: { [CLOSING_DAY_KEY[editing.what]]: r.value[0] ?? 0 } };",
+    "replace": "      return { value: { [editing.what === 'closing-day-everyday' ? 'oldCardClosingDay' : 'everydayCardClosingDay']: r.value[0] ?? 0 } };",
     "why": "[a52] [a53] 9.8 each card's sheet sets the other card's closing day"
   },
   {
@@ -2403,8 +2403,8 @@
   {
     "section": "home",
     "file": "packages/web/src/screens/Settings.tsx",
-    "find": "e.what === 'closing-day-everyday' ? { everydayCardClosingDay: null } : { oldCardClosingDay: null }",
-    "replace": "e.what === 'closing-day-everyday' ? { oldCardClosingDay: null } : { everydayCardClosingDay: null }",
+    "find": "onClick={() => send({ settings: { [CLOSING_DAY_KEY[e.what as keyof typeof CLOSING_DAY_KEY]]: null } })}",
+    "replace": "onClick={() => send({ settings: { [e.what === 'closing-day-everyday' ? 'oldCardClosingDay' : 'everydayCardClosingDay']: null } })}",
     "why": "[a52] [a53] 9.8 Clear the day clears the other card's"
   },
   {
@@ -3348,8 +3348,8 @@
   {
     "section": "words",
     "file": "packages/web/src/screens/settings-text.ts",
-    "find": "return accounts['old-card'] === undefined ? three : `${three}; old card: ${accounts['old-card']}`;",
-    "replace": "return `${three}; old card: ${accounts['old-card'] ?? ''}`;",
+    "find": "  return accounts['old-card'] === undefined ? second : `${second}; old card: ${accounts['old-card']}`;",
+    "replace": "  return `${second}; old card: ${accounts['old-card'] ?? ''}`;",
     "why": "[her-switches] Off in this setup: 13.5 the change log names an old card"
   },
   {

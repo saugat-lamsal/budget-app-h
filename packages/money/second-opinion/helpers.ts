@@ -59,7 +59,7 @@ export interface LifeInput {
 }
 
 interface Pending {
-  readonly account: 'checking' | 'everyday-card' | 'old-card';
+  readonly account: 'checking' | 'everyday-card' | 'old-card' | 'second-card';
   readonly amount: number;
 }
 

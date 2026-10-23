@@ -1,5 +1,6 @@
 import type { Pot } from '@budget-app/money';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { rememberCardNames } from '../ui/card-names.js';
 import type {
   AlertsView,
   StatusView,
@@ -11,6 +12,7 @@ import type {
   BankRuleRequest,
   BankRuleResponse,
   BucketsShown as BucketsView,
+  CardNames,
   TrendsShown as TrendsView,
   ChoiceRequest,
   ChoiceResponse,
@@ -80,6 +82,8 @@ async function fetchView<T extends { readonly state: string }>(url: ViewUrl): Pr
   // "Off in this setup": a bucket this setup does not have is 'off'.
   const states = url === '/api/bank' ? ['none', 'connected'] : url === ACTIVITY_URL.momReserve ? ['tracking', 'not-set-up', 'off'] : ['tracking', 'not-set-up'];
   if (!states.includes(view.state)) throw new Error(`${url} sent something unexpected`);
+  // Her setup (HB6): each card as its bank names it, sent with the screens that name cards.
+  if ('cardNames' in view) rememberCardNames((view as { readonly cardNames?: CardNames }).cardNames);
   return view;
 }
 

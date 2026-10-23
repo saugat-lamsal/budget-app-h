@@ -10,7 +10,8 @@ after those numbers. Today the code does exactly what sections 0 to 42 say,
 for upstream's setup (one bank, the old card, the mom reserve), with the
 texts already moved here from section H in their places (PR 3: "Off in this
 setup" after section 1, section 2, 12.2, 40.2 and 40.4; PR 4: section 2,
-3.1, 10.15, 13.2 and section 51). The rest of her
+3.1, 10.15, 13.2 and section 51; PR 5: section 1, 1.2, 4.1, 4.8, 5.1, 9.1,
+9.3, 9.8, 12.1, 12.6 and 14.2). The rest of her
 setup is in section "H. Approved for her setup, not built yet" at the end:
 the texts he approved on Oct 23, 2026 (docs/her-plan.txt). A text there is not in
 force until the pull request named above it moves it into its place here,
@@ -57,12 +58,12 @@ sections from 60.
      number is still asked of the server.
 
 
-## 1. Accounts (all Bank of America, one connection)
+## 1. Accounts (two banks, two connections)
 
-- Checking (debit card)
-- Savings
-- Everyday card (the credit card you use normally)
-- Old card (the house card, about $3,000, no longer used)
+- Capital One: checking (debit card), savings, and the Capital One card.
+- American Express: the Amex card.
+
+Both cards are used day to day and work the same way.
 
 1.1  Connecting the bank. "Connect the bank" is offered only while there
      is no connection. It asks first: it uses 1 of the 10 connections Plaid
@@ -71,11 +72,12 @@ sections from 60.
      it, sealed, on the server only. There is only ever one connection: the
      app never makes a second, and never removes one.
 1.2  Which account is which. After connecting, before setup day, you say
-     which of the bank's accounts is checking, savings, the everyday card,
-     and the old card, each once. Nothing is read from the bank until all
-     four are picked. If one is missing, log in to the bank again to add it
-     (1.3). Once tracking starts they cannot change. An account that is none
-     of the four is never read.
+     which of the banks' accounts is checking, savings, the Capital One
+     card, and the Amex card, each once, from either connection. Nothing
+     is read from either bank until all four are picked. If one is
+     missing, log in to its bank again to add it (1.3). Once tracking
+     starts they cannot change. An account that is none of the four is
+     never read.
 1.3  Logging in to the bank again. When the bank needs it (10.5), when its
      permission is running out (10.13), or to add an account that is
      missing, Settings offers "Log in to the bank again". It keeps the same
@@ -188,8 +190,8 @@ offered anywhere.
 
 ## 4. Spending
 
-4.1  A purchase on the debit card or the everyday card comes out of a bucket
-     on the day of the purchase.
+4.1  A purchase on the debit card or on either card comes out of a
+     bucket on the day of the purchase.
 4.2  The bucket is picked by your rules. No matching rule means "unsorted".
      Spending goes to needs or wants only; to pay for something out of
      savings, move the money by hand (13.3).
@@ -223,7 +225,7 @@ offered anywhere.
      pending charge without posting it (a hold that falls off), it is
      removed and the money goes back to where it came from.
 4.7  Re-sorting a purchase updates the buckets right away.
-4.8  Fees and interest on the everyday card go to review. Suggested bucket:
+4.8  Fees and interest on either card go to review. Suggested bucket:
      needs.
 4.9  Money leaving savings that is not a transfer to one of your accounts
      (5.3, 5.6) or a payment to a person (7.4), such as a withdrawal or a
@@ -244,8 +246,8 @@ offered anywhere.
 
 ## 5. Transfers and card payments
 
-5.1  Checking to everyday card: not spending. The purchases were already
-     counted under 4.1.
+5.1  Checking or savings to either card: not spending. The purchases
+     were already counted under 4.1.
 5.2  Checking to old card: spending. It comes out of needs, on a "debt
      payoff" line. From savings, it waits in review and comes out of the
      savings bucket once you confirm it, or out of needs if you pick that
@@ -324,14 +326,12 @@ offered anywhere.
 
 ## 9. Credit card reminders
 
-9.1  Everyday card: reminders show the statement balance, the minimum, and
+9.1  Each card: reminders show the statement balance, the minimum, and
      the due date.
 9.2  Old card: reminders show the minimum and the due date.
-9.3  Everyday card: reminders continue until the payments the app sees
-     since the statement add up to the full statement balance. Paying less
-     usually means interest on the rest.
-     Old card: reminders stop once the payments the app sees since the
-     statement add up to at least the minimum.
+9.3  Each card: reminders continue until the payments the app sees
+     since the statement add up to the full statement balance. Paying
+     less usually means interest on the rest.
      A payment counts toward the statement it reached the card after; one
      landing on the statement date counts toward the one before (B28). It
      counts from the day it leaves checking or savings, even while still on
@@ -355,13 +355,13 @@ offered anywhere.
      is sent ("due in 4 days", not "due in 7 days").
 9.8  When the bank does not send a card's statement date, the statement
      date is the last day before the card's due date that falls on the
-     closing day set for that card (section 2); in a month too short for
-     that day, the month's last day. Until it is set, that card has no
-     reminders, no due line on Home, and no overdue alert, and Home and
-     Settings say so: "Card
-     reminders are off for the old card: the bank did not send its
-     statement date." The same when the bank sends a statement for a card
-     that the app cannot read.
+     closing day set for that card, each card with its own (section 2); in
+     a month too short for that day, the month's last day. Until it is
+     set, that card has no reminders, no due line on Home, and no overdue
+     alert, and Home and Settings say so, naming the card: "Card reminders
+     are off for the Amex card: the bank did not send its statement date."
+     The same when the bank sends a statement for a card that the app
+     cannot read.
 
 
 ## 10. Alerts
@@ -460,15 +460,15 @@ offered anywhere.
 
 ## 12. Daily self-check
 
-12.1  Bank side: checking + savings - everyday card. For checking and
-      savings, the balance the bank shows as available, with what is still
-      pending that the app counts only once it posts put back: money going
-      out added back (a transfer between your accounts, a payment to a
-      person, money leaving savings), and money coming in taken out (a
-      paycheck or other deposit, a refund, a transfer arriving). If the
-      bank gives no available balance, its posted balance less pending
-      charges. For the everyday card, what it owes, including pending
-      charges (they already count in the buckets under 4.6).
+12.1  Bank side: checking + savings - the Capital One card - the Amex
+      card. For checking and savings, the balance the bank shows as
+      available, with what is still pending that the app counts only once
+      it posts put back: money going out added back (a transfer between
+      your accounts, a payment to a person, money leaving savings), and
+      money coming in taken out (a paycheck or other deposit, a refund, a
+      transfer arriving). If the bank gives no available balance, its
+      posted balance less pending charges. For each card, what it owes, including pending charges
+      (they already count in the buckets under 4.6).
 12.2  App side: savings + needs + wants + held for others + unsorted
       money in - unsorted spending.
       Unsorted money in: deposits and refunds waiting in review
@@ -497,8 +497,8 @@ offered anywhere.
       balance moved, against what the bank's transactions in between
       account for. It names a cause only when it accounts for a move to
       the cent:
-      - On the everyday card, pending charges Plaid still lists, when the
-        card's balance went up by exactly them: "Posted at the bank, Plaid
+      - On each card, pending charges Plaid still lists, when the card's
+        balance went up by exactly them: "Posted at the bank, Plaid
         still says pending: counted twice for now." Money in still pending
         there (a refund) that the balance already took: "Posted at the
         bank, Plaid still says pending: counted once Plaid says it posted."
@@ -579,9 +579,9 @@ offered anywhere.
 ## 14. Setup day
 
 14.1  The app reads your current balances.
-14.2  You assign the starting money (checking + savings - everyday card
-      balance) across savings, needs, wants, mom reserve, and held for
-      others. Charges still pending that day are part of the starting
+14.2  You assign the starting money (checking + savings - both cards'
+      balances) across savings, needs, wants and held for others. Charges
+      still pending that day are part of the starting
       money. If one later posts at a different amount, is refunded, or is
       dropped, only the difference waits in review. Money on its way
       between your accounts that day is part of it too (12.5): setup day
@@ -1167,41 +1167,9 @@ change with the answer.
 
 ### PR 5. The second card
 
-  Section 1 becomes "1. Accounts (two banks, two connections)":
-  - Capital One: checking (debit card), savings, and the Capital One card.
-  - American Express: the Amex card.
-  Both cards are used day to day and work the same way.
-
-  1.2   Which account is which. After connecting, before setup day, you say
-        which of the banks' accounts is checking, savings, the Capital One
-        card, and the Amex card, each once, from either connection. Nothing
-        is read from either bank until all four are picked. If one is
-        missing, log in to its bank again to add it (1.3). Once tracking
-        starts they cannot change. An account that is none of the four is
-        never read.
-  4.1   A purchase on the debit card or on either card comes out of a
-        bucket on the day of the purchase.
-  4.8   Fees and interest on either card go to review. Suggested bucket:
-        needs.
-  5.1   Checking or savings to either card: not spending. The purchases
-        were already counted under 4.1.
-  9.1   Each card: reminders show the statement balance, the minimum, and
-        the due date.
-  9.3   Each card: reminders continue until the payments the app sees
-        since the statement add up to the full statement balance. Paying
-        less usually means interest on the rest. (The rest of 9.3 as now:
-        which statement a payment counts toward, B28, B47.)
-  9.8   As now, for each card, with each card's own closing day (section
-        2), and the words name the card: "Card reminders are off for the
-        Amex card: the bank did not send its statement date."
-  12.1  Bank side: checking + savings - the Capital One card - the Amex
-        card. For checking and savings, as now. For each card, what it
-        owes, including pending charges (they already count in the buckets
-        under 4.6).
-  12.6  As now, with lines for each card as for the everyday card.
-  14.2  You assign the starting money (checking + savings - both cards'
-        balances) across savings, needs, wants and held for others. (The
-        rest of 14.2 as now. PR 9 adds Wishlist.)
+  In place: section 1, 1.2, 4.1, 4.8, 5.1, 9.1, 9.3, 9.8, 12.1, 12.6 and
+  14.2. (Until PR 6, 1.1 is as it was: one connection, and all four
+  accounts are picked from it.)
 
 ### PR 6. Two bank connections
 

@@ -5,8 +5,10 @@ import { readFileSync } from 'node:fs';
 import { bankSide, parseDollars, type Cents } from '@budget-app/money';
 import { describe, expect, it } from 'vitest';
 import { ACCOUNT_IDS } from './fake-plaid.js';
-import { herLife, setUpHer } from './her-harness.js';
-import { choose, decision, noonInNewYork } from './keeper-harness.js';
+import { checkBankRules } from '../src/bank/reading.js';
+import { HER_START } from '../src/setup-start.js';
+import { HER_BANK_RULES, herLife, setUpHer } from './her-harness.js';
+import { choose, decision, lifeInAFile, noonInNewYork, type Life } from './keeper-harness.js';
 
 const text = readFileSync(new URL('../worked-examples-h.txt', import.meta.url), 'utf8');
 
@@ -77,7 +79,57 @@ const examples: Record<number, () => Promise<Record<string, Cents>>> = {
       life.done();
     }
   },
+  // PR 5: her second card.
+  2: async () => {
+    const life = await lifeInAFile({ herSetup: true, secondCard: 25_000, rules: checkBankRules([...HER_BANK_RULES, ...SECOND_CARD_RULES]), start: HER_START });
+    try {
+      life.h.fake.addPending({ id: 'cafe-1', account: ACCOUNT_IDS.second, amount: 1_250, date: '2026-10-01', description: 'MADE UP CAFE' });
+      await life.sync();
+      const view = life.keeper.setupView();
+      if (view.state !== 'not-set-up' || !view.ready) throw new Error('setup day is not ready');
+      const startingMoney = view.startingMoney;
+      setUpHer(life);
+      const needs = life.keeper.book()?.pots().needs ?? -1;
+      life.h.fake.postPending('cafe-1', { id: 'cafe-1-posted', date: '2026-10-05' });
+      life.h.fake.addPosted({ id: 'pay-out', account: ACCOUNT_IDS.checking, amount: 10_000, date: '2026-10-05', description: 'Online payment to CRD 5555' });
+      life.now = noonInNewYork('2026-10-05');
+      await life.sync();
+      const left = checkOf(life);
+      life.h.fake.addPosted({ id: 'pay-in', account: ACCOUNT_IDS.second, amount: -10_000, date: '2026-10-06', description: 'PAYMENT - THANK YOU' });
+      life.now = noonInNewYork('2026-10-06');
+      await life.sync();
+      const landed = checkOf(life);
+      return {
+        'starting money': startingMoney,
+        needs,
+        'in transit after it leaves': left.inTransit,
+        'difference after it leaves': left.difference,
+        'bank side after it lands': landed.bankSide,
+        'difference after it lands': landed.difference,
+        'second card counted after it lands': life.h.fake.posted(ACCOUNT_IDS.second),
+        'needs after it lands': life.keeper.book()?.pots().needs ?? -1,
+      };
+    } finally {
+      life.done();
+    }
+  },
 };
+
+const SECOND_CARD_RULES = checkBankRules([
+  { id: 'chk-pays-second', account: 'checking', contains: 'payment to CRD 5555', means: 'transfer', other: 'second-card' },
+  { id: 'second-paid', account: 'second-card', contains: 'PAYMENT - THANK YOU', means: 'transfer', other: 'checking' },
+]);
+
+// The self-check as Home shows it (12.3): safe to spend is shown only when it matches.
+function checkOf(life: Life): { readonly bankSide: Cents; readonly inTransit: Cents; readonly difference: Cents } {
+  const book = life.keeper.book();
+  const home = life.keeper.home();
+  if (book === null || home.state !== 'tracking') throw new Error('not tracking');
+  const posted = (account: string): Cents => life.h.fake.posted(account);
+  const check = book.selfCheck({ checking: posted(ACCOUNT_IDS.checking), savings: posted(ACCOUNT_IDS.savings), everydayCard: posted(ACCOUNT_IDS.everyday), secondCard: posted(ACCOUNT_IDS.second) });
+  if (home.safeToSpend.shown !== check.ok) throw new Error('Home and the self-check disagree');
+  return check;
+}
 
 describe('worked examples, her setup: the screens (worked-examples-h.txt)', () => {
   const all = readExamples();
