@@ -6,9 +6,16 @@ import { paydaysAfter } from './payday.js';
 
 // Rulebook section 9: what the card reminders say, and when. Sending them
 // to the phone is Phase 5; this only works out what is due on a given day.
+// Her rulebook, 9.1 and 9.3: her second card is reminded about exactly like
+// the everyday card, each card with its own statement.
+
+// The cards used day to day: the everyday card, and her second card.
+export type EverydayCard = 'everyday-card' | 'second-card';
+
+const isEverydayCard = (card: CardStatement['card']): card is EverydayCard => card === 'everyday-card' || card === 'second-card';
 
 export interface CardStatement {
-  readonly card: 'everyday-card' | 'old-card';
+  readonly card: EverydayCard | 'old-card';
   // The statement date. Payments after it count toward this statement.
   readonly closingDate: IsoDate;
   readonly dueDate: IsoDate;
@@ -28,7 +35,7 @@ export interface CardPayment {
 export type CardNotice =
   | {
       readonly kind: 'reminder';
-      readonly card: 'everyday-card';
+      readonly card: EverydayCard;
       readonly daysBefore: number;
       readonly dueDate: IsoDate;
       readonly statementBalance: Cents;
@@ -43,7 +50,7 @@ export type CardNotice =
     }
   | {
       readonly kind: 'overdue';
-      readonly card: 'everyday-card' | 'old-card';
+      readonly card: EverydayCard | 'old-card';
       readonly dueDate: IsoDate;
       readonly minimumPayment: Cents;
     };
@@ -62,7 +69,7 @@ export function cardNotices(today: IsoDate, statement: CardStatement, payments: 
   if (paid >= toPay) return [];
   if (!settings.cardReminderDaysBefore.includes(daysLeft)) return [];
   // 9.1 and 9.2: the everyday card shows its statement balance; the old card does not.
-  return card === 'everyday-card'
+  return isEverydayCard(card)
     ? [{ kind: 'reminder', card, daysBefore: daysLeft, dueDate, statementBalance, minimumPayment }]
     : [{ kind: 'reminder', card, daysBefore: daysLeft, dueDate, minimumPayment }];
 }
@@ -87,7 +94,7 @@ function paidAgainst(today: IsoDate, statement: CardStatement, payments: readonl
     const forThisStatement = landed === null || daysBetween(closingDate, landed) > 0;
     return forThisStatement && daysBetween(p.date, today) >= 0;
   });
-  return { paid: addCents(0, ...seen.map((p) => p.amount)), toPay: card === 'everyday-card' ? statementBalance : minimumPayment };
+  return { paid: addCents(0, ...seen.map((p) => p.amount)), toPay: isEverydayCard(card) ? statementBalance : minimumPayment };
 }
 
 // Rule 9.6 (QUESTIONS.md A17): what Home shows about a card payment. Due on
@@ -97,14 +104,14 @@ function paidAgainst(today: IsoDate, statement: CardStatement, payments: readonl
 export type CardDue =
   | {
       readonly kind: 'due';
-      readonly card: 'everyday-card';
+      readonly card: EverydayCard;
       readonly daysLeft: number;
       readonly dueDate: IsoDate;
       readonly statementBalance: Cents;
       readonly minimumPayment: Cents;
     }
   | { readonly kind: 'due'; readonly card: 'old-card'; readonly daysLeft: number; readonly dueDate: IsoDate; readonly minimumPayment: Cents }
-  | { readonly kind: 'overdue'; readonly card: 'everyday-card' | 'old-card'; readonly dueDate: IsoDate; readonly minimumPayment: Cents };
+  | { readonly kind: 'overdue'; readonly card: EverydayCard | 'old-card'; readonly dueDate: IsoDate; readonly minimumPayment: Cents };
 
 export function cardDue(today: IsoDate, statement: CardStatement, payments: readonly CardPayment[], settings: Settings): CardDue | null {
   const { card, dueDate, statementBalance, minimumPayment } = statement;
@@ -113,14 +120,14 @@ export function cardDue(today: IsoDate, statement: CardStatement, payments: read
   if (daysLeft < 0) return paid < minimumPayment ? { kind: 'overdue', card, dueDate, minimumPayment } : null;
   const firstReminder = Math.max(-1, ...settings.cardReminderDaysBefore);
   if (daysLeft > firstReminder || paid >= toPay) return null;
-  return card === 'everyday-card'
+  return isEverydayCard(card)
     ? { kind: 'due', card, daysLeft, dueDate, statementBalance, minimumPayment }
     : { kind: 'due', card, daysLeft, dueDate, minimumPayment };
 }
 
 function checkStatement(statement: CardStatement): void {
-  if (statement.card !== 'everyday-card' && statement.card !== 'old-card') {
-    throw new MoneyError('bad-statement', `reminders are for the everyday card or the old card, not ${String(statement.card)}`);
+  if (!isEverydayCard(statement.card) && statement.card !== 'old-card') {
+    throw new MoneyError('bad-statement', `reminders are for the everyday card, the second card or the old card, not ${String(statement.card)}`);
   }
   assertIsoDate(statement.closingDate, 'statement date');
   assertIsoDate(statement.dueDate, 'due date');

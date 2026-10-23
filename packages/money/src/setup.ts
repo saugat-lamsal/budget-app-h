@@ -5,7 +5,7 @@ import { MoneyError } from './errors.js';
 import type { SortingRule } from './rules.js';
 import { bankSide, withPendingCharges, type BankBalances } from './self-check.js';
 import type { Settings } from './settings.js';
-import type { Switches } from './switches.js';
+import { checkSwitches, refuseOffBalances, type Switches } from './switches.js';
 import { checkTransaction, type Purchase, type SavingsWithdrawal, type TransferArrived, type TransferSent } from './transactions.js';
 
 // Rulebook section 14: setup day.
@@ -38,9 +38,10 @@ export type SetupResult =
   // assigned: positive means some is left to assign.
   | { readonly ok: false; readonly startingMoney: Cents; readonly assigned: Cents; readonly difference: Cents };
 
-// 14.2: checking + savings - everyday card balance, with pending charges
-// included (the same bank side as the self-check, 12.1), allowing for
-// money in transit between those accounts (12.5, inTransitEffect).
+// 14.2: checking + savings - everyday card balance (her rulebook: - both
+// cards' balances), with pending charges included (the same bank side as
+// the self-check, 12.1), allowing for money in transit between those
+// accounts (12.5, inTransitEffect).
 export function startingMoney(
   posted: BankBalances,
   pendingCharges: readonly (Purchase | SavingsWithdrawal)[],
@@ -88,6 +89,9 @@ export function checkAssignment(money: Cents, assignment: StartingPots): { reado
 // setup day are already in the starting money, so the book counts them as
 // spent at setup (QUESTIONS.md A10).
 export function startTracking(input: SetupInput): SetupResult {
+  // Her rulebook, 14.2: the second card's balance is part of the starting
+  // money only in a setup that has one.
+  refuseOffBalances(checkSwitches(input.switches), input.bankBalances);
   const ids = new Set<string>();
   const inTransit = input.transfersInTransit ?? [];
   for (const transfer of inTransit) {

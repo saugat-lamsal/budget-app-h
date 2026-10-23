@@ -3,9 +3,9 @@
 // in worked-examples.test.ts, so the file checked by hand and the test can
 // never drift apart.
 import { describe, expect, it } from 'vitest';
-import { HER_SETTINGS, HER_SWITCHES, changeSettings, openBook, parseDollars, type Book, type Cents } from '../src/index.js';
+import { HER_SETTINGS, HER_SWITCHES, bankSide, cardNotices, changeSettings, daysBetween, openBook, parseDollars, startTracking, withPendingCharges, type Book, type CardStatement, type Cents, type IsoDate } from '../src/index.js';
 import text from '../worked-examples-h.txt?raw';
-import { LAST_PAYCHECK, PAYROLL, START_DATE, ZERO_POTS, deposit, paycheck, purchase } from './helpers.js';
+import { LAST_PAYCHECK, PAYROLL, START_DATE, ZERO_POTS, arrived, deposit, paycheck, purchase, sent, transfer } from './helpers.js';
 
 interface Example {
   number: number;
@@ -29,6 +29,8 @@ function readExamples(): Example[] {
   });
 }
 
+const HER = changeSettings(HER_SETTINGS, { paycheckRule: { contains: PAYROLL } });
+
 // Her setup: no mom reserve and no old card, her starting settings, and the
 // paycheck rule set.
 function herBook(pots: Partial<Record<keyof typeof ZERO_POTS, Cents>> = {}): Book {
@@ -37,7 +39,7 @@ function herBook(pots: Partial<Record<keyof typeof ZERO_POTS, Cents>> = {}): Boo
     lastPaycheckDate: LAST_PAYCHECK,
     oldCardDebt: 0,
     pots: { ...ZERO_POTS, ...pots },
-    settings: changeSettings(HER_SETTINGS, { paycheckRule: { contains: PAYROLL } }),
+    settings: HER,
     switches: HER_SWITCHES,
   });
 }
@@ -97,7 +99,83 @@ const examples: Record<number, () => Record<string, Cents>> = {
     book.sort('pay', { to: 'other-income' }, '2026-10-10');
     return buckets(book);
   },
+  // PR 5: her second card.
+  7: () => ({ 'bank side': bankSide(withPendingCharges(EXAMPLE_7_POSTED, EXAMPLE_7_PENDING)) }),
+  8: () => {
+    const onItsWay = sent('pay-amex', '2026-09-30', parseDollars('200.00'), 'checking', 'second-card');
+    const result = startTracking({
+      date: START_DATE,
+      bankBalances: EXAMPLE_7_POSTED,
+      pendingCharges: EXAMPLE_7_PENDING,
+      transfersInTransit: [onItsWay],
+      oldCardBalance: 0,
+      assignment: { savings: parseDollars('6,300.00'), needs: parseDollars('452.98'), wants: parseDollars('300.00'), momReserve: 0, heldForOthers: 0 },
+      lastPaycheckDate: LAST_PAYCHECK,
+      settings: HER,
+      switches: HER_SWITCHES,
+    });
+    if (!result.ok) throw new Error('setup day did not add up');
+    const book = result.book;
+    const atSetup = book.selfCheck(withPendingCharges(EXAMPLE_7_POSTED, EXAMPLE_7_PENDING));
+    book.receive(arrived('landed', '2026-10-02', parseDollars('200.00'), 'checking', 'second-card'));
+    const landed = book.selfCheck(withPendingCharges({ ...EXAMPLE_7_POSTED, secondCard: parseDollars('875.92') }, EXAMPLE_7_PENDING));
+    return {
+      'starting money': result.startingMoney,
+      'in transit on setup day': atSetup.inTransit,
+      'difference on setup day': atSetup.difference,
+      'in transit after it lands': landed.inTransit,
+      'difference after it lands': landed.difference,
+      needs: book.pots().needs,
+    };
+  },
+  9: () => {
+    const book = herBook({ savings: parseDollars('1,000.00'), needs: parseDollars('500.00'), wants: parseDollars('250.00') });
+    const bank = (checking: string, everyday: string, second: string) => ({ checking: parseDollars(checking), savings: parseDollars('1,000.00'), everydayCard: parseDollars(everyday), secondCard: parseDollars(second) });
+    book.receive(sent('to-everyday', '2026-10-05', parseDollars('300.00'), 'checking', 'everyday-card'));
+    book.receive(sent('to-second', '2026-10-05', parseDollars('300.00'), 'checking', 'second-card'));
+    const bothLeft = book.selfCheck(bank('800.00', '300.00', '350.00'));
+    book.receive(arrived('second-lands', '2026-10-06', parseDollars('300.00'), 'checking', 'second-card'));
+    const secondLanded = book.selfCheck(bank('800.00', '300.00', '50.00'));
+    book.receive(arrived('everyday-lands', '2026-10-07', parseDollars('300.00'), 'checking', 'everyday-card'));
+    const bothLanded = book.selfCheck(bank('800.00', '0.00', '50.00'));
+    if (bothLeft.difference !== 0) throw new Error('the check failed when both left');
+    return {
+      'in transit after both leave': bothLeft.inTransit,
+      'in transit after the second lands': secondLanded.inTransit,
+      'difference after the second lands': secondLanded.difference,
+      'in transit after both land': bothLanded.inTransit,
+      'difference after both land': bothLanded.difference,
+      needs: book.pots().needs,
+    };
+  },
+  10: () => {
+    const book = herBook({ savings: parseDollars('2,000.00') });
+    const statement: CardStatement = { card: 'second-card', closingDate: '2026-10-01', dueDate: '2026-10-26', statementBalance: parseDollars('812.40'), minimumPayment: parseDollars('35.00') };
+    const paidBy = (day: IsoDate): Cents => book.cardPayments('second-card').filter((p) => daysBetween(p.date, day) >= 0).reduce((sum, p) => sum + p.amount, 0);
+    const reminders = (day: IsoDate): Cents => cardNotices(day, statement, book.cardPayments('second-card'), HER).filter((n) => n.kind === 'reminder').length * 100;
+    book.receive(transfer('minimum', '2026-10-10', parseDollars('35.00'), 'checking', 'second-card'));
+    const first = { paid: paidBy('2026-10-19'), reminders: reminders('2026-10-19') };
+    book.receive(transfer('most', '2026-10-20', parseDollars('777.39'), 'checking', 'second-card'));
+    const second = { paid: paidBy('2026-10-24'), reminders: reminders('2026-10-24') };
+    book.receive(transfer('last-cent', '2026-10-24', parseDollars('0.01'), 'checking', 'second-card'));
+    return {
+      'paid by the first reminder': first.paid,
+      'reminders on the first reminder day': first.reminders,
+      'paid by the second reminder': second.paid,
+      'reminders on the second reminder day': second.reminders,
+      'still to pay on the second reminder day': statement.statementBalance - second.paid,
+      'reminders after the last cent': reminders('2026-10-24'),
+    };
+  },
 };
+
+// Example 7's bank: posted balances, and the charges still pending.
+const EXAMPLE_7_POSTED = { checking: parseDollars('2,140.55'), savings: parseDollars('6,300.00'), everydayCard: parseDollars('412.18'), secondCard: parseDollars('1,075.92') };
+const EXAMPLE_7_PENDING = [
+  purchase('debit', '2026-09-30', parseDollars('15.00'), 'MADE UP DINER', { account: 'checking', pending: true }),
+  purchase('everyday', '2026-09-30', parseDollars('23.40'), 'MADE UP GROCER', { account: 'everyday-card', pending: true }),
+  purchase('second', '2026-09-30', parseDollars('61.07'), 'MADE UP PHARMACY', { account: 'second-card', pending: true }),
+];
 
 describe('worked examples, her setup (worked-examples-h.txt)', () => {
   const all = readExamples();

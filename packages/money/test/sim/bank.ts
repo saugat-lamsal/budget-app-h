@@ -19,7 +19,7 @@ import {
   type TransferSent,
 } from '../../src/index.js';
 
-export type Card = 'everyday-card' | 'old-card';
+export type Card = 'everyday-card' | 'old-card' | 'second-card';
 export type ChargeAccount = 'checking' | Card;
 export type OwnAccount = 'checking' | 'savings';
 export type Destination = OwnAccount | Card;
@@ -30,6 +30,8 @@ export interface Posted {
   savings: Cents;
   everydayCard: Cents;
   oldCard: Cents;
+  // Her second card (her rulebook, section 1); none in upstream's lives.
+  secondCard?: Cents;
 }
 
 // The simulator's bank: its own record of every account, worked out with its
@@ -52,16 +54,18 @@ export class SimBank {
 
   // 12.1: the balances the self-check is given, posted plus pending charges.
   balances(): BankBalances {
-    let { checking, everydayCard } = this.posted;
+    let { checking, everydayCard, secondCard } = this.posted;
     for (const charge of this.#pending.values()) {
       if (charge.account === 'checking') checking -= charge.amount;
       if (charge.account === 'everyday-card') everydayCard += charge.amount;
+      if (charge.account === 'second-card') secondCard = (secondCard ?? 0) + charge.amount;
     }
-    return { checking, savings: this.posted.savings, everydayCard };
+    return { checking, savings: this.posted.savings, everydayCard, ...(secondCard === undefined ? {} : { secondCard }) };
   }
 
   postedBalances(): BankBalances {
-    return { checking: this.posted.checking, savings: this.posted.savings, everydayCard: this.posted.everydayCard };
+    const { checking, savings, everydayCard, secondCard } = this.posted;
+    return { checking, savings, everydayCard, ...(secondCard === undefined ? {} : { secondCard }) };
   }
 
   pendingCharges(): Purchase[] {
@@ -240,19 +244,20 @@ export class SimBank {
   // it. The minimum is 2% rounded up to the dollar, at least $35, and never
   // more than what is owed.
   closeStatement(card: Card, date: IsoDate): CardStatement {
-    const balance = card === 'everyday-card' ? this.posted.everydayCard : this.posted.oldCard;
+    const balance = card === 'everyday-card' ? this.posted.everydayCard : card === 'second-card' ? (this.posted.secondCard ?? 0) : this.posted.oldCard;
     return { card, closingDate: date, dueDate: addDays(date, 25), statementBalance: balance, minimumPayment: minimumFor(balance) };
   }
 
   // Changes a balance without telling anyone. Only the simulator's own tests
   // use it, to make sure a mismatch is caught and reported.
   changeWithoutTelling(account: keyof Posted, amount: Cents): void {
-    this.posted[account] += amount;
+    this.posted[account] = (this.posted[account] ?? 0) + amount;
   }
 
   #owe(account: ChargeAccount, amount: Cents): void {
     if (account === 'checking') this.posted.checking -= amount;
     else if (account === 'everyday-card') this.posted.everydayCard += amount;
+    else if (account === 'second-card') this.posted.secondCard = (this.posted.secondCard ?? 0) + amount;
     else this.posted.oldCard += amount;
   }
 

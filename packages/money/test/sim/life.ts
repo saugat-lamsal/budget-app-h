@@ -314,8 +314,26 @@ export const STAT_NAMES = [
 // the old card refused, and items in review checked to offer nothing about
 // them; and (PR 4) paychecks that waited for her yes, yeses on a later day,
 // "not a paycheck" first and her paycheck after all, and a yes to a newer
-// paycheck refused while an older one waited (51.2).
-export const HER_STAT_NAMES = ['offRefused', 'offersChecked', 'paychecksWaitedForYes', 'yesLate', 'notAPaycheckFirst', 'yesAfterNotAPaycheck', 'olderPaycheckFirst'] as const;
+// paycheck refused while an older one waited (51.2); and (PR 5) her second
+// card: purchases, fees and refunds on it, payments to it (in transit,
+// landing late), card payments from savings, and its reminders checked.
+export const HER_STAT_NAMES = [
+  'offRefused',
+  'offersChecked',
+  'paychecksWaitedForYes',
+  'yesLate',
+  'notAPaycheckFirst',
+  'yesAfterNotAPaycheck',
+  'olderPaycheckFirst',
+  'secondCardPurchases',
+  'secondCardRefunds',
+  'secondCardFees',
+  'secondCardPayments',
+  'secondCardPaymentsInTransit',
+  'cardPaymentsFromSavings',
+  'secondCardRemindersChecked',
+  'secondCardAtSetup',
+] as const;
 // What a life shaped like hers never has.
 export const OFF_IN_HER_LIFE: readonly (typeof STAT_NAMES)[number][] = [
   'momPayments',
@@ -506,7 +524,7 @@ class Life {
   // Recent lines for a failure report.
   readonly #recent: string[] = [];
   readonly #statements: CardStatement[] = [];
-  readonly #cardPayments: Record<Card, CardPaymentSeen[]> = { 'everyday-card': [], 'old-card': [] };
+  readonly #cardPayments: Record<Card, CardPaymentSeen[]> = { 'everyday-card': [], 'old-card': [], 'second-card': [] };
   // The leftover questions: when the person will answer each one, and how.
   readonly #leftoverPlans = new Map<string, { readonly on: IsoDate | null; readonly answer: LeftoverAnswer }>();
   // What each leftover question asked at payday, and what spending made
@@ -563,7 +581,7 @@ class Life {
     const r = this.#random;
     if (options.plan !== undefined) {
       const plan = options.plan;
-      this.#person = { pay: plan.pay, rent: 0, closingDay: { 'everyday-card': 0, 'old-card': 0 }, roommate: false, momTimesPerMonth: 0, alwaysForMom: false };
+      this.#person = { pay: plan.pay, rent: 0, closingDay: { 'everyday-card': 0, 'old-card': 0, 'second-card': 0 }, roommate: false, momTimesPerMonth: 0, alwaysForMom: false };
       this.#start = plan.start;
       this.#date = plan.start;
       this.#lastPaycheckDate = plan.lastPaycheck;
@@ -593,7 +611,7 @@ class Life {
       // 14.2: savings and the mom reserve as planned, and the rest 60 to 40
       // between needs and wants, as a person lives it.
       const balances = this.#bank.balances();
-      const startingMoney = balances.checking + balances.savings - balances.everydayCard + this.#bank.inTransit();
+      const startingMoney = balances.checking + balances.savings - balances.everydayCard - (balances.secondCard ?? 0) + this.#bank.inTransit();
       const savings = balances.savings - plan.momReserve;
       const rest = startingMoney - savings - plan.momReserve;
       const needs = rest > 0 ? share(rest, 60) : rest;
@@ -615,8 +633,9 @@ class Life {
       this.#person = {
         pay: r.int(260_000, 480_000),
         rent: r.int(90_000, 180_000),
-        // Her life has no old card, so its statement never closes (day 0).
-        closingDay: { 'everyday-card': r.int(1, 28), 'old-card': this.#her ? 0 : r.int(1, 28) },
+        // Her life has no old card, so its statement never closes (day 0);
+        // upstream's has no second card.
+        closingDay: { 'everyday-card': r.int(1, 28), 'old-card': this.#her ? 0 : r.int(1, 28), 'second-card': this.#her ? r.int(1, 28) : 0 },
         roommate: r.chance(1, 2),
         momTimesPerMonth: this.#her ? 0 : r.int(1, 3),
         alwaysForMom: this.#her ? false : r.chance(1, 2),
@@ -635,12 +654,14 @@ class Life {
         savings: r.int(200_000, 2_000_000),
         everydayCard: r.int(0, 250_000),
         oldCard: this.#her ? 0 : r.int(250_000, 350_000),
+        ...(this.#her ? { secondCard: r.int(0, 250_000) } : {}),
       };
       this.#bank = new SimBank(this.#startPosted);
       for (let i = r.int(0, 3); i > 0; i--) {
         const store = r.pick(STORES.filter((s) => s.how !== 'posted'));
-        const account = r.chance(store.debitOutOf10, 10) ? 'checking' : 'everyday-card';
+        const account = r.chance(store.debitOutOf10, 10) ? 'checking' : this.#card();
         const charge = this.#bank.authorize(addDays(this.#start, -r.int(0, 2)), account, r.int(store.min, store.max), store.name);
+        if (account === 'second-card') this.#stats.secondCardAtSetup++;
         this.#standing.set(charge.id, 'setup');
         this.#intents.set(charge.id, { type: 'store', sorting: store.sorting, store: store.name });
         this.#stats.pendingAtSetup++;
@@ -684,9 +705,22 @@ class Life {
           seen.landed = this.#date;
         });
       }
+      // Her second card: a payment to it on its way on setup day, from
+      // checking or savings (12.5, B48).
+      if (this.#her && r.chance(1, 4)) {
+        const left = this.#bank.send(addDays(this.#start, -1), r.chance(1, 4) ? 'savings' : 'checking', 'second-card', r.int(5_000, 60_000));
+        this.#stats.inTransitAtSetup++;
+        this.#stats.secondCardAtSetup++;
+        const seen: CardPaymentSeen = { left: left.date, landed: null, amount: left.amount };
+        this.#cardPayments['second-card'].push(seen);
+        this.#laterOn(addDays(this.#start, r.int(1, 2)), () => {
+          this.#ownTransfer(() => this.#bank.land(this.#date, left, r.chance(1, 2)));
+          seen.landed = this.#date;
+        });
+      }
       // 14.2: the person assigns the starting money, worked out here on its own.
       const balances = this.#bank.balances();
-      const startingMoney = balances.checking + balances.savings - balances.everydayCard + this.#bank.inTransit();
+      const startingMoney = balances.checking + balances.savings - balances.everydayCard - (balances.secondCard ?? 0) + this.#bank.inTransit();
       const momReserve = this.#her ? 0 : Math.min(r.int(0, 300_000), balances.savings);
       const savings = balances.savings - momReserve;
       const rest = startingMoney - savings - momReserve;
@@ -836,10 +870,10 @@ class Life {
     if (dayOfMonth === 1) events.push(() => this.#payPerson(this.#person.rent, 'MADE UP LANDLORD', 'needs', r.chance(1, 12) ? 'savings' : 'checking'));
     if (dayOfMonth === 5) events.push(() => this.#bill('MADE UP STREAMING', 1_599, 'everyday-card'));
     if (dayOfMonth === 12) events.push(() => this.#bill('MADE UP UTILITY', r.int(6_000, 20_000), 'checking'));
-    if (dayOfMonth === 18) events.push(() => this.#bill('MADE UP PHONE', r.int(4_500, 9_000), 'everyday-card'));
+    if (dayOfMonth === 18) events.push(() => this.#bill('MADE UP PHONE', r.int(4_500, 9_000), this.#her ? 'second-card' : 'everyday-card'));
     if (dayOfMonth === 15 && this.#person.roommate) events.push(() => this.#deposit('checking', r.int(4_000, 12_000), 'ZELLE FROM MADE UP ROOMMATE', null));
     if (dayOfMonth === 28) events.push(() => this.#deposit('savings', r.int(50, 1_500), 'MADE UP BANK INTEREST PAID', null));
-    for (const card of ['everyday-card', 'old-card'] as const) {
+    for (const card of ['everyday-card', 'old-card', 'second-card'] as const) {
       if (dayOfMonth === this.#person.closingDay[card]) events.push(() => this.#closeStatement(card));
     }
     if (r.chance(1, 25)) events.push(() => this.#payForFriend());
@@ -1061,7 +1095,7 @@ class Life {
 
   #shop(store: Store): void {
     const r = this.#random;
-    const account: ChargeAccount = r.chance(store.debitOutOf10, 10) ? 'checking' : 'everyday-card';
+    const account: ChargeAccount = r.chance(store.debitOutOf10, 10) ? 'checking' : this.#card();
     const amount = r.int(store.min, store.max);
     this.#stats.purchases++;
     if (store.how === 'posted' || r.chance(1, 20)) {
@@ -1110,9 +1144,17 @@ class Life {
 
   // 4.1 to 4.3: a purchase comes out of the bucket its first matching rule
   // picks, on the day of the purchase; with no rule it waits in review.
+  // The card a purchase goes on: the everyday card, or in her life either of
+  // her two cards, half and half (her rulebook, section 1). Upstream's life
+  // draws nothing here, so it lives exactly as it did.
+  #card(): 'everyday-card' | 'second-card' {
+    return this.#her && this.#random.chance(1, 2) ? 'second-card' : 'everyday-card';
+  }
+
   #purchase(make: () => Purchase, store: Store | null): string {
     const before = this.#book.pots();
     const txn = make();
+    if (txn.account === 'second-card') this.#stats.secondCardPurchases++;
     if (store) this.#intents.set(txn.id, { type: 'store', sorting: store.sorting, store: store.name });
     this.#receive(txn);
     const rule = this.#ruleFor('purchase', txn.description);
@@ -1192,6 +1234,7 @@ class Life {
       const standing = this.#standing.get(first);
       const before = this.#book.pots();
       const txn = this.#bank.refund(this.#date, account, back, `${store.name} REFUND`, linked ? purchaseId : undefined);
+      if (account === 'second-card') this.#stats.secondCardRefunds++;
       this.#intents.set(txn.id, { type: 'refund', bucket });
       const outcome = this.#receive(txn);
       if (!linked) {
@@ -1402,7 +1445,7 @@ class Life {
     const r = this.#random;
     const recent = this.#sent
       .slice(-60)
-      .filter((t): t is Purchase => t.kind === 'purchase' && !t.pending && (t.account === 'checking' || t.account === 'everyday-card') && STORES.some((s) => s.name === t.description));
+      .filter((t): t is Purchase => t.kind === 'purchase' && !t.pending && (t.account === 'checking' || t.account === 'everyday-card' || t.account === 'second-card') && STORES.some((s) => s.name === t.description));
     if (recent.length === 0) return;
     const first = r.pick(recent);
     const copy = this.#bank.chargeTwice(this.#date, first);
@@ -1511,7 +1554,7 @@ class Life {
   #closeStatement(card: Card): void {
     const r = this.#random;
     const last = this.#statements.filter((s) => s.card === card).at(-1);
-    if (last && card === 'everyday-card') {
+    if (last && card !== 'old-card') {
       const unpaid = last.statementBalance - this.#paidToward(last, last.dueDate);
       if (unpaid > 0) this.#cardCharge(card, 'interest', Math.max(1, share(unpaid, 2)));
     }
@@ -1529,28 +1572,31 @@ class Life {
     const before = (days: number): IsoDate => addDays(dueDate, -days);
     const after = (days: number): IsoDate => addDays(dueDate, days);
     const plan = r.int(1, 100);
-    if (card === 'everyday-card') {
+    if (card !== 'old-card') {
+      // Her life pays her cards from savings now and then (5.1); upstream's
+      // always from checking, and draws nothing for it.
+      const from: OwnAccount = this.#her && r.chance(1, 6) ? 'savings' : 'checking';
       if (plan <= 70) {
-        this.#planCardPayment(card, 'checking', balance, before(r.int(1, 8)));
+        this.#planCardPayment(card, from, balance, before(r.int(1, 8)));
       } else if (plan <= 78) {
-        this.#planCardPayment(card, 'checking', minimum, before(r.int(1, 8)));
+        this.#planCardPayment(card, from, minimum, before(r.int(1, 8)));
       } else if (plan <= 90) {
         const first = Math.max(1, share(balance, r.int(30, 70)));
         if (balance > first && first * 2 !== balance && r.chance(1, 3)) {
-          this.#laterOn(this.#notBeforeTomorrow(before(r.int(3, 8))), () => this.#payTwoAtOnce(card, first, balance - first));
+          this.#laterOn(this.#notBeforeTomorrow(before(r.int(3, 8))), () => this.#payTwoAtOnce(card, first, balance - first, from));
         } else {
-          this.#planCardPayment(card, 'checking', first, addDays(closingDate, r.int(3, 10)));
-          if (balance > first) this.#planCardPayment(card, 'checking', balance - first, before(r.int(1, 5)));
+          this.#planCardPayment(card, from, first, addDays(closingDate, r.int(3, 10)));
+          if (balance > first) this.#planCardPayment(card, from, balance - first, before(r.int(1, 5)));
         }
       } else if (plan <= 95 || minimum <= 1) {
         this.#stats.lateCardPayments++;
-        this.#planCardPayment(card, 'checking', balance, after(r.int(1, 5)));
+        this.#planCardPayment(card, from, balance, after(r.int(1, 5)));
       } else {
         // Less than the minimum before the due date, the rest after it (A6).
         const short = r.int(1, minimum - 1);
         this.#stats.lateCardPayments++;
-        this.#planCardPayment(card, 'checking', short, before(r.int(1, 5)));
-        this.#planCardPayment(card, 'checking', balance - short, after(r.int(1, 5)));
+        this.#planCardPayment(card, from, short, before(r.int(1, 5)));
+        this.#planCardPayment(card, from, balance - short, after(r.int(1, 5)));
       }
     } else {
       const amount = Math.min(balance, minimum + r.int(0, 40_000));
@@ -1571,6 +1617,13 @@ class Life {
     }
   }
 
+  #countCardPayment(card: Card, from: OwnAccount): void {
+    if (card === 'old-card') this.#stats.oldCardPayments++;
+    else this.#stats.everydayCardPayments++;
+    if (card === 'second-card') this.#stats.secondCardPayments++;
+    if (card !== 'old-card' && from === 'savings') this.#stats.cardPaymentsFromSavings++;
+  }
+
   #notBeforeTomorrow(on: IsoDate): IsoDate {
     return daysBetween(this.#date, on) < 1 ? addDays(this.#date, 1) : on;
   }
@@ -1585,8 +1638,7 @@ class Life {
   // it before checking does.
   #payCard(card: Card, from: OwnAccount, amount: Cents): void {
     const r = this.#random;
-    if (card === 'everyday-card') this.#stats.everydayCardPayments++;
-    else this.#stats.oldCardPayments++;
+    this.#countCardPayment(card, from);
     const seen: CardPaymentSeen = { left: null, landed: null, amount };
     this.#cardPayments[card].push(seen);
     const how = r.int(1, 100);
@@ -1596,6 +1648,7 @@ class Life {
       seen.landed = this.#date;
     } else if (how <= 92) {
       this.#stats.paymentsInTransit++;
+      if (card === 'second-card') this.#stats.secondCardPaymentsInTransit++;
       const left = this.#ownTransfer(() => this.#bank.send(this.#date, from, card, amount));
       seen.left = this.#date;
       this.#laterOn(addDays(this.#date, r.int(1, 3)), () => {
@@ -1616,14 +1669,15 @@ class Life {
   // Two payments of different amounts leave the same day and land out of
   // order, neither naming the other half, so the book has to pair each
   // landing by its amount (12.5, B45).
-  #payTwoAtOnce(card: Card, first: Cents, second: Cents): void {
-    this.#stats.everydayCardPayments += 2;
+  #payTwoAtOnce(card: Card, first: Cents, second: Cents, from: OwnAccount = 'checking'): void {
     this.#stats.paymentsInTransit += 2;
     this.#stats.paymentsLandedOutOfOrder++;
     const halves: { left: TransferSent; seen: CardPaymentSeen }[] = [first, second].map((amount) => {
+      this.#countCardPayment(card, from);
+      if (card === 'second-card') this.#stats.secondCardPaymentsInTransit++;
       const seen: CardPaymentSeen = { left: this.#date, landed: null, amount };
       this.#cardPayments[card].push(seen);
-      return { left: this.#ownTransfer(() => this.#bank.send(this.#date, 'checking', card, amount)), seen };
+      return { left: this.#ownTransfer(() => this.#bank.send(this.#date, from, card, amount)), seen };
     });
     halves.reverse().forEach(({ left, seen }, i) => {
       this.#laterOn(addDays(this.#date, i + 1), () => {
@@ -1659,13 +1713,15 @@ class Life {
     const { card, dueDate, statementBalance, minimumPayment } = statement;
     const daysLeft = daysBetween(this.#date, dueDate);
     const paid = this.#paidToward(statement, this.#date);
-    const owed = card === 'everyday-card' ? statementBalance : minimumPayment;
+    // Her second card: like the everyday card (her rulebook, 9.1 and 9.3).
+    const owed = card !== 'old-card' ? statementBalance : minimumPayment;
     const expected: CardNotice[] = [];
     if (daysLeft < 0 && paid < minimumPayment) expected.push({ kind: 'overdue', card, dueDate, minimumPayment });
     const remind = daysLeft >= 0 && this.#settings.cardReminderDaysBefore.includes(daysLeft) && owed > 0 && paid < owed;
-    if (remind && card === 'everyday-card') expected.push({ kind: 'reminder', card, daysBefore: daysLeft, dueDate, statementBalance, minimumPayment });
+    if (remind && card !== 'old-card') expected.push({ kind: 'reminder', card, daysBefore: daysLeft, dueDate, statementBalance, minimumPayment });
     if (remind && card === 'old-card') expected.push({ kind: 'reminder', card, daysBefore: daysLeft, dueDate, minimumPayment });
     this.#stats.remindersChecked++;
+    if (card === 'second-card') this.#stats.secondCardRemindersChecked++;
     const notices = cardNotices(this.#date, statement, this.#book.cardPayments(statement.card), this.#book.settings());
     if (!same(notices, expected)) {
       throw new CheckFailed(daysLeft < 0 ? '9.4 the overdue alert' : '9.1 to 9.3 card reminders', `${statement.card} closed ${statement.closingDate}, due ${statement.dueDate}, paid ${paid}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(notices)}`);
@@ -1675,7 +1731,7 @@ class Life {
       (n): ExpectedAlert =>
         n.kind === 'overdue'
           ? { kind: 'card-overdue', card, dueDate, minimumPayment }
-          : { kind: 'card-reminder', card, dueDate, daysBefore: n.daysBefore, minimumPayment, statementBalance: n.card === 'everyday-card' ? n.statementBalance : null },
+          : { kind: 'card-reminder', card, dueDate, daysBefore: n.daysBefore, minimumPayment, statementBalance: n.card !== 'old-card' ? n.statementBalance : null },
     );
   }
 
@@ -1690,6 +1746,7 @@ class Life {
   #cardCharge(card: Card, charge: 'fee' | 'interest', amount: Cents): void {
     if (charge === 'fee') this.#stats.cardFees++;
     else this.#stats.cardInterest++;
+    if (card === 'second-card') this.#stats.secondCardFees++;
     const before = this.#book.pots();
     const txn = this.#bank.cardCharge(this.#date, card, charge, amount);
     this.#receive(txn);
@@ -2510,8 +2567,7 @@ class Life {
         this.#deposit(event.account, event.amount, event.description, event.choice);
         return;
       case 'card-payment': {
-        if (event.card === 'everyday-card') this.#stats.everydayCardPayments++;
-        else this.#stats.oldCardPayments++;
+        this.#countCardPayment(event.card, event.from);
         this.#stats.paymentsInTransit++;
         const seen: CardPaymentSeen = { left: this.#date, landed: null, amount: event.amount };
         this.#cardPayments[event.card].push(seen);
@@ -2827,7 +2883,7 @@ class Life {
     if ((waiting > 0) !== (review !== undefined)) throw new CheckFailed('10.3 the daily review only when something waits', `${waiting} waiting`);
     if (review !== undefined && (review.waiting !== waiting || review.at !== this.#settings.dailyReviewTime)) throw new CheckFailed('10.3 the daily review', `${JSON.stringify(review)} with ${waiting} waiting`);
     const expected: ExpectedAlert[] = waiting > 0 ? [{ kind: 'daily-review', waiting }] : [];
-    for (const card of ['everyday-card', 'old-card'] as const) {
+    for (const card of ['everyday-card', 'old-card', 'second-card'] as const) {
       const statement = this.#latestStatement[card];
       if (statement !== undefined) expected.push(...this.#cardAlerts(statement));
     }

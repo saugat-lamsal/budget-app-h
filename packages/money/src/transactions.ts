@@ -1,4 +1,4 @@
-import { ACCOUNTS, type AccountId } from './accounts.js';
+import { ALL_ACCOUNTS, type AccountId } from './accounts.js';
 import { assertPositiveCents, type Cents } from './cents.js';
 import { assertIsoDate, type IsoDate } from './dates.js';
 import { MoneyError } from './errors.js';
@@ -16,14 +16,14 @@ export interface Deposit {
   readonly description: string;
 }
 
-// A purchase on the debit card (checking), the everyday card, or the old
-// card. A pending purchase is later replaced by its posted version, which
+// A purchase on the debit card (checking), the everyday card, the old
+// card, or her second card. A pending purchase is later replaced by its posted version, which
 // the bank sends with a new id and pendingId pointing at the pending one
 // (rule 4.6).
 export interface Purchase {
   readonly kind: 'purchase';
   readonly id: string;
-  readonly account: 'checking' | 'everyday-card' | 'old-card';
+  readonly account: 'checking' | 'everyday-card' | 'old-card' | 'second-card';
   readonly date: IsoDate;
   readonly amount: Cents;
   readonly description: string;
@@ -51,7 +51,7 @@ export interface SavingsWithdrawal {
 export interface Refund {
   readonly kind: 'refund';
   readonly id: string;
-  readonly account: 'checking' | 'everyday-card' | 'old-card';
+  readonly account: 'checking' | 'everyday-card' | 'old-card' | 'second-card';
   readonly date: IsoDate;
   readonly amount: Cents;
   readonly description: string;
@@ -62,7 +62,7 @@ export interface Refund {
 export interface CardCharge {
   readonly kind: 'card-charge';
   readonly id: string;
-  readonly account: 'everyday-card' | 'old-card';
+  readonly account: 'everyday-card' | 'old-card' | 'second-card';
   readonly date: IsoDate;
   readonly amount: Cents;
   readonly description: string;
@@ -175,10 +175,10 @@ const ABOUT_ANOTHER: readonly string[] = ['pending-dropped', 'pending-changed', 
 
 const ACCOUNTS_FOR: Record<Exclude<BankTransaction['kind'], BetweenAccounts | AboutAnother>, readonly string[]> = {
   deposit: ['checking', 'savings'],
-  purchase: ['checking', 'everyday-card', 'old-card'],
+  purchase: ['checking', 'everyday-card', 'old-card', 'second-card'],
   'savings-withdrawal': ['savings'],
-  refund: ['checking', 'everyday-card', 'old-card'],
-  'card-charge': ['everyday-card', 'old-card'],
+  refund: ['checking', 'everyday-card', 'old-card', 'second-card'],
+  'card-charge': ['everyday-card', 'old-card', 'second-card'],
   'payment-to-person': ['checking', 'savings'],
 };
 
@@ -202,7 +202,7 @@ export function checkTransaction(txn: BankTransaction): void {
   }
   if (txn.kind === 'transfer' || txn.kind === 'transfer-sent' || txn.kind === 'transfer-arrived') {
     if (txn.from !== 'checking' && txn.from !== 'savings') bad('a transfer comes from checking or savings');
-    if (!ACCOUNTS.includes(txn.to) || txn.to === txn.from) bad('a transfer goes to one of your other accounts');
+    if (!ALL_ACCOUNTS.includes(txn.to) || txn.to === txn.from) bad('a transfer goes to one of your other accounts');
   } else if (!ACCOUNTS_FOR[txn.kind].includes(txn.account)) {
     bad(`a ${txn.kind} cannot be on ${String(txn.account)}`);
   }

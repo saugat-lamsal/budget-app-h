@@ -49,8 +49,9 @@ function sortOptions(detail: ReviewDetail | undefined): Extract<ReviewOptions, {
 
 describe('Off in this setup: her setup day starts with both switched off', () => {
   it('Off in this setup: her switches are both off, and upstream keeps both on', () => {
-    expect(HER_SWITCHES).toEqual({ momReserve: 'off', oldCard: 'off' });
-    expect(UPSTREAM_SWITCHES).toEqual({ momReserve: 'on', oldCard: 'on' });
+    // PR 5: her second card is on (her rulebook, section 1).
+    expect(HER_SWITCHES).toEqual({ momReserve: 'off', oldCard: 'off', secondCard: 'on' });
+    expect(UPSTREAM_SWITCHES).toEqual({ momReserve: 'on', oldCard: 'on', secondCard: 'off' });
     expect(Object.isFrozen(HER_SWITCHES)).toBe(true);
   });
 
@@ -65,6 +66,8 @@ describe('Off in this setup: her setup day starts with both switched off', () =>
       oldCardClosingDay: null,
       // PR 4: her paychecks wait for her yes (3.1).
       askBeforeSplittingPaycheck: true,
+      // PR 5: her second card's closing day, not set yet (9.8).
+      secondCardClosingDay: null,
     });
     // Upstream's defaults stay upstream's.
     expect(DEFAULT_SETTINGS.momReservePerPaycheck).toBe(150_000);
@@ -246,8 +249,9 @@ describe('Off in this setup: 5.2, 5.4, 5.5, 9.2, 9.5, 12.4 no old card', () => {
     const book = herBook();
     book.receive(purchase('p1', '2026-10-02', 5_000, 'MADE UP BILL PAY', { account: 'checking' }));
     const options = sortOptions(book.reviewDetails()[0]);
-    expect(options.transfer).toEqual(['savings', 'everyday-card']);
-    expect(Object.keys(options.transferOutcome).sort()).toEqual(['everyday-card', 'savings']);
+    // PR 5: her second card is a transfer too, as the everyday card is (5.6).
+    expect(options.transfer).toEqual(['savings', 'everyday-card', 'second-card']);
+    expect(Object.keys(options.transferOutcome).sort()).toEqual(['everyday-card', 'savings', 'second-card']);
     refusedOff(book, () => book.sort('p1', { transfer: 'old-card' }, '2026-10-02'));
     book.sort('p1', { to: 'needs' }, '2026-10-02');
     const again = book.resortDetail('p1');
@@ -369,7 +373,8 @@ function liveTwins(steps: Step[]): void {
   // Her settings but with mom on at $0.00: upstream's, with no reserve, and
   // (PR 4) asking before splitting a paycheck, as hers does.
   const twinSettings = changeSettings(DEFAULT_SETTINGS, { paycheckRule: { contains: PAYROLL }, momReservePerPaycheck: 0, momReserveCap: 0, askBeforeSplittingPaycheck: true });
-  const on = openBook({ date: START_DATE, lastPaycheckDate: LAST_PAYCHECK, oldCardDebt: 0, pots: POTS, settings: twinSettings });
+  // (PR 5) And with her second card on, as hers has: only mom differs.
+  const on = openBook({ date: START_DATE, lastPaycheckDate: LAST_PAYCHECK, oldCardDebt: 0, pots: POTS, settings: twinSettings, switches: { ...UPSTREAM_SWITCHES, secondCard: 'on' } });
   const off = herBook();
   const both = (run: (book: Book) => void): void => {
     run(on);
