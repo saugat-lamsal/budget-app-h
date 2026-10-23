@@ -225,4 +225,16 @@ or "Due" on Wishlist items and cards, never color alone.
 - PR 1, her docs: this file, her rulebook draft H1, her roadmap,
   docs/her-later.txt, docs/her-questions.txt, docs/her-merging.txt,
   .gitattributes. Docs only.
-- Waiting on: HA1 to HA5 in docs/her-questions.txt (plan Q2, Q4 to Q7).
+- PR 1 merged (Oct 23, 2026).
+- His answers to HA1 to HA5 (Oct 23): rulebook section 60,
+  docs/her-questions.txt. Section H's 14.2 for PR 5 no longer names
+  Wishlist (PR 9 adds it).
+- PR 2, hosting config (branch her-hosting), no account made: her app
+  budget-app-h-lbwr (https://budget-app-h-lbwr.fly.dev), volume
+  budget_h_data, ewr, PLAID_ENV sandbox, backups to folder budget-h in her
+  own R2 bucket. The deploy check reads the app from fly.toml (appOf in
+  scripts/deploy-check-lib.mjs); upstream's name was written in it.
+  test/hosting-config.test.ts holds her values and checks no hosting file
+  names upstream's app, volumes or folders. test/sandbox-only.test.ts: only
+  fly.toml may say production, now at most once. His steps:
+  docs/her-setup.txt.

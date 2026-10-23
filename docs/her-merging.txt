@@ -6,8 +6,9 @@ repo without losing her own files. Do it every time, the same way.
 
 BOTTOM LINE
 
-- Five files are always hers: CLAUDE.md, budget-app-rulebook.md,
-  budget-app-roadmap.md, fly.toml, litestream.yml.
+- Six files are always hers: CLAUDE.md, budget-app-rulebook.md,
+  budget-app-roadmap.md, fly.toml, litestream.yml, and
+  test/hosting-config.test.ts (the test of her fly.toml, from PR 2).
 - .gitattributes marks them "merge=ours". That line ONLY WORKS ON A
   MACHINE WHERE THIS WAS RUN ONCE, in that clone:
 
@@ -18,7 +19,16 @@ BOTTOM LINE
 - Merge on a machine with that config. Never use GitHub's web buttons
   ("Update branch", or a PR from upstream merged on GitHub): GitHub ignores
   local merge drivers.
-- After every merge, check that the five files are unchanged (below).
+- After every merge, check that the six files are unchanged (below).
+- Three more files differ from upstream by a few lines each and are NOT
+  kept whole, because they hold safety checks upstream may still fix:
+  - test/backup-only-here.test.ts and packages/server/test/
+    backup-litestream.test.ts: her backup folder, budget-h, where his say
+    budget-real.
+  - test/sandbox-only.test.ts: fly.toml MAY say production (at most once),
+    where his says it MUST. Hers says sandbox until connection day.
+  If upstream changes those lines, git shows a conflict. Keep her part and
+  take the rest of upstream's change.
 
 
 WHY THE CONFIG IS NEEDED
@@ -38,9 +48,8 @@ Tested on Oct 23, 2026, in a throwaway pair of repos:
 
 One limit: the driver only runs when both sides changed the file since the
 last merge. A file of hers that is still exactly upstream's takes
-upstream's changes as usual. That is the case for fly.toml and
-litestream.yml until PR 2 makes them hers, and it is harmless: until then
-they are upstream's anyway.
+upstream's changes as usual. From PR 2 on, all six differ from upstream's,
+so the driver always runs for them.
 
 
 ONCE PER MACHINE OR CLONE
@@ -73,17 +82,17 @@ EACH MERGE
        git switch -c merge-upstream-<date>
        git merge upstream/main
 
-4. Check that her five files did not change (empty output means they are
+4. Check that her six files did not change (empty output means they are
    still hers):
 
-       git diff HEAD^1 HEAD -- CLAUDE.md budget-app-rulebook.md budget-app-roadmap.md fly.toml litestream.yml
+       git diff HEAD^1 HEAD -- CLAUDE.md budget-app-rulebook.md budget-app-roadmap.md fly.toml litestream.yml test/hosting-config.test.ts
 
    If anything shows, the config was missing. Undo it with
    git reset --hard HEAD^1, run the config line, and merge again.
 
-5. Read upstream's own changes to those five files, which were not taken:
+5. Read upstream's own changes to those six files, which were not taken:
 
-       git diff <the last merged upstream commit> upstream/main -- CLAUDE.md budget-app-rulebook.md budget-app-roadmap.md fly.toml litestream.yml
+       git diff <the last merged upstream commit> upstream/main -- CLAUDE.md budget-app-rulebook.md budget-app-roadmap.md fly.toml litestream.yml test/hosting-config.test.ts
 
    A rule he changed, a testing rule, a pinned version in fly.toml: each
    may need the same change in hers. That is a change of its own, with

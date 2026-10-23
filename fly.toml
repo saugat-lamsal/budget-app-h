@@ -1,4 +1,8 @@
-# Fly.io (Phase 6): the app online, at https://budget-app-x7q2.fly.dev.
+# Fly.io, her own app (her plan, PR 2): online at
+# https://budget-app-h-lbwr.fly.dev. Never upstream's app: its name, volume,
+# backup folder and keys are all its own (test/hosting-config.test.ts checks
+# the name and the address are not upstream's). This file is always hers in
+# a merge from upstream (.gitattributes, docs/her-merging.txt).
 #
 # One small machine with one volume, in Secaucus, New Jersey (ewr), the
 # region nearest New York. Only ever one machine: the books are one SQLite
@@ -11,11 +15,12 @@
 #
 # If the name is taken when you create the app, pick another and change it in
 # two places here: app, and APP_ORIGIN (test/hosting-config.test.ts checks
-# they agree).
+# they agree). The deploy check reads the name from here
+# (scripts/deploy-check-lib.mjs).
 #
-# Secrets (keys) are never in this file: fly secrets set (docs/phase-6-checklist.txt).
+# Secrets (keys) are never in this file: fly secrets import (docs/her-setup.txt).
 
-app = "budget-app-x7q2"
+app = "budget-app-h-lbwr"
 primary_region = "ewr"
 # Fly sends this to stop the machine; the server and Litestream get up to a
 # minute to save the last answer and copy it to the backup.
@@ -28,18 +33,18 @@ swap_size_mb = 512
 
 [env]
   # The app's own address: the only one it answers to, and the one passkeys are made for.
-  APP_ORIGIN = "https://budget-app-x7q2.fly.dev"
+  APP_ORIGIN = "https://budget-app-h-lbwr.fly.dev"
   BUDGET_DB = "/data/budget.sqlite"
   PORT = "8080"
-  # Phase 7: Plaid's real bank. The lock lets it in only here, on the hosted
-  # server (APP_ORIGIN https), never under the tests; the key is a Fly secret.
-  PLAID_ENV = "production"
+  # Plaid's test bank until her connection day (her roadmap, Phase 3), when
+  # the switch PR makes it production, with her own Plaid team's key.
+  PLAID_ENV = "sandbox"
 
-# The volume: the books, and Litestream's own notes beside them. Phase 7: the
-# real bank's books on a volume of their own; the test bank's (budget_data)
-# is kept untouched, as the way back (docs/phase-7-connection-day.txt).
+# The volume: the books, and Litestream's own notes beside them. The test
+# bank's books are on budget_h_data. On connection day her real books get a
+# volume of their own (budget_h_real), and this one is kept as the way back.
 [mounts]
-  source = "budget_real"
+  source = "budget_h_data"
   destination = "/data"
   initial_size = "1gb"
 

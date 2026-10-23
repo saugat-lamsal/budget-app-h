@@ -20,7 +20,17 @@
 // 3. Whatever happened, any machine left from that image is removed.
 // The answer is yes only when the check said "The backup works."
 
-export const APP = 'budget-app-x7q2';
+import { readFileSync } from 'node:fs';
+
+// The app is the one fly.toml names (her plan, PR 2: never a name written
+// here, so a copy of the project checks its own app, not upstream's).
+export function appOf(flyToml) {
+  const name = /^app\s*=\s*"([a-z0-9-]+)"\s*$/m.exec(flyToml)?.[1];
+  if (name === undefined) throw new Error('fly.toml names no app (a line app = "...")');
+  return name;
+}
+
+export const APP = appOf(readFileSync(new URL('../fly.toml', import.meta.url), 'utf8'));
 export const CHECK_COMMAND = 'node /app/serve/restore-check.mjs';
 export const WORKS = 'The backup works.';
 export const CHECK_TRIES = 3;
