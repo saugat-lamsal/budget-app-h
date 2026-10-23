@@ -57,6 +57,9 @@ bank names (Capital One, American Express) may appear (his OK, Oct 23).
 - Never weaken, skip, or delete a failing test to make it pass. Fix the code
   or raise the question.
 - Any bug found later becomes a test first, then gets fixed.
+- Never turn on auto-merge for the money-math PRs (3 to 10 in
+  docs/her-plan.txt): open the PR, let CI run, and stop for his review. He
+  merges after he has checked it.
 
 
 ## Upstream, and keeping close to it
@@ -131,7 +134,12 @@ Test only what changed (upstream's rule, kept):
 - Never rerun a suite that already passed on the same code.
 - Long simulations only when the money math or the simulator changes, and
   then always (point 7).
-- A commit with only docs or notes gets [skip ci].
+- A commit with only docs or notes gets [skip ci], with one exception:
+  main needs the four CI checks (checks, chromium, webkit, image) before a
+  pull request can merge, and a pull request whose last commit says
+  [skip ci] never gets them. So [skip ci] goes only on a docs or notes
+  commit that is not the last commit of a pull request with code in it;
+  the last commit of such a pull request always runs CI.
 
 
 ## Technical decisions already made
@@ -238,3 +246,15 @@ or "Due" on Wishlist items and cards, never color alone.
   names upstream's app, volumes or folders. test/sandbox-only.test.ts: only
   fly.toml may say production, now at most once. His steps:
   docs/her-setup.txt.
+- PR 2 merged (Oct 23, 2026).
+- PR 3, no mom reserve and no old card (branch her-switches): switches,
+  not deletions. packages/money/src/switches.ts (both on is upstream's;
+  off is fixed on setup day, and anything about what is off is refused
+  with off-in-this-setup), her-setup.ts (HER_SWITCHES, HER_SETTINGS;
+  DEFAULT_SETTINGS unchanged). The server starts her setup with
+  BUDGET_SETUP=her (fly.toml; setup-start.ts), asks for three accounts,
+  and takes what is off out of each screen just before it is sent
+  (views/off.ts, http/off-options.ts); the web reads the ...Shown types.
+  Her simulated life: node scripts/simulate.mjs --profile her, and
+  packages/server/test/simulated-life-her.test.ts. Rulebook: "Off in this
+  setup" after section 1, section 2, 12.2, 40.2, 40.4.
