@@ -49,6 +49,7 @@ export {
   Book,
   MOVABLE_POTS,
   openBook,
+  type CardEntry,
   type ChangeLogEntry,
   type LeftoverAnswer,
   type MomMonth,
@@ -102,3 +103,5 @@ export { checkAssignment, inTransitEffect, startTracking, startingDebt, starting
 export { UPSTREAM_SWITCHES, checkSwitches, rolesFor, settingsWhenOff, type Switch, type Switches } from './switches.js';
 export { HER_SETTINGS, HER_SWITCHES } from './her-setup.js';
 export { OLDER_PAYCHECK_FIRST, type WaitingPaycheck } from './paycheck-ask.js';
+export { cardOwes, owedAtSetup, setAside, type CardSetAside, type SetAside } from './set-aside.js';
+export { cardStatementView, type BeforeSetupLine, type CarriedIn, type StatementBucket, type StatementInput, type StatementItem, type StatementPeriod, type StatementView } from './statement.js';

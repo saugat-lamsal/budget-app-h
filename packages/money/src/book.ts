@@ -2,7 +2,7 @@ import { ALL_ACCOUNTS, type AccountId } from './accounts.js';
 import { ACTIVITY_KINDS, foldLines, type ActivityKind, type ActivityRow, type ActivityWhat, type BucketActivity, type LedgerLine, type PeriodSummary } from './activity.js';
 import { bucketLevel, type Alert, type AlertInput } from './alerts.js';
 import { isSpendingBucket, type SplitBucket } from './buckets.js';
-import type { CardPayment } from './reminders.js';
+import type { CardPayment, EverydayCard } from './reminders.js';
 import { addCents, assertCents, assertPositiveCents, subtractCents, type Cents } from './cents.js';
 import { assertIsoDate, daysBetween, monthOf, type IsoDate } from './dates.js';
 import { MoneyError } from './errors.js';
@@ -316,6 +316,33 @@ export interface InTransit {
   readonly total: Cents;
   readonly items: readonly InTransitItem[];
 }
+
+// Her rulebook, 52.2 and 52.4 (PR 7+8): one thing the book holds on a card
+// used day to day, as it holds it now (Book.cardEntries). owes is what it
+// adds to what the card owes now: a charge above zero, a refund or a payment
+// that reached the card below. atSetup is the part of it already in the
+// card's balance on setup day. posted is null while it is still pending or
+// was dropped: it is on no statement.
+// takenBack: the bank took it back (4.10), and owed is what it added before.
+interface CardEntryBase {
+  readonly id: string;
+  // The bank's id and day for it as posted (the book's own; the bank's
+  // posted day can differ, statement.ts asks for it).
+  readonly posted: { readonly id: string; readonly date: IsoDate } | null;
+  // The day of the purchase (4.1), or the day it reached the card.
+  readonly date: IsoDate;
+  readonly description: string;
+  readonly owes: Cents;
+  readonly atSetup: Cents;
+  readonly takenBack: { readonly id: string; readonly date: IsoDate; readonly owed: Cents } | null;
+}
+
+export type CardEntry =
+  | (CardEntryBase & { readonly kind: 'charge'; readonly spendingKind: SpendingKind; readonly sortedTo: SpendingSort })
+  // A refund counted on the purchase it belongs to (refundOf), or money in
+  // on the card sorted on its own (4.5, 6.1).
+  | (CardEntryBase & { readonly kind: 'refund'; readonly refundOf: string | null; readonly sortedTo: 'unsorted' | DepositRuleChoice['to'] })
+  | (CardEntryBase & { readonly kind: 'payment' });
 
 // Rule 0.5: safe to spend only when the totals match the bank.
 export type CheckedSafeToSpend =
@@ -665,6 +692,8 @@ export class Book {
   readonly #changes = new Map<string, PendingChanged>();
   // Transactions the bank took back, by the id of the take-back (A14).
   readonly #takenBacks = new Map<string, TakenBack>();
+  // Halves of transfers given on setup day: already in the balances then (52.2).
+  readonly #setupLegs = new Set<string>();
   // Alerts that come once, when something happens (10.6), not yet given.
   readonly #notices: Alert[] = [];
   readonly #paychecks: PaycheckRecord[] = [];
@@ -734,6 +763,7 @@ export class Book {
     const partner = copy.kind === 'transfer-sent' ? this.#arrivalFor(copy) : this.#oldestUnpairedSent(copy);
     const travelling = copy.kind === 'transfer-sent' ? copy.amount : -copy.amount;
     this.#add({ kind: 'leg', id: copy.id, txn: copy, effect: {} }, copy.to === 'old-card' ? {} : { inTransit: travelling });
+    this.#setupLegs.add(copy.id);
     if (partner !== undefined) this.#pair(copy.kind === 'transfer-sent' ? copy.id : partner, copy.kind === 'transfer-sent' ? partner : copy.id);
   }
 
@@ -1027,6 +1057,41 @@ export class Book {
       }
     }
     return payments.sort((a, b) => daysBetween(b.date, a.date));
+  }
+
+  // Her rulebook, 52.2 and 52.4 (PR 7+8): everything the book holds on a card
+  // used day to day that changes what it owes, as it holds it now, in the
+  // order it came: purchases, fees and interest, refunds, and payments that
+  // reached it. A payment still on its way is not here (12.5). Only reads;
+  // set-aside.ts and statement.ts add it up.
+  cardEntries(card: EverydayCard): CardEntry[] {
+    if (card !== 'everyday-card' && card !== 'second-card') throw new MoneyError('bad-card', `not a card used day to day: ${String(card)}`);
+    if (card === 'second-card' && this.#switches.secondCard !== 'on') throw new MoneyError('off-in-this-setup', 'this setup has no second card');
+    const takeBacks = new Map<string, TakenBack>();
+    for (const t of this.#takenBacks.values()) takeBacks.set(this.#aliases.get(t.takenId) ?? t.takenId, t);
+    const takenBack = (entry: Entry, owed: Cents): CardEntry['takenBack'] => {
+      const t = takeBacks.get(entry.id);
+      return t === undefined ? null : { id: t.id, date: t.date, owed };
+    };
+    const entries: CardEntry[] = [];
+    for (const entry of this.#entries.values()) {
+      if (entry.kind === 'spend' && (entry.txn.kind === 'purchase' || entry.txn.kind === 'card-charge') && entry.txn.account === card) {
+        const shown = entry.postedTxn ?? entry.txn;
+        const posted = entry.pending || entry.dropped === true ? null : { id: shown.id, date: shown.date };
+        const base = { id: entry.id, posted, date: entry.txn.date, description: shown.description, owes: entry.amount, atSetup: entry.countedAtSetup };
+        entries.push({ ...base, kind: 'charge', spendingKind: entry.spendingKind, sortedTo: entry.sortedTo, takenBack: takenBack(entry, shown.amount) });
+      } else if ((entry.kind === 'refund' || entry.kind === 'money-in') && entry.txn.kind === 'refund' && entry.txn.account === card) {
+        const gone = this.#gone(entry);
+        const base = { id: entry.id, posted: { id: entry.txn.id, date: entry.txn.date }, date: entry.txn.date, description: entry.txn.description, owes: gone ? 0 : -entry.txn.amount, atSetup: 0 };
+        const sorted = entry.kind === 'refund' ? { refundOf: entry.of, sortedTo: 'unsorted' as const } : { refundOf: null, sortedTo: entry.sortedTo };
+        entries.push({ ...base, kind: 'refund', ...sorted, takenBack: takenBack(entry, -entry.txn.amount) });
+      } else if ((entry.kind === 'transfer' || entry.kind === 'leg') && (entry.txn.kind === 'transfer' || entry.txn.kind === 'transfer-arrived') && entry.txn.to === card) {
+        const owes = this.#gone(entry) ? 0 : -entry.txn.amount;
+        const base = { id: entry.id, posted: { id: entry.txn.id, date: entry.txn.date }, date: entry.txn.date, description: entry.txn.description, owes, atSetup: this.#setupLegs.has(entry.id) ? -entry.txn.amount : 0 };
+        entries.push({ ...base, kind: 'payment', takenBack: takenBack(entry, -entry.txn.amount) });
+      }
+    }
+    return entries;
   }
 
   othersMoney(): OthersMoney {
