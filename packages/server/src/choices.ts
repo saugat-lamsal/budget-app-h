@@ -19,7 +19,7 @@ import {
   type LeftoverChoice,
   type PaySchedule,
   type PickTo,
-  type Pot,
+  type AnyPot,
   type ResortDetail,
   type ReviewDetail,
   type ReviewOptions,
@@ -71,9 +71,11 @@ import type { BankRuleRequest, BankRuleSpec } from './views/bank-rules.js';
 // buckets by hand (13.3, 13.4, B103); a change to the settings (section 2,
 // 13.1); and adding, changing, or removing a sorting rule (13.2).
 
-const PICKS: readonly PickTo[] = ['paycheck', 'other-income', 'savings', 'needs', 'wants', 'momReserve', 'not-mine', 'mom'];
-const SPLIT_BUCKETS: readonly ChoicePart['bucket'][] = ['needs', 'wants', 'not-mine'];
-const BUCKET_WORDS: Readonly<Record<string, string>> = { needs: 'Needs', wants: 'Wants', 'not-mine': 'Not mine', savings: 'Savings', momReserve: 'Mom reserve', heldForOthers: 'Held for others' };
+// Her rulebook: Wishlist too (4.2, 4.4, 6.1, 13.3); the money math refuses it where the setup has none.
+const PICKS: readonly PickTo[] = ['paycheck', 'other-income', 'savings', 'needs', 'wants', 'wishlist', 'momReserve', 'not-mine', 'mom'];
+const SPLIT_BUCKETS: readonly ChoicePart['bucket'][] = ['needs', 'wants', 'wishlist', 'not-mine'];
+const BUCKET_WORDS: Readonly<Record<string, string>> = { needs: 'Needs', wants: 'Wants', wishlist: 'Wishlist', 'not-mine': 'Not mine', savings: 'Savings', momReserve: 'Mom reserve', heldForOthers: 'Held for others' };
+const POTS: readonly AnyPot[] = [...MOVABLE_POTS, 'wishlist'];
 
 const ID_FORMAT = /^[A-Za-z0-9_-]{8,64}$/;
 // An item's key as a screen saw it (item-key.ts).
@@ -262,10 +264,13 @@ function textRule(value: unknown): TextRule | null | undefined {
 // undefined. Whether the value makes sense (a split adding up to 100, a real
 // date) is the money math's to say, in words.
 const SETTING_READERS: { readonly [K in keyof Settings]: (value: unknown) => Settings[K] | undefined } = {
+  // Her rulebook, section 2: with Wishlist's share too, where the setup has it.
   split: (v) => {
-    if (!isRecord(v) || Object.keys(v).length !== 3 || !onlyKeys(v, ['savings', 'needs', 'wants'])) return undefined;
-    const { savings, needs, wants } = v;
-    return isWhole(savings) && isWhole(needs) && isWhole(wants) ? { savings, needs, wants } : undefined;
+    if (!isRecord(v) || ![3, 4].includes(Object.keys(v).length) || !onlyKeys(v, ['savings', 'needs', 'wants', 'wishlist'])) return undefined;
+    const { savings, needs, wants, wishlist } = v;
+    if (!(isWhole(savings) && isWhole(needs) && isWhole(wants))) return undefined;
+    if (wishlist === undefined) return { savings, needs, wants };
+    return isWhole(wishlist) ? { savings, needs, wants, wishlist } : undefined;
   },
   momReservePerPaycheck: whole,
   momReserveCap: whole,
@@ -387,8 +392,8 @@ function sortingRuleOf(id: string, spec: RuleSpec): SortingRule {
   }
 }
 
-function isPot(value: unknown): value is Pot {
-  return (MOVABLE_POTS as readonly unknown[]).includes(value);
+function isPot(value: unknown): value is AnyPot {
+  return (POTS as readonly unknown[]).includes(value);
 }
 
 function parseChoice(value: unknown): ChoiceOf | null {
@@ -806,6 +811,8 @@ function askingWhy(move: Moved, reasons: readonly ConfirmReason[]): string {
         return 'takes money out of Savings';
       case 'out-of-mom-reserve':
         return 'takes money out of the Mom reserve';
+      case 'out-of-wishlist':
+        return 'takes money out of Wishlist';
       case 'below-zero':
         return `would leave ${from} below zero, which is usually a typo`;
     }

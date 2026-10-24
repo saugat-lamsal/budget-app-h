@@ -1,4 +1,4 @@
-import { formatDollars, parseDollars, type Cents, type Pot } from '@budget-app/money';
+import { formatDollars, parseDollars, type Cents, type AnyPot } from '@budget-app/money';
 import type { HalfLine, SetupReadyShown as SetupReadyView, SetupResponse, SetupStep, SetupShown as SetupView, SuggestionLine } from '@budget-app/server/views';
 import { useRef, useState, type ReactNode } from 'react';
 import { newDecisionId, sendChoice, type Load, type Reload } from '../app/api.js';
@@ -20,7 +20,8 @@ import { ACCOUNT_NAMES, answerText, bankRuleText, effectLead, halfText, lookBack
 // math; the screen only shows it. His answers go to the server one at a time
 // (the same desk, with decision numbers); starting asks first.
 
-const POTS: readonly Pot[] = ['savings', 'needs', 'wants', 'momReserve', 'heldForOthers'];
+// Her rulebook, 14.2: Wishlist after wants, where the setup has it.
+const POTS: readonly AnyPot[] = ['savings', 'needs', 'wants', 'wishlist', 'momReserve', 'heldForOthers'];
 
 export function SetupScreen({ step, load, onRetry, onStarted }: { readonly step: SetupStepName; readonly load: Load<SetupView>; readonly onRetry: Reload; readonly onStarted: () => void }) {
   const index = SETUP_STEPS.indexOf(step);
@@ -536,7 +537,7 @@ function DateSheet({ view, sender, onClose }: { readonly view: SetupReadyView; r
 // Step 5, 14.2: the starting money handed out across the buckets. What is
 // left to assign comes from the server after every amount.
 function AssignStep({ view, sender }: { readonly view: SetupReadyView; readonly sender: Sender }) {
-  const [editing, setEditing] = useState<Pot | null>(null);
+  const [editing, setEditing] = useState<AnyPot | null>(null);
   return (
     <>
       <Hero label="Left to assign" sub={<LeftWords view={view} />} testId="setup-hero">
@@ -565,7 +566,7 @@ function AssignStep({ view, sender }: { readonly view: SetupReadyView; readonly 
 
 // The buckets the starting money goes to, in order, with what each has: the
 // mom reserve only when this setup has one ("Off in this setup").
-function potsOf(view: SetupReadyView): (readonly [Pot, Cents])[] {
+function potsOf(view: SetupReadyView): (readonly [AnyPot, Cents])[] {
   return POTS.flatMap((pot) => {
     const cents = view.assignment[pot];
     return cents === undefined ? [] : [[pot, cents] as const];
@@ -578,7 +579,7 @@ function LeftWords({ view }: { readonly view: SetupReadyView }): ReactNode {
   return 'More is handed out than there is. Take some back.';
 }
 
-function AmountSheet({ pot, view, sender, onClose }: { readonly pot: Pot; readonly view: SetupReadyView; readonly sender: Sender; readonly onClose: () => void }) {
+function AmountSheet({ pot, view, sender, onClose }: { readonly pot: AnyPot; readonly view: SetupReadyView; readonly sender: Sender; readonly onClose: () => void }) {
   const [text, setText] = useState(() => typed(view.assignment[pot] ?? 0));
   const [problem, setProblem] = useState<string | null>(null);
   const amount = readAmount(text);

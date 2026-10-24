@@ -137,6 +137,8 @@ function PaydayMoment({ paycheck }: { readonly paycheck: PaycheckReport }) {
     { key: 'savings', name: 'Savings', cents: split.savings },
     { key: 'needs', name: 'Needs', cents: split.needs },
     { key: 'wants', name: 'Wants', cents: split.wants },
+    // Her rulebook, 3.3: Wishlist's part, where the split names it.
+    ...(split.wishlist === undefined ? [] : [{ key: 'wishlist', name: 'Wishlist', cents: split.wishlist } as const]),
   ] as const;
   // Parts that are zero or below take no room on the bar; the list still names them.
   const drawn = parts.filter((p) => p.cents > 0);
@@ -230,6 +232,14 @@ function WhatItDid({ paycheck }: { readonly paycheck: PaycheckReport }) {
           <dd>
             <Money cents={split.wants} testId="split-wants" />
           </dd>
+          {split.wishlist !== undefined && (
+            <>
+              <dt>Wishlist, {percent.wishlist ?? 0}%</dt>
+              <dd>
+                <Money cents={split.wishlist} testId="split-wishlist" />
+              </dd>
+            </>
+          )}
           {d.roundingToSavings > 0 && (
             <>
               <dt>Cents left over from rounding, to Savings</dt>
@@ -264,6 +274,14 @@ function WhatItDid({ paycheck }: { readonly paycheck: PaycheckReport }) {
           <dd>
             <Money cents={split.wants} signed testId="got-wants" />
           </dd>
+          {split.wishlist !== undefined && (
+            <>
+              <dt>Wishlist</dt>
+              <dd>
+                <Money cents={split.wishlist} signed testId="got-wishlist" />
+              </dd>
+            </>
+          )}
           <dt className="figures__total">The paycheck</dt>
           <dd className="figures__total">
             <Money cents={paycheck.amount} testId="got-total" />
@@ -284,7 +302,7 @@ function MoveToSavings({ view }: { readonly view: Tracking }) {
       ) : (
         <>
           <dl className="figures">
-            <dt>{view.savingsAlone === true ? 'Savings' : 'Savings plus mom reserve'}</dt>
+            <dt>{view.withWishlist === true ? 'Savings plus Wishlist' : view.savingsAlone === true ? 'Savings' : 'Savings plus mom reserve'}</dt>
             <dd>
               <Money cents={t.transfer.shouldBeInSavings} testId="savings-should" />
             </dd>

@@ -21,7 +21,7 @@ export type AlertFacts =
   // second card is reminded about like the everyday card (her rulebook, 9.1).
   // name: in her setup, the card's name as its bank gives it (HB6); left out
   // in upstream's, which keeps its own words. It is not part of the key.
-  | { readonly kind: 'card-reminder'; readonly card: Card; readonly dueDate: IsoDate; readonly daysBefore: number; readonly minimumPayment: Cents; readonly statementBalance: Cents | null; readonly name?: string }
+  | { readonly kind: 'card-reminder'; readonly card: Card; readonly dueDate: IsoDate; readonly daysBefore: number; readonly minimumPayment: Cents; readonly statementBalance: Cents | null; readonly name?: string; readonly wishlistMove?: Cents }
   // 9.4: every day after the due date until the minimum is paid (B30).
   | { readonly kind: 'card-overdue'; readonly card: Card; readonly dueDate: IsoDate; readonly minimumPayment: Cents; readonly date: IsoDate; readonly name?: string }
   // 10.4 and 10.5 (A37): when it starts (the time-th time it starts, on its
@@ -176,7 +176,9 @@ export function alertWords(f: AlertFacts, options: { readonly amounts?: boolean;
       // Only one the phone could not be given until after the due date goes then (B181).
       const when = left < 0 ? `was due ${left === -1 ? 'yesterday' : `${-left} days ago`}` : `due ${left === 0 ? 'today' : left === 1 ? 'tomorrow' : `in ${left} days`}`;
       const owed = f.statementBalance === null ? `Minimum ${formatDollars(f.minimumPayment)}.` : `Statement balance ${formatDollars(f.statementBalance)}, minimum ${formatDollars(f.minimumPayment)}.`;
-      return { title: `${f.name ?? CARDS[f.card]} payment ${when}`, body: amounts ? `${owed} Due ${dayWords(f.dueDate)}.` : `Due ${dayWords(f.dueDate)}.` };
+      // Her rulebook, 50.4: Wishlist money still to move from savings to checking.
+      const move = f.wishlistMove === undefined ? '' : amounts ? ` Move ${formatDollars(f.wishlistMove)} from savings to checking for Wishlist first.` : ' Move the Wishlist money from savings to checking first.';
+      return { title: `${f.name ?? CARDS[f.card]} payment ${when}`, body: amounts ? `${owed} Due ${dayWords(f.dueDate)}.${move}` : `Due ${dayWords(f.dueDate)}.${move}` };
     }
     case 'card-overdue':
       return {

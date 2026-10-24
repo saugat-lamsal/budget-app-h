@@ -1,4 +1,4 @@
-import { MOVABLE_POTS, parseDollars, type Cents, type Pot } from '@budget-app/money';
+import { parseDollars, type Cents, type AnyPot } from '@budget-app/money';
 import { useEffect, useRef, useState } from 'react';
 import { newDecisionId, sendChoice } from '../app/api.js';
 import { BottomSheet, Button, ButtonRow, Notice, SelectField, TextField } from '../ui/blocks.js';
@@ -13,6 +13,10 @@ import { POT_NAMES } from '../ui/names.js';
 // the digits. The same move sent twice, as a retry, changes nothing the
 // second time.
 
+// The buckets in the order the sheet offers them; only the ones the balances
+// name are offered (her rulebook: Wishlist after wants where the setup has it).
+const POT_ORDER: readonly AnyPot[] = ['savings', 'needs', 'wants', 'wishlist', 'momReserve', 'heldForOthers'];
+
 export function MoveMoney({
   open,
   onClose,
@@ -24,14 +28,14 @@ export function MoveMoney({
   readonly onClose: () => void;
   // What every bucket holds now. A bucket that is not there ("Off in this
   // setup": the mom reserve) is not offered.
-  readonly balances: Readonly<Partial<Record<Pot, Cents>>>;
+  readonly balances: Readonly<Partial<Record<AnyPot, Cents>>>;
   // Where it comes from and goes to, to begin with.
-  readonly start: { readonly from: Pot; readonly to: Pot };
+  readonly start: { readonly from: AnyPot; readonly to: AnyPot };
   // He moved it: what to say.
   readonly onMoved: (said: string) => void;
 }) {
-  const [from, setFrom] = useState<Pot>(start.from);
-  const [to, setTo] = useState<Pot>(start.to);
+  const [from, setFrom] = useState<AnyPot>(start.from);
+  const [to, setTo] = useState<AnyPot>(start.to);
   const [typed, setTyped] = useState('');
   const [step, setStep] = useState<'form' | 'confirm'>('form');
   // What the server said when it asked first (13.4).
@@ -103,7 +107,7 @@ export function MoveMoney({
     );
   };
 
-  const options = MOVABLE_POTS.flatMap((pot) => {
+  const options = POT_ORDER.flatMap((pot) => {
     const held = balances[pot];
     return held === undefined ? [] : [{ value: pot, label: `${POT_NAMES[pot]} · ${moneyText(held)}` }];
   });
@@ -119,8 +123,8 @@ export function MoveMoney({
             </Notice>
           )}
           <div className="card" style={{ display: 'grid', gap: 'var(--space-3)', padding: 'var(--space-4)' }}>
-            <SelectField label="From" value={from} onChange={(v) => setFrom(v as Pot)} options={options} testId="move-from" />
-            <SelectField label="To" value={to} onChange={(v) => setTo(v as Pot)} options={options} testId="move-to" />
+            <SelectField label="From" value={from} onChange={(v) => setFrom(v as AnyPot)} options={options} testId="move-from" />
+            <SelectField label="To" value={to} onChange={(v) => setTo(v as AnyPot)} options={options} testId="move-to" />
             <TextField label="Amount (dollars)" money value={typed} onChange={setTyped} testId="move-amount" />
             {reading !== null && (
               <p className="field__hint" role="alert" data-testid="move-reading">

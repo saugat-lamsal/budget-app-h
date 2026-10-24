@@ -72,6 +72,9 @@ export interface Totals {
   readonly waiting: number;
 }
 
+// Her rulebook, section 2: with Wishlist too, where the setup has it.
+export type HerTotals = Totals & { readonly wishlist?: Cents };
+
 export function totalsOf(book: Book | null): Totals | null {
   if (book === null) return null;
   const p = book.pots();
@@ -81,6 +84,7 @@ export function totalsOf(book: Book | null): Totals | null {
     wants: p.wants,
     momReserve: p.momReserve,
     heldForOthers: p.heldForOthers,
+    ...(p.wishlist === undefined ? {} : { wishlist: p.wishlist }),
     unsortedIn: p.unsortedIn,
     unsortedOut: p.unsortedOut,
     oldCardDebt: book.oldCardDebt(),
@@ -91,7 +95,9 @@ export function totalsOf(book: Book | null): Totals | null {
 
 export function sameTotals(a: Totals | null, b: Totals | null): boolean {
   if (a === null || b === null) return a === b;
-  return (Object.keys(a) as (keyof Totals)[]).every((key) => a[key] === b[key]) && Object.keys(b).length === Object.keys(a).length;
+  const x = a as HerTotals;
+  const y = b as HerTotals;
+  return (Object.keys(x) as (keyof HerTotals)[]).every((key) => x[key] === y[key]) && Object.keys(y).length === Object.keys(x).length;
 }
 
 // ----- Recording what an answer did -----

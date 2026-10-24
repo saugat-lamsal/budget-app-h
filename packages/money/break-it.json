@@ -163,7 +163,7 @@
   {
     "section": "3",
     "file": "packages/money/src/payday.ts",
-    "find": "const roundingToSavings = rest - savingsShare - needs - wants;",
+    "find": "const roundingToSavings = rest - savingsShare - needs - wants - (wishlist ?? 0);",
     "replace": "const roundingToSavings = 0;",
     "why": "3.3 assume the shares never need rounding"
   },
@@ -247,8 +247,8 @@
   {
     "section": "3",
     "file": "packages/money/src/book.ts",
-    "find": "const shouldBeInSavings = addCents(this.#totals.savings, this.#totals.momReserve);",
-    "replace": "const shouldBeInSavings = addCents(this.#totals.savings, 0);",
+    "find": "const shouldBeInSavings = addCents(this.#totals.savings, this.#totals.momReserve, this.#totals.wishlist);",
+    "replace": "const shouldBeInSavings = addCents(this.#totals.savings, 0, this.#totals.wishlist);",
     "why": "3.8 leave the mom reserve out of the savings account"
   },
   {
@@ -562,8 +562,8 @@
   {
     "section": "6",
     "file": "packages/money/src/book.ts",
-    "find": "effect = { momReserve: incomeSplit.momReserve, savings: incomeSplit.savings, needs: incomeSplit.needs, wants: incomeSplit.wants };",
-    "replace": "effect = { momReserve: incomeSplit.momReserve, savings: incomeSplit.savings, needs: incomeSplit.wants, wants: incomeSplit.needs };",
+    "find": "effect = { momReserve: incomeSplit.momReserve, savings: incomeSplit.savings, needs: incomeSplit.needs, wants: incomeSplit.wants,",
+    "replace": "effect = { momReserve: incomeSplit.momReserve, savings: incomeSplit.savings, needs: incomeSplit.wants, wants: incomeSplit.needs,",
     "why": "6.1 swap needs and wants for other income"
   },
   {
@@ -583,8 +583,8 @@
   {
     "section": "6",
     "file": "packages/money/src/rules.ts",
-    "find": " || (typeof choice === 'object' && choice !== null && 'to' in choice && choice.to === 'paycheck')",
-    "replace": "",
+    "find": "(choice.to === 'paycheck' || choice.to === 'wishlist')",
+    "replace": "(choice.to === 'wishlist')",
     "why": "6.1 refuse \"this is my paycheck\""
   },
   {
@@ -947,22 +947,22 @@
   {
     "section": "12",
     "file": "packages/money/src/book.ts",
-    "find": "addCents(t.savings, t.needs, t.wants, t.momReserve, t.heldForOthers, t.unsortedIn), t.unsortedOut",
-    "replace": "addCents(t.savings, t.needs, t.wants, t.momReserve, t.heldForOthers), t.unsortedOut",
+    "find": "addCents(t.savings, t.needs, t.wants, t.momReserve, t.heldForOthers, t.wishlist, t.unsortedIn), t.unsortedOut",
+    "replace": "addCents(t.savings, t.needs, t.wants, t.momReserve, t.heldForOthers, t.wishlist), t.unsortedOut",
     "why": "12.2 leave unsorted money in off the app side"
   },
   {
     "section": "12",
     "file": "packages/money/src/book.ts",
-    "find": "addCents(t.savings, t.needs, t.wants, t.momReserve, t.heldForOthers, t.unsortedIn), t.unsortedOut",
-    "replace": "addCents(t.savings, t.needs, t.wants, t.momReserve, t.unsortedIn), t.unsortedOut",
+    "find": "addCents(t.savings, t.needs, t.wants, t.momReserve, t.heldForOthers, t.wishlist, t.unsortedIn), t.unsortedOut",
+    "replace": "addCents(t.savings, t.needs, t.wants, t.momReserve, t.wishlist, t.unsortedIn), t.unsortedOut",
     "why": "12.2 leave held for others off the app side"
   },
   {
     "section": "12",
     "file": "packages/money/src/book.ts",
-    "find": "addCents(t.savings, t.needs, t.wants, t.momReserve, t.heldForOthers, t.unsortedIn), t.unsortedOut",
-    "replace": "addCents(t.savings, t.needs, t.wants, t.momReserve, t.heldForOthers, t.unsortedIn, t.oldCardDebt), t.unsortedOut",
+    "find": "addCents(t.savings, t.needs, t.wants, t.momReserve, t.heldForOthers, t.wishlist, t.unsortedIn), t.unsortedOut",
+    "replace": "addCents(t.savings, t.needs, t.wants, t.momReserve, t.heldForOthers, t.wishlist, t.unsortedIn, t.oldCardDebt), t.unsortedOut",
     "why": "12.4 count the old card debt in the check"
   },
   {
@@ -2242,8 +2242,8 @@
   {
     "section": "7",
     "file": "packages/money/src/book.ts",
-    "find": "        if (!isSpendingBucket(part.bucket) && !(person && part.bucket === 'not-mine')) {",
-    "replace": "        if (!isSpendingBucket(part.bucket) && part.bucket !== 'not-mine') {",
+    "find": "        if (!(isSortBucket(part.bucket) && !(person && part.bucket === 'wishlist')) && !(person && part.bucket === 'not-mine')) {",
+    "replace": "        if (!(isSortBucket(part.bucket) && !(person && part.bucket === 'wishlist')) && part.bucket !== 'not-mine') {",
     "why": "7.6 let a purchase have a not-mine part (B20)"
   },
   {
@@ -2466,15 +2466,15 @@
   {
     "section": "7",
     "file": "packages/money/src/review-options.ts",
-    "find": "(person ? (['needs', 'wants', 'not-mine'] as const) : (['needs', 'wants'] as const))",
-    "replace": "(['needs', 'wants'] as const)",
+    "find": "(person ? (['needs', 'wants', 'not-mine'] as const) : wishlist ? (['needs', 'wants', 'wishlist'] as const) : (['needs', 'wants'] as const))",
+    "replace": "(person ? (['needs', 'wants'] as const) : wishlist ? (['needs', 'wants', 'wishlist'] as const) : (['needs', 'wants'] as const))",
     "why": "[review] 7.6 a payment to a person cannot be split with not mine"
   },
   {
     "section": "4",
     "file": "packages/money/src/review-options.ts",
-    "find": "(person ? (['needs', 'wants', 'not-mine'] as const) : (['needs', 'wants'] as const))",
-    "replace": "(['needs', 'wants', 'not-mine'] as const)",
+    "find": "(person ? (['needs', 'wants', 'not-mine'] as const) : wishlist ? (['needs', 'wants', 'wishlist'] as const) : (['needs', 'wants'] as const))",
+    "replace": "(person ? (['needs', 'wants', 'not-mine'] as const) : wishlist ? (['needs', 'wants', 'wishlist', 'not-mine'] as const) : (['needs', 'wants', 'not-mine'] as const))",
     "why": "[review] 4.4 a purchase can be split with not mine"
   },
   {
@@ -2550,8 +2550,8 @@
   {
     "section": "4",
     "file": "packages/money/src/review-options.ts",
-    "find": "const picks: ReviewPick[] = [plain('needs'), plain('wants')];",
-    "replace": "const picks: ReviewPick[] = [plain('needs')];",
+    "find": "const picks: ReviewPick[] = [plain('needs'), plain('wants'), ...(wishlist ? [plain('wishlist')] : [])];",
+    "replace": "const picks: ReviewPick[] = [plain('needs'), ...(wishlist ? [plain('wishlist')] : [])];",
     "why": "[review] 4.2 wants is not offered for spending"
   },
   {
@@ -2767,15 +2767,15 @@
   {
     "section": "12",
     "file": "packages/money/src/book.ts",
-    "find": "t.heldForOthers, t.unsortedIn), t.unsortedOut);",
-    "replace": "t.heldForOthers, t.unsortedIn), 0);",
+    "find": "t.heldForOthers, t.wishlist, t.unsortedIn), t.unsortedOut);",
+    "replace": "t.heldForOthers, t.wishlist, t.unsortedIn), 0);",
     "why": "[review] 12.2 the app side ignores unsorted spending"
   },
   {
     "section": "12",
     "file": "packages/money/src/book.ts",
-    "find": "t.momReserve, t.heldForOthers, t.unsortedIn), t.unsortedOut);",
-    "replace": "t.momReserve, t.unsortedIn), t.unsortedOut);",
+    "find": "t.momReserve, t.heldForOthers, t.wishlist, t.unsortedIn), t.unsortedOut);",
+    "replace": "t.momReserve, t.wishlist, t.unsortedIn), t.unsortedOut);",
     "why": "[review] 12.2 the app side ignores money held for others"
   },
   {
@@ -2893,8 +2893,8 @@
   {
     "section": "4",
     "file": "packages/money/src/book.ts",
-    "find": "if (change !== 0 && POT_NAMES_SET.has(name)) lines.push({ pot: name as Pot, delta: change });",
-    "replace": "if (change !== 0 && POT_NAMES_SET.has(name)) lines.push({ pot: name as Pot, delta: -change });",
+    "find": "if (change !== 0 && POT_NAMES_SET.has(name)) lines.push({ pot: name as AnyPot, delta: change });",
+    "replace": "if (change !== 0 && POT_NAMES_SET.has(name)) lines.push({ pot: name as AnyPot, delta: -change });",
     "why": "[activity] B97 a line of the ledger has the wrong sign"
   },
   {
@@ -2963,7 +2963,7 @@
   {
     "section": "4",
     "file": "packages/money/src/book.ts",
-    "find": "closing: next === undefined ? this.#totals[pot] : next.opening[pot],",
+    "find": "closing: next === undefined ? this.#totals[pot] : (next.opening[pot] ?? 0),",
     "replace": "closing: this.#totals[pot],",
     "why": "[activity] B97 an old pay period ends with what the bucket holds now"
   },
@@ -2977,7 +2977,7 @@
   {
     "section": "4",
     "file": "packages/money/src/book.ts",
-    "find": "opening: record.opening[pot],\n      in: wentIn,",
+    "find": "opening: record.opening[pot] ?? 0,\n      in: wentIn,",
     "replace": "opening: this.#totals[pot],\n      in: wentIn,",
     "why": "[activity] B97 a pay period starts with what the bucket holds now"
   },
@@ -3068,8 +3068,8 @@
   {
     "section": "4",
     "file": "packages/money/src/book.ts",
-    "find": "olderThanLastPaycheck: older, likely: likely.map((p) => p.id), ...(txn.kind === 'deposit' && this.#olderWaitingFor(txn.date) ? { olderPaycheckWaiting: true } : {}) });\n        if (options.type !== 'sort') throw new MoneyError('broken-book', 'money in has no choices');",
-    "replace": "olderThanLastPaycheck: false, likely: likely.map((p) => p.id), ...(txn.kind === 'deposit' && this.#olderWaitingFor(txn.date) ? { olderPaycheckWaiting: true } : {}) });\n        if (options.type !== 'sort') throw new MoneyError('broken-book', 'money in has no choices');",
+    "find": "const options = reviewOptions({ type: 'money-in', reason: entry.reason, account: txn.account, olderThanLastPaycheck: older, likely: likely.map((p) => p.id), ...(txn.kind === 'deposit' && this.#olderWaitingFor(txn.date) ? { olderPaycheckWaiting: true } : {}), ...this.#wishlistFact() });",
+    "replace": "const options = reviewOptions({ type: 'money-in', reason: entry.reason, account: txn.account, olderThanLastPaycheck: false, likely: likely.map((p) => p.id), ...(txn.kind === 'deposit' && this.#olderWaitingFor(txn.date) ? { olderPaycheckWaiting: true } : {}), ...this.#wishlistFact() });",
     "why": "[activity] B54 a deposit older than the last paycheck is offered to be your paycheck"
   },
   {
@@ -3488,8 +3488,8 @@
   {
     "section": "14",
     "file": "packages/money/src/setup.ts",
-    "find": "const assigned = addCents(a.savings, a.needs, a.wants, a.momReserve, a.heldForOthers);",
-    "replace": "const assigned = addCents(a.savings, a.needs, a.wants, a.momReserve);",
+    "find": "const assigned = addCents(a.savings, a.needs, a.wants, a.momReserve, a.heldForOthers, a.wishlist ?? 0);",
+    "replace": "const assigned = addCents(a.savings, a.needs, a.wants, a.momReserve, a.wishlist ?? 0);",
     "why": "[setup] 14.2 leave held for others out of what is assigned"
   },
   {
@@ -4167,8 +4167,8 @@
   {
     "section": "14",
     "file": "packages/money/src/book.ts",
-    "find": "checkOpening(this.#switches, { momReserve, oldCardDebt",
-    "replace": "checkOpening(this.#switches, { momReserve: 0, oldCardDebt",
+    "find": "checkOpening(this.#switches, { momReserve, wishlist, oldCardDebt",
+    "replace": "checkOpening(this.#switches, { momReserve: 0, wishlist, oldCardDebt",
     "why": "[her-switches] Off in this setup: 14 a book opened with money in a mom reserve that is off"
   },
   {
@@ -4230,15 +4230,15 @@
   {
     "section": "1",
     "file": "packages/money/src/her-setup.ts",
-    "find": "checkSwitches({ momReserve: 'off', oldCard: 'off', secondCard: 'on' })",
-    "replace": "checkSwitches({ momReserve: 'off', oldCard: 'on', secondCard: 'on' })",
+    "find": "checkSwitches({ momReserve: 'off', oldCard: 'off', secondCard: 'on', wishlist: 'on' })",
+    "replace": "checkSwitches({ momReserve: 'off', oldCard: 'on', secondCard: 'on', wishlist: 'on' })",
     "why": "[her-switches] Off in this setup: her setup has the old card"
   },
   {
     "section": "1",
     "file": "packages/money/src/her-setup.ts",
-    "find": "checkSwitches({ momReserve: 'off', oldCard: 'off', secondCard: 'on' })",
-    "replace": "checkSwitches({ momReserve: 'on', oldCard: 'off', secondCard: 'on' })",
+    "find": "checkSwitches({ momReserve: 'off', oldCard: 'off', secondCard: 'on', wishlist: 'on' })",
+    "replace": "checkSwitches({ momReserve: 'on', oldCard: 'off', secondCard: 'on', wishlist: 'on' })",
     "why": "[her-switches] Off in this setup: her setup has the mom reserve"
   },
   {
@@ -4447,8 +4447,8 @@
   {
     "section": "1",
     "file": "packages/money/src/switches.ts",
-    "find": "export const UPSTREAM_SWITCHES: Switches = Object.freeze({ momReserve: 'on', oldCard: 'on', secondCard: 'off' });",
-    "replace": "export const UPSTREAM_SWITCHES: Switches = Object.freeze({ momReserve: 'on', oldCard: 'on', secondCard: 'on' });",
+    "find": "export const UPSTREAM_SWITCHES: Switches = Object.freeze({ momReserve: 'on', oldCard: 'on', secondCard: 'off', wishlist: 'off' });",
+    "replace": "export const UPSTREAM_SWITCHES: Switches = Object.freeze({ momReserve: 'on', oldCard: 'on', secondCard: 'on', wishlist: 'off' });",
     "why": "[her-second-card] 1 upstream's setup has the second card"
   },
   {
@@ -4461,8 +4461,8 @@
   {
     "section": "1",
     "file": "packages/money/src/switches.ts",
-    "find": "|| !isSwitch(secondCard)) {",
-    "replace": ") {",
+    "find": "|| !isSwitch(secondCard) || !isSwitch(wishlist)) {",
+    "replace": "|| !isSwitch(wishlist)) {",
     "why": "[her-second-card] 1 a second card switch that is neither on nor off is let through"
   },
   {
@@ -4594,8 +4594,8 @@
   {
     "section": "1",
     "file": "packages/money/src/her-setup.ts",
-    "find": "checkSwitches({ momReserve: 'off', oldCard: 'off', secondCard: 'on' })",
-    "replace": "checkSwitches({ momReserve: 'off', oldCard: 'off', secondCard: 'off' })",
+    "find": "checkSwitches({ momReserve: 'off', oldCard: 'off', secondCard: 'on', wishlist: 'on' })",
+    "replace": "checkSwitches({ momReserve: 'off', oldCard: 'off', secondCard: 'off', wishlist: 'on' })",
     "why": "[her-second-card] her setup has no second card"
   },
   {
@@ -4699,8 +4699,8 @@
   {
     "section": "52",
     "file": "packages/money/src/statement.ts",
-    "find": "return nonZero([{ where: to === 'unsorted' || to === 'needs' || to === 'wants' ? to : 'credit', amount }]);",
-    "replace": "return nonZero([{ where: to === 'needs' || to === 'wants' ? to : 'unsorted', amount }]);",
+    "find": "return nonZero([{ where: to === 'unsorted' || isListed(to) ? to : 'credit', amount }]);",
+    "replace": "return nonZero([{ where: isListed(to) ? to : 'unsorted', amount }]);",
     "why": "[her-cards] 52.4 a refund that is not hers is a purchase line"
   },
   {
@@ -4716,5 +4716,208 @@
     "find": "notMatched: subtractCents(subtractCents(statement.statementBalance, carriedIn.amount), charged),",
     "replace": "notMatched: 0,",
     "why": "[her-cards] 52.4 Not matched is hidden"
+  },
+  {
+    "section": "3",
+    "file": "packages/money/src/payday.ts",
+    "find": "const wishlist = settings.split.wishlist === undefined ? undefined : percentOf(rest, settings.split.wishlist);",
+    "replace": "const wishlist = settings.split.wishlist === undefined ? undefined : Math.ceil((rest * settings.split.wishlist) / 100);",
+    "why": "[her-wishlist] 3.3 round Wishlist's share up instead of down"
+  },
+  {
+    "section": "3",
+    "file": "packages/money/src/payday.ts",
+    "find": "const roundingToSavings = rest - savingsShare - needs - wants - (wishlist ?? 0);",
+    "replace": "const roundingToSavings = rest - savingsShare - needs - wants;",
+    "why": "[her-wishlist] 3.3 Wishlist's share left out of the rounding, so a cent is made"
+  },
+  {
+    "section": "3",
+    "file": "packages/money/src/payday.ts",
+    "find": "percentOf(rest, settings.split.wishlist);",
+    "replace": "percentOf(rest, settings.split.wants);",
+    "why": "[her-wishlist] 3.3 Wishlist gets the wants percentage"
+  },
+  {
+    "section": "3",
+    "file": "packages/money/src/book.ts",
+    "find": "wants: split.wants, ...(split.wishlist === undefined ? {} : { wishlist: split.wishlist }) });",
+    "replace": "wants: split.wants });",
+    "why": "[her-wishlist] 3.3 the paycheck never adds Wishlist's part"
+  },
+  {
+    "section": "6",
+    "file": "packages/money/src/book.ts",
+    "find": "wants: incomeSplit.wants, ...(incomeSplit.wishlist === undefined ? {} : { wishlist: incomeSplit.wishlist }) };",
+    "replace": "wants: incomeSplit.wants };",
+    "why": "[her-wishlist] 6.1 other income leaves out Wishlist's share"
+  },
+  {
+    "section": "12",
+    "file": "packages/money/src/book.ts",
+    "find": "t.heldForOthers, t.wishlist, t.unsortedIn), t.unsortedOut);",
+    "replace": "t.heldForOthers, t.unsortedIn), t.unsortedOut);",
+    "why": "[her-wishlist] 12.2 the app side leaves out Wishlist"
+  },
+  {
+    "section": "3",
+    "file": "packages/money/src/book.ts",
+    "find": "addCents(this.#totals.savings, this.#totals.momReserve, this.#totals.wishlist);",
+    "replace": "addCents(this.#totals.savings, this.#totals.momReserve);",
+    "why": "[her-wishlist] 3.8 what should be in savings leaves out Wishlist"
+  },
+  {
+    "section": "2",
+    "file": "packages/money/src/book.ts",
+    "find": "...(switches.wishlist === 'on' ? { wishlist } : {}) });",
+    "replace": "});",
+    "why": "[her-wishlist] Section 2 the books never show Wishlist"
+  },
+  {
+    "section": "13",
+    "file": "packages/money/src/book.ts",
+    "find": "    if (from === 'wishlist') reasons.push('out-of-wishlist');\n",
+    "replace": "",
+    "why": "[her-wishlist] 13.4 money out of Wishlist moves without asking"
+  },
+  {
+    "section": "4",
+    "file": "packages/money/src/book.ts",
+    "find": "if (!(isSortBucket(part.bucket) && !(person && part.bucket === 'wishlist')) && !(person && part.bucket === 'not-mine')) {",
+    "replace": "if (!isSortBucket(part.bucket) && !(person && part.bucket === 'not-mine')) {",
+    "why": "[her-wishlist] 4.4 a payment to a person can be split into Wishlist"
+  },
+  {
+    "section": "4",
+    "file": "packages/money/src/book.ts",
+    "find": "return this.#switches.wishlist === 'on' ? { wishlist: true } : {};",
+    "replace": "return {};",
+    "why": "[her-wishlist] 4.2 review never offers Wishlist"
+  },
+  {
+    "section": "4",
+    "file": "packages/money/src/book.ts",
+    "find": "const POT_NAMES_SET: ReadonlySet<string> = new Set(WITH_WISHLIST);",
+    "replace": "const POT_NAMES_SET: ReadonlySet<string> = new Set(MOVABLE_POTS);",
+    "why": "[her-wishlist] 4.2 B97 Wishlist's list loses its lines"
+  },
+  {
+    "section": "2",
+    "file": "packages/money/src/switches.ts",
+    "find": "  if (switches.wishlist === 'off' && (opening.wishlist ?? 0) !== 0) refuse(`${NO_WISHLIST} Nothing can be assigned to it.`);\n",
+    "replace": "",
+    "why": "[her-wishlist] Section 2 a book with Wishlist off takes starting money in it"
+  },
+  {
+    "section": "2",
+    "file": "packages/money/src/switches.ts",
+    "find": "  if (switches.wishlist === 'off' && split.wishlist !== undefined) refuse(`${NO_WISHLIST} The split has no Wishlist share.`);\n",
+    "replace": "",
+    "why": "[her-wishlist] Section 2 a split with Wishlist off takes a Wishlist share"
+  },
+  {
+    "section": "2",
+    "file": "packages/money/src/switches.ts",
+    "find": "  if (switches.wishlist === 'on' && split.wishlist === undefined) throw new MoneyError('bad-setting', 'the split names Wishlist in this setup: savings, needs, wants and Wishlist');\n",
+    "replace": "",
+    "why": "[her-wishlist] Section 2 a split without Wishlist taken with it on"
+  },
+  {
+    "section": "2",
+    "file": "packages/money/src/switches.ts",
+    "find": "    refuse(`${NO_WISHLIST} Nothing can be sorted to it.`);",
+    "replace": "    void NO_WISHLIST;",
+    "why": "[her-wishlist] Section 2 sorting to Wishlist taken with it off"
+  },
+  {
+    "section": "2",
+    "file": "packages/money/src/settings.ts",
+    "find": "const shares = [s.split.savings, s.split.needs, s.split.wants, ...(s.split.wishlist === undefined ? [] : [s.split.wishlist])];",
+    "replace": "const shares = [s.split.savings, s.split.needs, s.split.wants];",
+    "why": "[her-wishlist] Section 2 Wishlist's share left out of the 100"
+  },
+  {
+    "section": "2",
+    "file": "packages/money/src/switches.ts",
+    "find": "const wishlist: unknown = switches.wishlist === undefined ? 'off' : switches.wishlist;",
+    "replace": "const wishlist: unknown = switches.wishlist === undefined ? 'on' : switches.wishlist;",
+    "why": "[her-wishlist] Section 2 B242 a book saved before Wishlist opens with it on"
+  },
+  {
+    "section": "14",
+    "file": "packages/money/src/setup.ts",
+    "find": "a.heldForOthers, a.wishlist ?? 0);",
+    "replace": "a.heldForOthers);",
+    "why": "[her-wishlist] 14.2 the starting money given to Wishlist not counted"
+  },
+  {
+    "section": "52",
+    "file": "packages/money/src/statement.ts",
+    "find": "const isListed = (to: string): to is 'needs' | 'wants' | 'wishlist' => to === 'needs' || to === 'wants' || to === 'wishlist';",
+    "replace": "const isListed = (to: string): to is 'needs' | 'wants' | 'wishlist' => to === 'needs' || to === 'wants';",
+    "why": "[her-wishlist] 52.4 a Wishlist purchase listed as still unsorted"
+  },
+  {
+    "section": "50",
+    "file": "packages/money/src/wishlist.ts",
+    "find": "const amount = Math.max(0, Math.min(extra, notMoved));",
+    "replace": "const amount = Math.max(0, Math.max(extra, notMoved));",
+    "why": "[her-wishlist] 50.4 $X the larger of the two amounts"
+  },
+  {
+    "section": "50",
+    "file": "packages/money/src/wishlist.ts",
+    "find": "const back = addCents(flows.paidBack, flows.movedToChecking);",
+    "replace": "const back = addCents(flows.paidBack, 0);",
+    "why": "[her-wishlist] 50.4 moves from savings to checking not taken off"
+  },
+  {
+    "section": "50",
+    "file": "packages/money/src/wishlist.ts",
+    "find": "const back = addCents(flows.paidBack, flows.movedToChecking);",
+    "replace": "const back = addCents(0, flows.movedToChecking);",
+    "why": "[her-wishlist] 50.4 money back into Wishlist not taken off"
+  },
+  {
+    "section": "50",
+    "file": "packages/money/src/wishlist.ts",
+    "find": "day: toDue > 0 ? 'before' : toDue === 0 ? 'on' : 'after'",
+    "replace": "day: toDue >= 0 ? 'before' : toDue === -1 ? 'on' : 'after'",
+    "why": "[her-wishlist] 50.4 the due date shifted by a day"
+  },
+  {
+    "section": "50",
+    "file": "packages/money/src/wishlist.ts",
+    "find": "daysBetween(w.dueDate, best.dueDate) > 0) best = w;",
+    "replace": "daysBetween(w.dueDate, best.dueDate) < 0) best = w;",
+    "why": "[her-wishlist] 50.4 the latest due date named instead of the earliest"
+  },
+  {
+    "section": "50",
+    "file": "packages/money/src/wishlist.ts",
+    "find": ".find((s) => daysBetween(postedOn, s.closingDate) >= 0);",
+    "replace": ".find((s) => daysBetween(postedOn, s.closingDate) > 0);",
+    "why": "[her-wishlist] 50.4 a purchase on the closing day put on the next statement"
+  },
+  {
+    "section": "50",
+    "file": "packages/money/src/wishlist.ts",
+    "find": "const oldestFirst = [...flows.purchases].sort((a, b) => daysBetween(b.date, a.date));",
+    "replace": "const oldestFirst = [...flows.purchases].sort((a, b) => daysBetween(a.date, b.date));",
+    "why": "[her-wishlist] 50.4 moves cover the newest purchases first"
+  },
+  {
+    "section": "50",
+    "file": "packages/money/src/book.ts",
+    "find": "if (amount <= 0 || account === 'savings') continue;",
+    "replace": "if (amount <= 0) continue;",
+    "why": "[her-wishlist] 50.4 a purchase from savings counted as still to move"
+  },
+  {
+    "section": "50",
+    "file": "packages/money/src/book.ts",
+    "find": "} else if ((entry.kind === 'transfer' || entry.kind === 'leg') && !this.#gone(entry) && !this.#setupLegs.has(entry.id)) {",
+    "replace": "} else if ((entry.kind === 'transfer' || entry.kind === 'leg') && !this.#setupLegs.has(entry.id)) {",
+    "why": "[her-wishlist] 50.4 a move the bank took back still counted"
   }
 ]

@@ -197,7 +197,7 @@ describe('51.1 3.1 her paycheck waiting, on Home and in Review, through the choi
     const life = await books();
     await paycheckPosts(life, 'pay-1', '2026-10-09');
     const item = reviewItem(life, 'pay-1');
-    expect(item.options.type === 'sort' && item.options.picks.map((p) => p.to)).toEqual(['paycheck', 'other-income', 'savings', 'needs', 'wants', 'not-mine']);
+    expect(item.options.type === 'sort' && item.options.picks.map((p) => p.to)).toEqual(['paycheck', 'other-income', 'savings', 'needs', 'wants', 'wishlist', 'not-mine']);
     expect(choose(life.keeper, { item: 'pay-1', choice: { to: 'not-mine' }, seen: item.key })).toMatchObject({ ok: true });
     expect(bookOf(life).pots().heldForOthers).toBe(PAY);
     expect(bookOf(life).period().number).toBe(0);
@@ -207,7 +207,7 @@ describe('51.1 3.1 her paycheck waiting, on Home and in Review, through the choi
     const life = await books();
     await paycheckPosts(life, 'pay-1', '2026-10-09');
     const shown = reviewItem(life, 'pay-1');
-    expect(life.keeper.settingsChange({ id: decision(), settings: { split: { savings: 60, needs: 25, wants: 15 } } })).toMatchObject({ ok: true });
+    expect(life.keeper.settingsChange({ id: decision(), settings: { split: { savings: 60, needs: 25, wants: 15, wishlist: 0 } } })).toMatchObject({ ok: true });
     const now = reviewItem(life, 'pay-1');
     expect(now.paycheckPreview).toMatchObject({ savings: 150_000, needs: 62_500, wants: 37_500 });
     expect(now.key).not.toBe(shown.key);

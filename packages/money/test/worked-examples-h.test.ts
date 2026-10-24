@@ -3,7 +3,7 @@
 // in worked-examples.test.ts, so the file checked by hand and the test can
 // never drift apart.
 import { describe, expect, it } from 'vitest';
-import { HER_SETTINGS, HER_SWITCHES, bankSide, cardNotices, cardOwes, cardStatementView, changeSettings, owedAtSetup, setAside, daysBetween, openBook, parseDollars, startTracking, withPendingCharges, type Book, type CardStatement, type Cents, type IsoDate } from '../src/index.js';
+import { HER_SETTINGS, HER_SWITCHES, bankSide, cardNotices, cardOwes, cardStatementView, changeSettings, owedAtSetup, setAside, daysBetween, openBook, parseDollars, startTracking, wishlistMove, withPendingCharges, type Book, type CardStatement, type Cents, type IsoDate } from '../src/index.js';
 import text from '../worked-examples-h.txt?raw';
 import { LAST_PAYCHECK, PAYROLL, START_DATE, ZERO_POTS, arrived, deposit, paycheck, posted, purchase, refund, sent, transfer } from './helpers.js';
 
@@ -33,7 +33,7 @@ const HER = changeSettings(HER_SETTINGS, { paycheckRule: { contains: PAYROLL } }
 
 // Her setup: no mom reserve and no old card, her starting settings, and the
 // paycheck rule set.
-function herBook(pots: Partial<Record<keyof typeof ZERO_POTS, Cents>> = {}): Book {
+function herBook(pots: Partial<Record<keyof typeof ZERO_POTS | 'wishlist', Cents>> = {}): Book {
   return openBook({
     date: START_DATE,
     lastPaycheckDate: LAST_PAYCHECK,
@@ -201,7 +201,58 @@ const examples: Record<number, () => Record<string, Cents>> = {
       'not matched': view.notMatched,
     };
   },
+  13: () => {
+    const book = openBook({ date: START_DATE, lastPaycheckDate: LAST_PAYCHECK, oldCardDebt: 0, pots: ZERO_POTS, settings: changeSettings(HER, { split: { savings: 40, needs: 30, wants: 20, wishlist: 10 } }), switches: HER_SWITCHES });
+    book.receive(paycheck('pay', '2026-10-09', parseDollars('2,345.67')));
+    book.sort('pay', { to: 'paycheck' }, '2026-10-09');
+    const split = book.paychecks()[0]?.split;
+    if (split === undefined) throw new Error('no paycheck');
+    return { savings: split.savings, needs: split.needs, wants: split.wants, wishlist: split.wishlist ?? -1, 'rounding to savings': split.detail.roundingToSavings };
+  },
+  14: () => {
+    const { book, move } = example14();
+    const wishlist = book.pots().wishlist ?? -1;
+    const should = book.savingsTransfer(parseDollars('2,300.00')).shouldBeInSavings;
+    const toMove = move(parseDollars('2,300.00'));
+    book.receive(transfer('moves', '2026-10-05', parseDollars('129.99'), 'savings', 'checking'));
+    return { wishlist, 'should be in savings': should, 'to move': toMove, 'safe to spend': book.safeToSpend('2026-10-05').amount, 'to move after she moves it': move(parseDollars('2,170.01')) };
+  },
+  15: () => {
+    const { book, move } = example14();
+    book.receive(transfer('moves', '2026-10-05', parseDollars('129.99'), 'savings', 'checking'));
+    book.receive(refund('back', '2026-10-10', parseDollars('40.00'), 'headphones', 'second-card'));
+    return { wishlist: book.pots().wishlist ?? -1, 'still to move into savings': book.savingsTransfer(parseDollars('2,170.01')).stillToMove, 'to move to checking': move(parseDollars('2,170.01')) };
+  },
+  16: () => {
+    const book = herBook({ needs: parseDollars('500.00'), wants: parseDollars('200.00'), wishlist: parseDollars('300.00') });
+    book.receive(purchase('big-box', '2026-10-04', parseDollars('250.00'), 'MADE UP BIG BOX', { account: 'everyday-card' }));
+    book.sort('big-box', { split: [{ bucket: 'needs', amount: parseDollars('80.00') }, { bucket: 'wants', amount: parseDollars('45.50') }, { bucket: 'wishlist', amount: parseDollars('124.50') }] }, '2026-10-04');
+    const p = book.pots();
+    return { needs: p.needs, wants: p.wants, wishlist: p.wishlist ?? -1, 'safe to spend': book.safeToSpend('2026-10-04').amount };
+  },
+  17: () => {
+    const book = herBook({ savings: parseDollars('2,000.00'), needs: parseDollars('500.00'), wants: parseDollars('200.00'), wishlist: parseDollars('300.00') });
+    book.receive(deposit('in', '2026-10-03', parseDollars('25.00')));
+    book.receive(purchase('out', '2026-10-03', parseDollars('60.00'), 'MADE UP NEW PLACE', { account: 'everyday-card' }));
+    const before = book.appSide();
+    const asked = book.moveMoney({ from: 'wishlist', to: 'wants', amount: parseDollars('50.00') }, '2026-10-03');
+    if (asked.moved) throw new Error('a move out of Wishlist did not ask first');
+    book.moveMoney({ from: 'wishlist', to: 'wants', amount: parseDollars('50.00'), confirmed: true }, '2026-10-03');
+    return { 'app side': before, 'wishlist after the move': book.pots().wishlist ?? -1, 'wants after the move': book.pots().wants, 'app side after the move': book.appSide(), 'safe to spend': book.safeToSpend('2026-10-03').amount };
+  },
 };
+
+// Example 14: savings 2,000.00, Wishlist 300.00 and wants 150.00; headphones
+// on the Amex card sorted to Wishlist. move is 50.4's amount for what the
+// savings account holds.
+function example14(): { readonly book: Book; readonly move: (inSavings: Cents) => Cents } {
+  const book = herBook({ savings: parseDollars('2,000.00'), wants: parseDollars('150.00'), wishlist: parseDollars('300.00') });
+  book.receive(purchase('headphones', '2026-10-04', parseDollars('129.99'), 'MADE UP AUDIO', { account: 'second-card' }));
+  book.sort('headphones', { to: 'wishlist' }, '2026-10-04');
+  const amex = [{ closingDate: '2026-10-08', dueDate: '2026-11-03' }];
+  const move = (inSavings: Cents): Cents => wishlistMove(book, { savingsAccountBalance: inSavings, statements: { 'second-card': amex }, today: '2026-10-09' })?.amount ?? -1;
+  return { book, move };
+}
 
 // Examples 11 and 12: setup day with both cards owing, and charges still
 // pending on each; then her first days on them.

@@ -870,8 +870,8 @@
   {
     "section": "review",
     "file": "packages/server/src/views/activity.ts",
-    "find": "Object.fromEntries(MOVABLE_POTS.map((p) => [p, pots[p]]))",
-    "replace": "Object.fromEntries(MOVABLE_POTS.map((p) => [p, pots.needs]))",
+    "find": "Object.fromEntries(book.movablePots().map((p) => [p, pots[p]]))",
+    "replace": "Object.fromEntries(book.movablePots().map((p) => [p, pots.needs]))",
     "why": "[activity] B97 every bucket holds what needs holds"
   },
   {
@@ -975,8 +975,8 @@
   {
     "section": "settings",
     "file": "packages/server/src/choices.ts",
-    "find": "return isWhole(savings) && isWhole(needs) && isWhole(wants) ? { savings, needs, wants } : undefined;",
-    "replace": "return isWhole(savings) && isWhole(needs) ? { savings, needs, wants } as never : undefined;",
+    "find": "    if (!(isWhole(savings) && isWhole(needs) && isWhole(wants))) return undefined;",
+    "replace": "    if (!(isWhole(savings) && isWhole(needs))) return undefined;",
     "why": "[settings] 0.2 a split with a part missing is read"
   },
   {
@@ -1206,7 +1206,7 @@
   {
     "section": "setup",
     "file": "packages/server/src/setup-desk.ts",
-    "find": "amount = addCents(this.#answers.assignment[pot], view.leftToAssign);",
+    "find": "amount = addCents(this.#answers.assignment[pot] ?? 0, view.leftToAssign);",
     "replace": "amount = view.leftToAssign;",
     "why": "[setup] 14.2 the rest replaces what the bucket had instead of adding to it"
   },
@@ -1556,8 +1556,8 @@
   {
     "section": "history",
     "file": "packages/server/src/history/history.ts",
-    "find": "return (Object.keys(a) as (keyof Totals)[]).every((key) => a[key] === b[key])",
-    "replace": "return (Object.keys(a) as (keyof Totals)[]).filter((key) => key !== 'needs').every((key) => a[key] === b[key])",
+    "find": "return (Object.keys(x) as (keyof HerTotals)[]).every((key) => x[key] === y[key])",
+    "replace": "return (Object.keys(x) as (keyof HerTotals)[]).filter((key) => key !== 'needs').every((key) => x[key] === y[key])",
     "why": "[keeper] the replay check leaves needs out"
   },
   {
@@ -1808,8 +1808,8 @@
   {
     "section": "history",
     "file": "packages/server/src/views/settings.ts",
-    "find": ".filter((name) => before[name] !== after[name])",
-    "replace": ".filter((name) => before[name] === after[name])",
+    "find": ".filter((name) => was[name] !== now[name])",
+    "replace": ".filter((name) => was[name] === now[name])",
     "why": "[a28] the log line lists the totals that did not change"
   },
   {
@@ -2760,8 +2760,8 @@
   {
     "section": "alerts",
     "file": "packages/server/src/alerts/alerts.ts",
-    "find": "body: amounts ? `${owed} Due ${dayWords(f.dueDate)}.` : `Due ${dayWords(f.dueDate)}.` };",
-    "replace": "body: `${owed} Due ${dayWords(f.dueDate)}.` };",
+    "find": "body: amounts ? `${owed} Due ${dayWords(f.dueDate)}.${move}` : `Due ${dayWords(f.dueDate)}.${move}` };",
+    "replace": "body: `${owed} Due ${dayWords(f.dueDate)}.${move}` };",
     "why": "[a39] 10.10 a card reminder shows the amounts on the lock screen"
   },
   {
@@ -4069,8 +4069,8 @@
   {
     "section": "sync",
     "file": "packages/server/src/history/keeper.ts",
-    "find": "permissionEnds: connection?.permissionEnds ?? null, mismatchSince: this.mismatchSince(), cardNames: this.cardNames(), banks };",
-    "replace": "permissionEnds: null, mismatchSince: this.mismatchSince(), cardNames: this.cardNames(), banks };",
+    "find": "permissionEnds: connection?.permissionEnds ?? null, mismatchSince: this.mismatchSince(), cardNames: this.cardNames(), banks, wishlistMove: this.#wishlistMove() };",
+    "replace": "permissionEnds: null, mismatchSince: this.mismatchSince(), cardNames: this.cardNames(), banks, wishlistMove: this.#wishlistMove() };",
     "why": "[a45] 10.13 the alerts never see the date"
   },
   {
@@ -6106,7 +6106,7 @@
   {
     "section": "home",
     "file": "packages/server/src/views/off.ts",
-    "find": "}, ended }, savingsAlone: true };",
+    "find": "}, ended }, savingsAlone: true, ...wishlist };",
     "replace": "}, ended } };",
     "why": "[her-switches] Off in this setup: Payday: what savings should hold is called savings and reserve"
   },
@@ -6575,8 +6575,8 @@
   {
     "section": "alerts",
     "file": "packages/server/src/history/keeper.ts",
-    "find": ", mismatchSince: this.mismatchSince(), cardNames: this.cardNames(), banks };",
-    "replace": ", mismatchSince: this.mismatchSince(), banks };",
+    "find": ", mismatchSince: this.mismatchSince(), cardNames: this.cardNames(), banks, wishlistMove: this.#wishlistMove() };",
+    "replace": ", mismatchSince: this.mismatchSince(), banks, wishlistMove: this.#wishlistMove() };",
     "why": "[her-second-card] 9.1 the alerts never get the cards' names"
   },
   {
@@ -7081,5 +7081,12 @@
     "find": "'second-card': owedAtSetup(setup, 'second-card') };",
     "replace": "'second-card': owedAtSetup(setup, 'everyday-card') };",
     "why": "[her-cards] 52.2 the second card starts from what the everyday card owed"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/views/off.ts",
+    "find": "const wishlist = switches.wishlist === 'on' ? { withWishlist: true as const } : {};",
+    "replace": "const wishlist = {};",
+    "why": "[her-wishlist] 3.8 Payday calls what should be in savings the savings bucket alone"
   }
 ]

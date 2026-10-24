@@ -1,4 +1,4 @@
-import { ACTIVITY_KINDS, MOVABLE_POTS, type Book, type Cents, type StartingPots } from '../src/index.js';
+import { ACTIVITY_KINDS, type Book, type Cents, type StartingPots } from '../src/index.js';
 
 // What a bucket's activity must always satisfy, checked on a book after
 // anything has happened to it. Worked out here on its own, from the numbers
@@ -13,8 +13,9 @@ export function activityProblems(book: Book, start?: StartingPots, from = 0): st
   const problems: string[] = [];
   const pots = book.pots();
   const current = book.period().number;
-  for (const pot of MOVABLE_POTS) {
-    let carried: Cents | undefined = from === 0 ? start?.[pot] : undefined;
+  // Her rulebook: Wishlist too, where the setup has it ($0.00 when setup day gave it nothing).
+  for (const pot of book.movablePots()) {
+    let carried: Cents | undefined = from === 0 && start !== undefined ? (start[pot] ?? 0) : undefined;
     for (let k = from; k <= current; k += 1) {
       const a = book.activity(pot, k);
       const where = `${pot}, pay period ${k}`;
@@ -47,10 +48,11 @@ export function summaryProblems(book: Book, from = 0): string[] {
     if (s.number !== k) problems.push(`asked for pay period ${k}, got ${s.number}`);
     if ((s.endDate === null) !== (k === current)) problems.push(`pay period ${k}: only the current pay period has no end day`);
     const next = k < current ? book.periodSummary(k + 1) : undefined;
-    for (const pot of MOVABLE_POTS) {
+    for (const pot of book.movablePots()) {
       const where = `${pot}, pay period ${k}`;
-      const kinds: Cents = ACTIVITY_KINDS.map((kind) => s.byKind[pot][kind]).reduce((sum, c) => sum + c, 0);
-      if (s.opening[pot] + kinds !== s.closing[pot]) problems.push(`${where}: opening ${s.opening[pot]} plus ${JSON.stringify(s.byKind[pot])} is not closing ${s.closing[pot]}`);
+      const byKind = (s.byKind as Readonly<Record<string, Readonly<Record<string, Cents>>>>)[pot] ?? {};
+      const kinds: Cents = ACTIVITY_KINDS.map((kind) => byKind[kind] ?? 0).reduce((sum, c) => sum + c, 0);
+      if ((s.opening[pot] ?? 0) + kinds !== s.closing[pot]) problems.push(`${where}: opening ${s.opening[pot]} plus ${JSON.stringify(s.byKind[pot])} is not closing ${s.closing[pot]}`);
       const a = book.activity(pot, k);
       if (a.opening !== s.opening[pot] || a.closing !== s.closing[pot]) problems.push(`${where}: the list and the summary disagree about where it started or ended`);
       if (a.in + a.out !== kinds) problems.push(`${where}: the list adds up to ${a.in + a.out}, the summary to ${kinds}`);

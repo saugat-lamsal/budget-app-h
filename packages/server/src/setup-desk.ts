@@ -210,13 +210,15 @@ export class SetupDesk {
       const { pot } = step.assign;
       // "Off in this setup": nothing can be given to the mom reserve, not even a cent.
       if (pot === 'momReserve' && this.#input.bank?.switches?.momReserve === 'off') return refuse('refused', 'This setup has no mom reserve.');
+      // Her rulebook, 14.2: Wishlist only where the setup has it.
+      if (pot === 'wishlist' && this.#input.bank?.switches?.wishlist !== 'on') return refuse('refused', 'This setup has no Wishlist.');
       let amount: number;
       try {
         if ('rest' in step.assign) {
           if (view.leftToAssign === 0) return refuse('refused', 'Nothing is left to assign');
-          amount = addCents(this.#answers.assignment[pot], view.leftToAssign);
+          amount = addCents(this.#answers.assignment[pot] ?? 0, view.leftToAssign);
         } else amount = step.assign.amount;
-        if (amount === this.#answers.assignment[pot]) return refuse('refused', 'That is already the amount');
+        if (amount === (this.#answers.assignment[pot] ?? 0)) return refuse('refused', 'That is already the amount');
         const assignment: StartingPots = { ...this.#answers.assignment, [pot]: amount };
         checkAssignment(view.startingMoney, assignment);
         this.#answers = { ...this.#answers, assignment };

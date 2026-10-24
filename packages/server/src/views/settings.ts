@@ -9,13 +9,13 @@ import {
   type ChangeLogEntry,
   type IsoDate,
   type PayoffCountdown,
-  type Pot,
+  type AnyPot,
   type Settings,
   type SortingRule,
   type SplitSettings,
 } from '@budget-app/money';
 import type { BankRule } from '../bank/reading.js';
-import type { Totals } from '../history/history.js';
+import type { HerTotals } from '../history/history.js';
 import type { BankRuleLogLine } from './bank-rules.js';
 import type { RuleView } from './choice.js';
 import type { CardRemindersOff, CheckedAt } from './home.js';
@@ -90,7 +90,7 @@ export type LogRow =
   | { readonly key: string; readonly date: IsoDate; readonly kind: 'rule-removed'; readonly rule: RuleView }
   // A22: moved one place up or down past another rule of its kind; position is its place now.
   | { readonly key: string; readonly date: IsoDate; readonly kind: 'rule-moved'; readonly rule: RuleView; readonly past: RuleView; readonly direction: 'up' | 'down'; readonly position: number }
-  | { readonly key: string; readonly date: IsoDate; readonly kind: 'money-moved'; readonly from: Pot; readonly to: Pot; readonly amount: Cents }
+  | { readonly key: string; readonly date: IsoDate; readonly kind: 'money-moved'; readonly from: AnyPot; readonly to: AnyPot; readonly amount: Cents }
   // 4.10: the bank took back something the app had counted.
   | { readonly key: string; readonly date: IsoDate; readonly kind: 'bank-took-back'; readonly description: string; readonly amount: Cents }
   // Section 2, 24c: a bank rule added, changed (before and after), or removed.
@@ -107,7 +107,7 @@ export type LogRow =
       readonly kind: 'history-retotaled';
       readonly from: { readonly date: IsoDate; readonly what: string };
       readonly events: number;
-      readonly changes: readonly { readonly name: keyof Totals; readonly before: number; readonly after: number }[];
+      readonly changes: readonly { readonly name: keyof HerTotals; readonly before: number; readonly after: number }[];
     }
   // Logins, new passkeys and log outs, by the device, and the login setting.
   | { readonly key: string; readonly date: IsoDate; readonly kind: 'logged-in' | 'logged-out' | 'passkey-added'; readonly device: string }
@@ -300,7 +300,9 @@ function serverRow(line: ServerLogLine, key: string): LogRow {
       const first = line.events[0];
       const before = first?.before ?? null;
       const after = first?.after ?? null;
-      const changes = before === null || after === null ? [] : (Object.keys(after) as (keyof Totals)[]).filter((name) => before[name] !== after[name]).map((name) => ({ name, before: before[name], after: after[name] }));
+      const was = before as HerTotals | null;
+      const now = after as HerTotals | null;
+      const changes = was === null || now === null ? [] : (Object.keys(now) as (keyof HerTotals)[]).filter((name) => was[name] !== now[name]).map((name) => ({ name, before: was[name] ?? 0, after: now[name] ?? 0 }));
       return { key, date: line.date, kind: 'history-retotaled', from: { date: line.from.date, what: line.from.what }, events: line.events.length, changes };
     }
     case 'stay-logged-in-changed':

@@ -68,7 +68,8 @@ describe('Off in this setup: no screen shows the mom reserve or the old card', (
     const rows = (JSON.parse(body) as { activity: { rows: { resort: { resortable: boolean; paycheckPreview?: Record<string, unknown> | null } }[] } }).activity.rows;
     const previews = rows.flatMap((row) => (row.resort.resortable && row.resort.paycheckPreview ? [row.resort.paycheckPreview] : []));
     expect(previews.length).toBeGreaterThan(0);
-    for (const preview of previews) expect(Object.keys(preview).sort()).toEqual(['detail', 'needs', 'savings', 'wants']);
+    // PR 9: and Wishlist's part, at 0% here.
+    for (const preview of previews) expect(Object.keys(preview).sort()).toEqual(['detail', 'needs', 'savings', 'wants', 'wishlist']);
     expect(body).not.toMatch(OFF_WORDS);
   });
 
@@ -87,7 +88,7 @@ describe('Off in this setup: no screen shows the mom reserve or the old card', (
     expect(buckets.state).toBe('tracking');
     const payday = JSON.parse((await read(r, '/api/payday')).body) as { report: { paycheck: { amount: number; split: Record<string, unknown> } } };
     expect(payday.report.paycheck.amount).toBe(250_000);
-    expect(Object.keys(payday.report.paycheck.split).sort()).toEqual(['detail', 'needs', 'savings', 'wants']);
+    expect(Object.keys(payday.report.paycheck.split).sort()).toEqual(['detail', 'needs', 'savings', 'wants', 'wishlist']);
     const review = JSON.parse((await read(r, '/api/review')).body) as { state: string };
     expect(review.state).toBe('tracking');
   });
@@ -99,7 +100,7 @@ describe('Off in this setup: no screen shows the mom reserve or the old card', (
     expect(status).toBe(200);
     expect(JSON.parse(body)).toEqual({ state: 'off', madeUpData: false });
     const needs = JSON.parse((await read(r, '/api/activity/needs')).body) as { balances: Record<string, number> };
-    expect(Object.keys(needs.balances).sort()).toEqual(['heldForOthers', 'needs', 'savings', 'wants']);
+    expect(Object.keys(needs.balances).sort()).toEqual(['heldForOthers', 'needs', 'savings', 'wants', 'wishlist']);
   });
 
   it('Off in this setup: before setup day, Setup day asks nothing about the old card or the mom reserve', { timeout: 60_000 }, async () => {
@@ -109,7 +110,7 @@ describe('Off in this setup: no screen shows the mom reserve or the old card', (
     const { body } = await read(r, '/api/setup');
     const view = JSON.parse(body) as { state: string; ready: boolean; assignment: Record<string, number> };
     expect(view).toMatchObject({ state: 'not-set-up', ready: true });
-    expect(Object.keys(view.assignment).sort()).toEqual(['heldForOthers', 'needs', 'savings', 'wants']);
+    expect(Object.keys(view.assignment).sort()).toEqual(['heldForOthers', 'needs', 'savings', 'wants', 'wishlist']);
     expect(body).not.toMatch(OFF_WORDS);
   });
 

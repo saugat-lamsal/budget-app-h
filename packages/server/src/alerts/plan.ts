@@ -1,4 +1,4 @@
-import { addDays, bucketLevel, cardDue, cardNotices, payoffCountdown, type BankBalances, type Book, type CardStatement, type IsoDate } from '@budget-app/money';
+import { addDays, bucketLevel, cardDue, cardNotices, payoffCountdown, type BankBalances, type Book, type CardStatement, type Cents, type IsoDate } from '@budget-app/money';
 import { ReplayFailed } from '../history/history.js';
 import { instantIn, timeIn, todayIn } from '../history/today.js';
 import { alertRecord, lastingKindOf, type AlertFacts, type AlertRecord, type LastingKind } from './alerts.js';
@@ -119,6 +119,9 @@ export interface AlertWorld {
   // its name, in place of needsLogin, lastRead and permissionEnds, which are
   // then about her first bank only. Null or left out in upstream's setup.
   readonly banks?: readonly AlertBank[] | null;
+  // Her rulebook, 50.4: the Wishlist money to move from savings to checking,
+  // which the card reminders say too. Null or left out without Wishlist.
+  readonly wishlistMove?: { readonly amount: Cents; readonly cards: readonly ('everyday-card' | 'second-card')[] } | null;
 }
 
 // One of her banks, as the alerts know it.
@@ -311,6 +314,8 @@ function eveningAlerts(world: AlertWorld, ledger: AlertLedger, date: IsoDate): A
           minimumPayment: notice.minimumPayment,
           statementBalance: notice.card !== 'old-card' ? notice.statementBalance : null,
           ...named,
+          // Her rulebook, 50.4: while it is not moved, the reminder says it too.
+          ...(notice.card !== 'old-card' && world.wishlistMove != null && world.wishlistMove.amount > 0 && world.wishlistMove.cards.includes(notice.card) ? { wishlistMove: world.wishlistMove.amount } : {}),
         });
       }
     }

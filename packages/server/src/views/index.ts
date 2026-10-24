@@ -2,6 +2,7 @@
 // phone's side: the numbers are worked out here, from the money math.
 export * from './home.js';
 export type * from './home-cards.js';
+export type * from './home-wishlist.js';
 export type * from './statement.js';
 export * from './buckets.js';
 export * from './trends.js';

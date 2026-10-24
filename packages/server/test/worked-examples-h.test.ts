@@ -165,6 +165,50 @@ examples[3] = async () => {
   }
 };
 
+// PR 9: a Wishlist purchase, on Buckets and Home (50.4).
+examples[4] = async () => {
+  const life = await herLife();
+  try {
+    const k = life.keeper;
+    for (const setup of [
+      { lastPaycheck: '2026-09-25' },
+      { assign: { pot: 'savings' as const, amount: parseDollars('4,000.00') } },
+      { assign: { pot: 'wishlist' as const, amount: parseDollars('300.00') } },
+      { assign: { pot: 'wants' as const, amount: parseDollars('200.00') } },
+      { assign: { pot: 'needs' as const, rest: true as const } },
+    ]) {
+      const answer = k.setup({ id: decision(), setup });
+      if (!answer.ok) throw new Error(answer.why);
+    }
+    const view = k.setupView();
+    if (view.state !== 'not-set-up' || !view.ready) throw new Error('setup day is not ready');
+    const started = k.setup({ id: decision(), setup: { start: true }, confirmed: true, seen: view.key });
+    if (!started.ok) throw new Error(started.why);
+    life.h.fake.addPosted({ id: 'gadget-1', account: ACCOUNT_IDS.everyday, amount: parseDollars('50.00'), date: '2026-10-03', description: 'MADE UP GADGETS' });
+    life.now = noonInNewYork('2026-10-03');
+    await life.sync();
+    const sorted = choose(k, { item: 'gadget-1', choice: { to: 'wishlist' } });
+    if (!sorted.ok) throw new Error(sorted.why);
+    const buckets = k.buckets();
+    const home = k.home();
+    const toMove = home.state === 'tracking' && 'wishlistMove' in home ? (home.wishlistMove?.amount ?? 0) : 0;
+    life.h.fake.addPosted({ id: 'move-out', account: ACCOUNT_IDS.savings, amount: parseDollars('50.00'), date: '2026-10-06', description: 'Online transfer to CHK 1111' });
+    life.h.fake.addPosted({ id: 'move-in', account: ACCOUNT_IDS.checking, amount: -parseDollars('50.00'), date: '2026-10-06', description: 'Online transfer from SAV 2222' });
+    life.now = noonInNewYork('2026-10-06');
+    await life.sync();
+    const after = k.home();
+    return {
+      'wishlist on buckets': buckets.state === 'tracking' ? (buckets.wishlist ?? -1) : -1,
+      'to move on home': toMove,
+      'savings account after the move': life.h.fake.posted(ACCOUNT_IDS.savings),
+      'to move after the move': after.state === 'tracking' && 'wishlistMove' in after ? (after.wishlistMove?.amount ?? -1) : 0,
+      'wishlist after the move': k.book()?.pots().wishlist ?? -1,
+    };
+  } finally {
+    life.done();
+  }
+};
+
 // The self-check against each bank's latest good read, as saved (12.3).
 function bankStatusOf(life: Life): { readonly bankSide: Cents; readonly difference: Cents } {
   const check = bankStatus(life.h.db).selfCheck;

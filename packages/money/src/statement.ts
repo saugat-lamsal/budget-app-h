@@ -17,7 +17,8 @@ import type { CardStatement, EverydayCard } from './reminders.js';
 // bank takes back is on the statement it posted in, and its take-back on the
 // one it came in. Readings HB14 to HB18, docs/her-questions.txt.
 
-export type StatementBucket = 'needs' | 'wants' | 'unsorted' | 'before-setup';
+// Her rulebook, 52.4 (PR 9): Wishlist too, where the setup has it.
+export type StatementBucket = 'needs' | 'wants' | 'wishlist' | 'unsorted' | 'before-setup';
 
 export interface StatementItem {
   readonly id: string;
@@ -82,7 +83,7 @@ export interface StatementView {
   readonly from: IsoDate;
   readonly carriedIn: CarriedIn;
   // Only the groups with something in them, in this order: needs, wants,
-  // still unsorted, before setup day.
+  // Wishlist, still unsorted, before setup day.
   readonly byBucket: readonly { readonly bucket: StatementBucket; readonly total: Cents; readonly items: readonly StatementItem[] }[];
   // Before setup day first, then each pay period, oldest first.
   readonly byPayPeriod: readonly { readonly period: StatementPeriod | 'before-setup'; readonly total: Cents; readonly items: readonly StatementItem[] }[];
@@ -101,7 +102,10 @@ interface Line {
   readonly pieces: readonly Piece[];
 }
 
-const BUCKET_ORDER: readonly StatementBucket[] = ['needs', 'wants', 'unsorted', 'before-setup'];
+const BUCKET_ORDER: readonly StatementBucket[] = ['needs', 'wants', 'wishlist', 'unsorted', 'before-setup'];
+
+// A bucket a purchase or a refund can be listed by.
+const isListed = (to: string): to is 'needs' | 'wants' | 'wishlist' => to === 'needs' || to === 'wants' || to === 'wishlist';
 
 export function cardStatementView(input: StatementInput): StatementView {
   const { statement, before, book } = input;
@@ -197,7 +201,8 @@ export function cardStatementView(input: StatementInput): StatementView {
 // bucket; a part a refund already took is under the first part, as that
 // refund is. A refund: under the bucket its purchase is in now (all of a
 // split's parts when it is the whole of what is left), or as it is sorted
-// itself; one sorted to neither needs nor wants is a credit, like a payment.
+// itself; one sorted to neither needs, wants nor Wishlist is a credit, like a
+// payment.
 function piecesOf(entry: CardEntry, amount: Cents, charges: ReadonlyMap<string, Extract<CardEntry, { kind: 'charge' }>>): Piece[] {
   if (entry.kind === 'payment') return nonZero([{ where: 'credit', amount }]);
   if (entry.kind === 'charge') {
@@ -209,13 +214,13 @@ function piecesOf(entry: CardEntry, amount: Cents, charges: ReadonlyMap<string, 
     return nonZero(of === undefined ? [{ where: 'unsorted', amount }] : spread(of.sortedTo, amount, true));
   }
   const to = entry.sortedTo;
-  return nonZero([{ where: to === 'unsorted' || to === 'needs' || to === 'wants' ? to : 'credit', amount }]);
+  return nonZero([{ where: to === 'unsorted' || isListed(to) ? to : 'credit', amount }]);
 }
 
 // An amount spread as a spending sort spreads it.
 function spread(sorted: SpendingSort, amount: Cents, refund = false): Piece[] {
   if ('split' in sorted) {
-    const parts = sorted.split.map((part): Piece => ({ where: part.bucket === 'needs' || part.bucket === 'wants' ? part.bucket : 'unsorted', amount: part.amount }));
+    const parts = sorted.split.map((part): Piece => ({ where: isListed(part.bucket) ? part.bucket : 'unsorted', amount: part.amount }));
     const sum = addCents(...parts.map((p) => p.amount));
     const [first, ...others] = parts;
     if (first === undefined) return [{ where: 'unsorted', amount }];
@@ -224,7 +229,7 @@ function spread(sorted: SpendingSort, amount: Cents, refund = false): Piece[] {
     if (refund) return [{ where: first.where, amount }];
     return [{ where: first.where, amount: addCents(first.amount, subtractCents(amount, sum)) }, ...others];
   }
-  if (sorted.to === 'needs' || sorted.to === 'wants') return [{ where: sorted.to, amount }];
+  if (isListed(sorted.to)) return [{ where: sorted.to, amount }];
   if (sorted.to === 'counted-at-setup') return [{ where: 'before-setup', amount }];
   return [{ where: 'unsorted', amount }];
 }

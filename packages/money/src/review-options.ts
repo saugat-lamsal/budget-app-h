@@ -10,7 +10,8 @@ import { OLDER_PAYCHECK_FIRST } from './paycheck-ask.js';
 
 // One tap. For money in, needs/wants/savings/momReserve mean "payback into
 // that bucket" (6.1); for spending they mean "take it from that bucket".
-export type PickTo = 'paycheck' | 'other-income' | 'savings' | 'needs' | 'wants' | 'momReserve' | 'not-mine' | 'mom';
+// Her rulebook: wishlist is Wishlist, both ways (4.2, 6.1).
+export type PickTo = 'paycheck' | 'other-income' | 'savings' | 'needs' | 'wants' | 'momReserve' | 'not-mine' | 'mom' | 'wishlist';
 
 export interface ReviewPick {
   readonly to: PickTo;
@@ -35,7 +36,7 @@ export type ReviewOptions =
       // In the order to show them.
       readonly picks: readonly ReviewPick[];
       // Which buckets it can be split across (4.4, 7.6); null when it cannot be split.
-      readonly split: readonly ('needs' | 'wants' | 'not-mine')[] | null;
+      readonly split: readonly ('needs' | 'wants' | 'wishlist' | 'not-mine')[] | null;
       // Which of your accounts it can be marked a transfer with (5.6).
       readonly transfer: readonly AccountId[];
       // Which picks "always do this" can make a rule for (13.6); empty when none.
@@ -70,6 +71,8 @@ export type ReviewFacts =
       // 20d: for a refund, or money in to checking (A29), the purchases it
       // likely belongs to.
       readonly likely: readonly string[];
+      // Her rulebook, 6.1: payback into Wishlist, where the setup has it.
+      readonly wishlist?: boolean;
     }
   | {
       readonly type: 'spending';
@@ -87,6 +90,8 @@ export type ReviewFacts =
       readonly markedFromSavings: boolean;
       // What is left to sort (4.4 needs a part of at least a cent each).
       readonly net: Cents;
+      // Her rulebook, 4.2 and 4.4: Wishlist, where the setup has it.
+      readonly wishlist?: boolean;
     }
   | { readonly type: 'leftover' }
   | { readonly type: 'old-card-purchase' };
@@ -122,7 +127,7 @@ function moneyInOptions(f: Extract<ReviewFacts, { type: 'money-in' }>): ReviewOp
     }
     picks.push(plain('other-income'));
   }
-  picks.push(...BUCKET_PAYBACKS.map(plain), plain('not-mine'));
+  picks.push(...BUCKET_PAYBACKS.map(plain), ...(f.wishlist === true ? [plain('wishlist')] : []), plain('not-mine'));
   // 5.6: money arrives from checking or savings.
   const transfer = (['checking', 'savings'] as const).filter((a) => a !== f.account);
   return {
@@ -148,14 +153,17 @@ function spendingOptions(f: Extract<ReviewFacts, { type: 'spending' }>): ReviewO
   if (f.kind === 'debt-payoff') return { type: 'sort', picks: [plain('savings'), plain('needs')], split: null, transfer: [], transferOutcome: {}, always: [], unavailable: [], match: [], unmark: f.markedFromSavings };
 
   const person = f.kind === 'person-payment';
-  const picks: ReviewPick[] = [plain('needs'), plain('wants')];
+  // Her rulebook, 4.2: spending goes to needs, wants or Wishlist; a payment to
+  // a person keeps 7.6's choices, and the difference on a mom payment 8.3's.
+  const wishlist = f.wishlist === true && !person && f.kind !== 'mom-difference';
+  const picks: ReviewPick[] = [plain('needs'), plain('wants'), ...(wishlist ? [plain('wishlist')] : [])];
   if (person) {
     picks.push(plain('not-mine'));
     if (f.canBeForMom) picks.push(plain('mom'));
   }
   // 4.4: parts of at least a cent each. 8.3, B23: the difference on a mom payment goes to one bucket.
   const canSplit = f.kind !== 'mom-difference' && f.net >= 2;
-  const split = canSplit ? (person ? (['needs', 'wants', 'not-mine'] as const) : (['needs', 'wants'] as const)) : null;
+  const split = canSplit ? (person ? (['needs', 'wants', 'not-mine'] as const) : wishlist ? (['needs', 'wants', 'wishlist'] as const) : (['needs', 'wants'] as const)) : null;
 
   // 5.6, B74: only a purchase or a payment to a person, that left checking or
   // savings, once it has posted and nothing of it was refunded or counted on setup day.

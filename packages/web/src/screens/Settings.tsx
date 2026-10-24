@@ -199,10 +199,11 @@ function SettingsReady({ view, reload, onChanged }: { readonly view: Tracking; r
             { name: 'From next paycheck', sub: next },
           ]}
           rows={[
-            ...(['savings', 'needs', 'wants'] as const).map((bucket) => ({
+            // Her rulebook, section 2: Wishlist too, where the split names it.
+            ...(split.thisPayPeriod.split.wishlist === undefined ? (['savings', 'needs', 'wants'] as const) : (['savings', 'needs', 'wants', 'wishlist'] as const)).map((bucket) => ({
               label: POT_NAMES[bucket],
-              first: `${split.thisPayPeriod.split[bucket]}%`,
-              second: `${split.fromNextPaycheck.split[bucket]}%`,
+              first: `${split.thisPayPeriod.split[bucket] ?? 0}%`,
+              second: `${split.fromNextPaycheck.split[bucket] ?? 0}%`,
               differs: split.thisPayPeriod.split[bucket] !== split.fromNextPaycheck.split[bucket],
               testId: `split-${bucket}`,
             })),
@@ -226,7 +227,7 @@ function SettingsReady({ view, reload, onChanged }: { readonly view: Tracking; r
                 ]),
           ]}
         />
-        <ListRow icon="settings" title="Change the split" detail="Savings, needs, and wants, in whole percents" onClick={() => open({ what: 'split' })} testId="row-split" />
+        <ListRow icon="settings" title="Change the split" detail={s.split.wishlist === undefined ? 'Savings, needs, and wants, in whole percents' : 'Savings, needs, wants, and Wishlist, in whole percents'} onClick={() => open({ what: 'split' })} testId="row-split" />
         {reserve !== null && <ListRow icon="heart" title="Change the mom reserve" detail="What each paycheck sets aside for mom, and the most it holds" onClick={() => open({ what: 'reserve' })} testId="row-reserve" />}
       </Card>
 
@@ -529,7 +530,7 @@ function reserveOf(split: Tracking['split']): { readonly now: { readonly perPayc
 function startFields(editing: Editing, s: SettingsValuesShown): Fields {
   switch (editing.what) {
     case 'split':
-      return { savings: String(s.split.savings), needs: String(s.split.needs), wants: String(s.split.wants) };
+      return { savings: String(s.split.savings), needs: String(s.split.needs), wants: String(s.split.wants), ...(s.split.wishlist === undefined ? {} : { wishlist: String(s.split.wishlist) }) };
     case 'reserve':
       return { perPaycheck: typed(s.momReservePerPaycheck ?? 0), cap: typed(s.momReserveCap ?? 0) };
     case 'target':
@@ -591,10 +592,12 @@ function readSettings(editing: Editing, f: Fields): Reading<Partial<Settings>> {
   };
   switch (editing.what) {
     case 'split': {
-      const r = wholes(['savings', 'needs', 'wants']);
+      // Her rulebook, section 2: with Wishlist's share, where the setup has it.
+      const withWishlist = 'wishlist' in f;
+      const r = wholes(['savings', 'needs', 'wants', ...(withWishlist ? ['wishlist'] : [])]);
       if ('problem' in r) return r;
-      const [savings = 0, needs = 0, wants = 0] = r.value;
-      return { value: { split: { savings, needs, wants } } };
+      const [savings = 0, needs = 0, wants = 0, wishlist = 0] = r.value;
+      return { value: { split: withWishlist ? { savings, needs, wants, wishlist } : { savings, needs, wants } } };
     }
     case 'reserve': {
       const r = amounts(['perPaycheck', 'cap']);
@@ -902,7 +905,14 @@ function SheetFields({ editing, get, set, view, kind }: { readonly editing: Edit
         <>
           <TextField label="Savings (%)" kind="whole" value={get('savings')} onChange={set('savings')} testId="field-savings" />
           <TextField label="Needs (%)" kind="whole" value={get('needs')} onChange={set('needs')} testId="field-needs" />
-          <TextField label="Wants (%)" kind="whole" value={get('wants')} onChange={set('wants')} testId="field-wants" hint="The three must add up to 100." />
+          {view.settings.split.wishlist === undefined ? (
+            <TextField label="Wants (%)" kind="whole" value={get('wants')} onChange={set('wants')} testId="field-wants" hint="The three must add up to 100." />
+          ) : (
+            <>
+              <TextField label="Wants (%)" kind="whole" value={get('wants')} onChange={set('wants')} testId="field-wants" />
+              <TextField label="Wishlist (%)" kind="whole" value={get('wishlist')} onChange={set('wishlist')} testId="field-wishlist" hint="The four must add up to 100. Wishlist money is kept in savings and is not part of safe to spend." />
+            </>
+          )}
         </>
       );
     case 'reserve':
@@ -1066,7 +1076,8 @@ function PreviewOf({ preview, view }: { readonly preview: SettingsPreviewView; r
                   {item.kind === 'paycheck' && (
                     <>
                       {' '}
-                      Mom reserve <Money cents={item.split.momReserve} />, Savings <Money cents={item.split.savings} />, Needs <Money cents={item.split.needs} />, Wants <Money cents={item.split.wants} />.
+                      Mom reserve <Money cents={item.split.momReserve} />, Savings <Money cents={item.split.savings} />, Needs <Money cents={item.split.needs} />, Wants <Money cents={item.split.wants} />
+                      {item.split.wishlist === undefined ? '' : <>, Wishlist <Money cents={item.split.wishlist} /></>}.
                     </>
                   )}
                 </>

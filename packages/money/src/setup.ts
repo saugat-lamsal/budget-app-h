@@ -80,7 +80,8 @@ export function checkAssignment(money: Cents, assignment: StartingPots): { reado
   assertCents(money, 'starting money');
   const a = assignment;
   for (const [name, value] of Object.entries(a)) assertCents(value, name);
-  const assigned = addCents(a.savings, a.needs, a.wants, a.momReserve, a.heldForOthers);
+  // Her rulebook, 14.2: and Wishlist, where the setup has it.
+  const assigned = addCents(a.savings, a.needs, a.wants, a.momReserve, a.heldForOthers, a.wishlist ?? 0);
   return { assigned, leftToAssign: subtractCents(money, assigned) };
 }
 

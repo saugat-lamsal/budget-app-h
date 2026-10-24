@@ -25,7 +25,8 @@ import { LAST_PAYCHECK, PAYROLL, START_DATE, TestBank, codeOf, deposit, paycheck
 
 const HER: Settings = changeSettings(HER_SETTINGS, { paycheckRule: { contains: PAYROLL } });
 const POTS = { savings: 100_000, needs: 50_000, wants: 30_000, momReserve: 0, heldForOthers: 0 };
-const START = { ...POTS, unsortedIn: 0, unsortedOut: 0 };
+// PR 9: her setup has Wishlist, at 0% here.
+const START = { ...POTS, unsortedIn: 0, unsortedOut: 0, wishlist: 0 };
 const MAX = Number.MAX_SAFE_INTEGER;
 
 // LAST_PAYCHECK is Sep 25, so Oct 9 is the next payday (14 days) and
@@ -119,9 +120,9 @@ describe('3.1 with "Ask before splitting a paycheck" on, a paycheck waits for yo
 
   it('3.1 what it would get is the split the next paycheck uses (13.1), not the one in force', () => {
     const book = herBook();
-    book.changeSettings({ split: { savings: 40, needs: 40, wants: 20 } }, '2026-10-02');
+    book.changeSettings({ split: { savings: 40, needs: 40, wants: 20, wishlist: 0 } }, '2026-10-02');
     book.receive(paycheck('p1', PAYDAY, 400_000));
-    expect(book.splitInForce().split).toEqual({ savings: 50, needs: 30, wants: 20 });
+    expect(book.splitInForce().split).toEqual({ savings: 50, needs: 30, wants: 20, wishlist: 0 });
     expect(detailOf(book, 'p1').paycheckPreview).toMatchObject({ savings: 160_000, needs: 160_000, wants: 80_000 });
   });
 
@@ -187,6 +188,8 @@ describe('3.1 with "Ask before splitting a paycheck" on, a paycheck waits for yo
       { to: 'savings', final: false },
       { to: 'needs', final: false },
       { to: 'wants', final: false },
+      // PR 9: payback into Wishlist too (6.1).
+      { to: 'wishlist', final: false },
       { to: 'not-mine', final: false },
     ]);
     expect(options.unavailable).toEqual([]);
@@ -340,14 +343,14 @@ describe('51.1 a paycheck waiting for your yes', () => {
     const book = herBook({ leftoverAtPayday: { needs: 'roll-over', wants: 'roll-over' } });
     book.receive(paycheck('p1', PAYDAY, 400_000));
     const shown = detailOf(book, 'p1').paycheckPreview;
-    book.changeSettings({ split: { savings: 60, needs: 25, wants: 15 } }, '2026-10-10');
+    book.changeSettings({ split: { savings: 60, needs: 25, wants: 15, wishlist: 0 } }, '2026-10-10');
     const now = detailOf(book, 'p1').paycheckPreview;
     expect(now).not.toEqual(shown);
     expect(now).toMatchObject({ savings: 240_000, needs: 100_000, wants: 60_000 });
     expect(book.paychecksWaiting()[0]?.wouldGet).toEqual(now);
     book.sort('p1', { to: 'paycheck' }, '2026-10-11');
     expect(book.paychecks()[0]?.split).toEqual(now);
-    expect(book.splitInForce().split).toEqual({ savings: 60, needs: 25, wants: 15 });
+    expect(book.splitInForce().split).toEqual({ savings: 60, needs: 25, wants: 15, wishlist: 0 });
   });
 
   it('51.1 it is no longer waiting once answered either way', () => {

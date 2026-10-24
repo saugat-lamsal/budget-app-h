@@ -2,7 +2,7 @@ import { BankDesk, rolesComplete } from '../bank-desk.js';
 import { PLAID_URLS } from '../plaid/sandbox-lock.js';
 import type { IncomingMessage, Server } from 'node:http';
 import type { Agent } from 'node:https';
-import { owedAtSetup, rolesFor, type AccountId, type BankBalances, type Book, type CardStatement, type EverydayCard, type IsoDate, type Pot, type Switches } from '@budget-app/money';
+import { owedAtSetup, rolesFor, type AccountId, type BankBalances, type Book, type CardStatement, type EverydayCard, type IsoDate, type AnyPot, type Switches, type WishlistMove } from '@budget-app/money';
 import { UPSTREAM_START, type SetupStart } from '../setup-start.js';
 import { cardsNamed } from '../http/card-names.js';
 import { offTakenOut } from '../http/off-options.js';
@@ -49,6 +49,7 @@ import { beforeSetupOf } from '../trends-db.js';
 import type { TrendsView } from '../views/trends.js';
 import type { ChoiceRequest, ChoiceResponse, MoveRequest, MoveResponse, RuleRequest, RuleResponse, SettingsRequest, SettingsResponse, SetupRequest, SetupResponse } from '../views/choice.js';
 import { withCards, homeCards, type HomeWithCards } from '../views/home-cards.js';
+import { wishlistMoveOf, withWishlistMove, type HomeWithWishlist } from '../views/home-wishlist.js';
 import { homeView, type BankDetail, type CardRemindersOff, type CheckedAt, type HomeView, type PendingMoneyIn, type WhyLine } from '../views/home.js';
 import { paydayView, type PaydayView } from '../views/payday.js';
 import { reviewView, type ReviewView } from '../views/review.js';
@@ -433,7 +434,7 @@ export class Keeper {
     return { statements, cardsOff };
   }
 
-  home(): HomeWithCards {
+  home(): HomeWithWishlist {
     const view = homeView({
       today: this.today(),
       book: this.book(),
@@ -456,7 +457,21 @@ export class Keeper {
     // 0.5, B82: the last safe to spend the bank backed up, and when.
     if (view.state === 'tracking' && view.safeToSpend.shown) saveLastChecked(this.#db, { amount: view.safeToSpend.amount, at: timeIn(this.timeZone(), this.#now()) });
     // Her rulebook, 52.1 and 52.2: each card, with what is set aside for it.
-    return this.#withCards(view);
+    // Her rulebook, 50.4: and the Wishlist money to move from savings to checking.
+    return withWishlistMove(this.#withCards(view), this.#wishlistMove());
+  }
+
+  // Her rulebook, 50.4: from the book, the savings account as 3.8 reads it,
+  // each card's statements (the latest and the kept ones, 52.5) and the days
+  // the bank posted its items. Null without Wishlist or before setup day.
+  #wishlistMove(): WishlistMove | null {
+    const book = this.book();
+    if (book === null || book.switches().wishlist !== 'on') return null;
+    const settings = book.settings();
+    const kept = readAccounts(this.#db).flatMap((a) => (a.role === 'everyday-card' || a.role === 'second-card' ? [{ card: a.role, raw: keptStatements(this.#db, a.plaidAccountId), closingDay: closingDayOf(a.role, settings) }] : []));
+    // HB22: nothing is said while the check waits for a bank (12.3).
+    const bank = this.#waiting() ? null : this.#bank();
+    return wishlistMoveOf({ today: this.today(), book, bank, latest: this.#statements(), kept, items: readItems(this.#db) });
   }
 
   // Her rulebook, 52.1 and 52.2: Home with each card, from what each owed on
@@ -513,7 +528,7 @@ export class Keeper {
     return reviewView({ today: this.today(), book: this.book(), madeUpData: false, labeled });
   }
 
-  activity(pot: Pot): ActivityView {
+  activity(pot: AnyPot): ActivityView {
     return activityView({ today: this.today(), book: this.book(), pot, madeUpData: false });
   }
 
@@ -865,7 +880,7 @@ export class Keeper {
     // Her setup (HB10): each bank's own; while the check waits for one (12.3,
     // HB9), the bank's numbers are not known to the alerts.
     const banks = this.#banksInSetup() === 2 ? connections.map((c) => ({ bank: c.bank, name: bankNameOf(c), needsLogin: c.needsLogin, lastRead: c.lastRead, permissionEnds: c.permissionEnds })) : null;
-    return { book, now: this.#now(), zone: this.timeZone(), bank: this.#waiting() ? null : this.#bank(), needsLogin: connection?.needsLogin ?? false, statements: this.#statements(), lastRead: this.lastRead(), permissionEnds: connection?.permissionEnds ?? null, mismatchSince: this.mismatchSince(), cardNames: this.cardNames(), banks };
+    return { book, now: this.#now(), zone: this.timeZone(), bank: this.#waiting() ? null : this.#bank(), needsLogin: connection?.needsLogin ?? false, statements: this.#statements(), lastRead: this.lastRead(), permissionEnds: connection?.permissionEnds ?? null, mismatchSince: this.mismatchSince(), cardNames: this.cardNames(), banks, wishlistMove: this.#wishlistMove() };
   }
 
   // Works out every alert due now (alerts/plan.ts) and keeps it: each
@@ -1060,6 +1075,7 @@ export class Keeper {
       trends: () => this.trends(),
       review: () => this.review(),
       activity: (_request, pot) => this.activity(pot),
+      wishlistActivity: () => this.activity('wishlist'),
       payday: () => this.payday(),
       settings: (request) => this.settings(request),
       setupView: () => this.setupView(),

@@ -1171,8 +1171,8 @@
   {
     "section": "home",
     "file": "packages/web/src/screens/Settings.tsx",
-    "find": "              second: `${split.fromNextPaycheck.split[bucket]}%`,",
-    "replace": "              second: `${split.thisPayPeriod.split[bucket]}%`,",
+    "find": "              second: `${split.fromNextPaycheck.split[bucket] ?? 0}%`,",
+    "replace": "              second: `${split.thisPayPeriod.split[bucket] ?? 0}%`,",
     "why": "[settings] 13.1 the table shows this pay period's split as the next paycheck's"
   },
   {
@@ -1199,8 +1199,8 @@
   {
     "section": "home",
     "file": "packages/web/src/screens/Settings.tsx",
-    "find": "      return { value: { split: { savings, needs, wants } } };",
-    "replace": "      return { value: { split: { savings: needs, needs: savings, wants } } };",
+    "find": "      return { value: { split: withWishlist ? { savings, needs, wants, wishlist } : { savings, needs, wants } } };",
+    "replace": "      return { value: { split: withWishlist ? { savings: needs, needs: savings, wants, wishlist } : { savings: needs, needs: savings, wants } } };",
     "why": "[settings] 0.2 savings and needs are sent the wrong way round"
   },
   {
@@ -3369,8 +3369,8 @@
   {
     "section": "home",
     "file": "packages/web/src/screens/Buckets.tsx",
-    "find": "detail={momReserve === undefined ? 'Needs, wants, savings, or money held for others' : 'Needs, wants, savings, the mom reserve, or money held for others'}",
-    "replace": "detail={momReserve === null ? 'Needs, wants, savings, or money held for others' : 'Needs, wants, savings, the mom reserve, or money held for others'}",
+    "find": "detail={momReserve !== undefined ? 'Needs, wants, savings, the mom reserve, or money held for others' : view.wishlist !== undefined",
+    "replace": "detail={momReserve !== null ? 'Needs, wants, savings, the mom reserve, or money held for others' : view.wishlist !== undefined",
     "why": "[her-switches] Off in this setup: Buckets: moving money names the mom reserve"
   },
   {

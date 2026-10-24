@@ -1,4 +1,4 @@
-import type { ActivityWhat, Pot } from '@budget-app/money';
+import type { ActivityWhat, AnyPot } from '@budget-app/money';
 import type { ActivityShown as ActivityView } from '@budget-app/server/views';
 import { useState } from 'react';
 import type { Load, Reload } from '../app/api.js';
@@ -25,7 +25,7 @@ export interface Back {
   readonly onBack: () => void;
 }
 
-export function ActivityScreen({ pot, load, onRetry, onChanged, back }: { readonly pot: Pot; readonly load: Load<ActivityView>; readonly onRetry: Reload; readonly onChanged: Reload; readonly back: Back }) {
+export function ActivityScreen({ pot, load, onRetry, onChanged, back }: { readonly pot: AnyPot; readonly load: Load<ActivityView>; readonly onRetry: Reload; readonly onChanged: Reload; readonly back: Back }) {
   // "Off in this setup": a bucket this setup does not have is not named.
   const off = load.status === 'ready' && load.value.state === 'off';
   const name = off ? 'Not in your setup' : POT_NAMES[pot];
@@ -131,7 +131,7 @@ function ActivityReady({ view, reload, onChanged }: { readonly view: Tracking; r
 
   const open = sheet === null ? undefined : activity.rows.find((r) => r.id === sheet.item);
   // Moving money starts from this bucket, to the one next to it (needs <-> wants).
-  const other: Pot = pot === 'needs' ? 'wants' : pot === 'wants' ? 'needs' : 'needs';
+  const other: AnyPot = pot === 'needs' ? 'wants' : pot === 'wants' ? 'needs' : 'needs';
 
   return (
     <>

@@ -1606,6 +1606,11 @@ a.tile:active {
   --seg: var(--accent-text);
 }
 
+/* Her rulebook, 3.3: Wishlist's part; the list under the bar names it too. */
+.moment__seg--wishlist {
+  --seg: rgb(255 255 255 / 0.6);
+}
+
 /* One pass of light across the savings segment, after it has drawn. */
 .moment__seg--savings::after {
   content: '';
