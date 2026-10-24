@@ -2,6 +2,7 @@ import { HER_SETTINGS, HER_SWITCHES, addDays, startTracking, type BankBalances, 
 import { describe, expect, it } from 'vitest';
 import { checkBankRules } from '../src/bank/reading.js';
 import { bookEvents } from '../src/db/store.js';
+import { memoryLog } from '../src/log.js';
 import { setupPreview, setUpTracking } from '../src/setup-day.js';
 import { syncBank } from '../src/sync/sync.js';
 import { ACCOUNT_IDS, type FakePlaid } from './fake-plaid.js';
@@ -225,7 +226,7 @@ async function syncEach(h: Harness, today: string, pageSize: number, unreadable:
   for (const bank of [1, 2] as const) {
     const fake = bank === 1 ? h.fake : secondOf(h);
     if (unreadable === bank) fake.beforeCall = () => 'network';
-    await syncBank({ db: h.db, plaid: h.plaid, box: h.box, log: { info: () => undefined, warn: () => undefined }, today, pageSize, ...(bank === 2 ? { bank } : {}) }).catch((error: unknown) => {
+    await syncBank({ db: h.db, plaid: h.plaid, box: h.box, log: memoryLog([]), today, pageSize, ...(bank === 2 ? { bank } : {}) }).catch((error: unknown) => {
       if (unreadable !== bank) throw error;
     });
     fake.beforeCall = undefined;

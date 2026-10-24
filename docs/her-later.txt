@@ -46,3 +46,25 @@ FROM PR 5 (Oct 23)
    reminders-off line (9.6, 9.8) already; what each card owes in all and
    what is set aside (52.1, 52.2), and each card's statement (52.4), come
    with those PRs.
+
+FROM PR 6 (Oct 24)
+
+8. QUESTION for him (PLAID_PLAN.md). Plaid's guidance puts Liabilities in
+   Link's additional_consented_products rather than products (LIAB-007).
+   The app asks for both as products, as upstream does. For her two banks
+   it changes nothing (both support Liabilities, and the app reads it on
+   every sync); changing it means changing upstream's code too.
+
+9. LATER, if she ever wants to connect from the phone. Connecting is done
+   on a computer (Plaid's login opens in a window of its own). From the
+   home-screen app on her iPhone, OAuth banks (Capital One and American
+   Express are both OAuth) need a redirect address registered on her Plaid
+   team and Link resumed on the way back (Plaid's OAUTH-001 to OAUTH-005).
+
+10. WATCH, connection day. The name Plaid gives each bank in Link is what
+    her screens and alerts call it (HB8). If one reads oddly, a setting to
+    call it something else is a small change, with his OK.
+
+11. LATER, with upstream. The rehearsal shortcut (npm run serve -- --connect)
+    still connects one test bank with all four accounts; her two banks are
+    rehearsed through Plaid's own window on the Bank page (roadmap Phase 2).
