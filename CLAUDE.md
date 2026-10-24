@@ -352,6 +352,9 @@ or "Due" on Wishlist items and cards, never color alone.
   Home's 50.4 line (views/home-wishlist.ts) and the card reminders' line.
   Web: Buckets, Move, Payday, Review, Settings, Setup day, the Statement
   screen, Home's "Wishlist" card. Trends' Wishlist parts (40.2, 40.4,
-  40.5, 40.11) wait on HA6 and stay in section H. Readings HB19 to HB25.
+  40.5, 40.11) are built in PR 10+11 (HA6) and stay in section H.
+  Readings HB19 to HB25.
   Her simulated life buys from Wishlist, splits three ways, refunds, moves
   money by hand and does 50.4's move.
+- His answer to HA6 (Oct 24): Trends' Wishlist parts are built in PR 10+11
+  (rulebook 60f; section H's PR 10+11 block).

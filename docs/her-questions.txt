@@ -10,8 +10,14 @@ No numbers from her real accounts are written here.
 
 PART A. WAITING FOR AN ANSWER
 
-HA6 (PR 9). Where Trends' Wishlist parts are built. The rulebook's section H
-    lists, under PR 9, 40.2 and 40.4 (Wishlist spending its own part of each
+(none)
+
+
+PART A, ANSWERED
+
+HA6 (PR 9). ANSWERED Oct 24: option 1, in PR 10+11 with the rest of her
+    Trends. Rulebook 60f; the four texts are under PR 10+11 in section H.
+    Was: the rulebook's section H lists, under PR 9, 40.2 and 40.4 (Wishlist spending its own part of each
     pay period's bar), 40.5 (Wishlist over time beside savings) and 40.11
     (no estimate for Wishlist). The roadmap and docs/her-plan.txt put
     "Trends for her setup: Wishlist's part" in PR 10+11. PR 9 does not build
@@ -21,9 +27,6 @@ HA6 (PR 9). Where Trends' Wishlist parts are built. The rulebook's section H
     Options: (1) build them in PR 10+11 with the rest of her Trends, the
     view and read-only bar (recommended: they only read, and that PR already
     reworks Trends for her); (2) a small PR 9b before 10+11.
-
-
-PART A, ANSWERED
 
 HA1 (plan Q2). ANSWERED Oct 23: option 1 and (a). Rulebook 60a.
     A Wishlist item bought for less or more than its price is marked bought,

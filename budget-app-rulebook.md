@@ -1253,6 +1253,10 @@ d.  Her starting values: the pay schedule every 14 days, counted from the
     HA3). Both are upstream's starting values too.
 e.  The app runs on Fly.io in ewr (Secaucus, New Jersey), as upstream's
     (HA5).
+f.  Trends' Wishlist parts (40.2, 40.4, 40.5, 40.11) are built in PR 10+11,
+    with the rest of her Trends, not in PR 9 (Oct 24, 2026,
+    docs/her-questions.txt HA6). Until then Trends reads needs and wants
+    only.
 
 
 ## H. Approved for her setup, not built yet
@@ -1295,13 +1299,7 @@ change with the answer.
   13.4, 14.2, 50.4 and 52.4's buckets. 10.1 and 10.2 are unchanged: the low
   and empty alerts are for needs and wants only.
 
-  Not built in PR 9 (question HA6, docs/her-questions.txt): Trends, which
-  the roadmap puts in PR 10+11 ("Trends for her setup"). Until then 40.2,
-  40.4, 40.5 and 40.11 stand as they are, and Trends reads needs and wants
-  only:
-  40.2 and 40.4: Wishlist spending is its own part of each pay period's
-  bar. 40.5: Wishlist over time beside savings, its own amount. 40.11: no
-  estimate for Wishlist.
+  Trends' Wishlist parts are built in PR 10+11 (60f, below).
 
 ### PR 10. Wishlist items
 
@@ -1324,6 +1322,14 @@ change with the answer.
         marked bought can be changed back from its row on Wishlist's list.
         A refund goes back to the Wishlist bucket (4.5). The item does not
         come back by itself; you can add it again. (60a)
+
+### PR 10+11. Trends for her setup: Wishlist's part (60f)
+
+  Until this PR, 40.2, 40.4, 40.5 and 40.11 stand as they are, and Trends
+  reads needs and wants only.
+  40.2 and 40.4: Wishlist spending is its own part of each pay period's
+  bar. 40.5: Wishlist over time beside savings, its own amount. 40.11: no
+  estimate for Wishlist.
 
 ### Unchanged for her setup
 
