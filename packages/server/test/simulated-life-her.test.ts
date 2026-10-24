@@ -14,6 +14,7 @@ import { setUpTracking } from '../src/setup-day.js';
 import { bankStatus } from '../src/status.js';
 import { ACCOUNT, inPlaidFormat, simBankRules } from './sim-bank.js';
 import { bothBanks, connected } from './harness.js';
+import { lives as count } from './slow.js';
 
 // Her rulebook, "Off in this setup": the simulated life shaped like hers (no
 // mom reserve, no old card) through the bank connection and through the
@@ -179,8 +180,8 @@ function throughTheDatabase(seed: number, years: number): { days: number; answer
 
 const seeds = (first: string, count: string, firstDefault: number, countDefault: number): number[] =>
   Array.from({ length: Number(process.env[count] ?? countDefault) }, (_, i) => Number(process.env[first] ?? firstDefault) + i);
-const BANK_YEARS = Number(process.env['SIM_HER_BANK_YEARS'] ?? 1);
-const DB_YEARS = Number(process.env['SIM_HER_DB_YEARS'] ?? 1);
+const BANK_YEARS = Number(process.env['SIM_HER_BANK_YEARS'] ?? count(1, 0.25));
+const DB_YEARS = Number(process.env['SIM_HER_DB_YEARS'] ?? count(1, 0.1));
 
 describe('her simulated life, through the bank connection in Plaid\'s format', () => {
   it.each(seeds('SIM_HER_BANK_FIRST_SEED', 'SIM_HER_BANK_SEEDS', 1, 1))(

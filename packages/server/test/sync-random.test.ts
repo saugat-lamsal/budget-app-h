@@ -4,6 +4,7 @@ import { bookEvents } from '../src/db/store.js';
 import { setupPreview, setUpTracking } from '../src/setup-day.js';
 import { ACCOUNT_IDS, type FakePlaid } from './fake-plaid.js';
 import { SETTINGS, SETUP_DAY, SORTING_RULES, book, connected, status, type Harness } from './harness.js';
+import { lives as count } from './slow.js';
 
 // Random scenarios (testing bar point 4): made-up weeks of bank activity,
 // run through two copies of the app. One syncs every day, with pages of
@@ -307,7 +308,7 @@ async function run(seed: number): Promise<void> {
 
 describe('random scenarios through the bank connection', () => {
   const only = process.env['SEED'];
-  const runs = Number(process.env['BANK_SCENARIOS'] ?? 25);
+  const runs = Number(process.env['BANK_SCENARIOS'] ?? count(25, 10));
   const seeds = only === undefined ? Array.from({ length: runs }, (_, i) => i + 1) : [Number(only)];
   it.each(seeds)('random: seed %i keeps every rule above', async (seed) => {
     await run(seed);

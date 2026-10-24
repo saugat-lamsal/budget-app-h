@@ -1,6 +1,7 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_SETTINGS, addDays, cardDue, cardNotices, changeSettings, type CardPayment, type CardStatement } from '../src/index.js';
+import { runs } from './slow.js';
 
 // Rule 9.6 (QUESTIONS.md A17): Home shows a card payment as due every day
 // from the first reminder day until the payments the app sees add up to
@@ -123,7 +124,7 @@ describe('9.6 Home and the phone reminders agree', () => {
           if (due?.kind === 'overdue') expect(notices).toMatchObject([{ kind: 'overdue' }]);
         },
       ),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 });

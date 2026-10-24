@@ -3,6 +3,7 @@ import type { ChoiceOf, ChoiceResponse } from '../src/views/choice.js';
 import type { KeyedDetail } from '../src/views/review.js';
 import { ACCOUNT_IDS } from './fake-plaid.js';
 import { decisions, lifeInAFile, noonInNewYork, screens, setUpThroughTheDesk, type Life } from './keeper-harness.js';
+import { lives as count } from './slow.js';
 
 // Random scenarios for Step 3: bank activity, syncs and his answers in random
 // order, given to two servers alike, one of them stopped and started again
@@ -224,7 +225,7 @@ async function scenario(seed: number): Promise<void> {
   }
 }
 
-const SEEDS = process.env['SEED'] !== undefined ? [Number(process.env['SEED'])] : Array.from({ length: Number(process.env['SYNC_ANSWER_SCENARIOS'] ?? 8) }, (_, i) => i + 1);
+const SEEDS = process.env['SEED'] !== undefined ? [Number(process.env['SEED'])] : Array.from({ length: Number(process.env['SYNC_ANSWER_SCENARIOS'] ?? count(8, 4)) }, (_, i) => i + 1);
 
 // Over every seed: how many answers came from a screen, and how many of them
 // were refused because the item had changed.

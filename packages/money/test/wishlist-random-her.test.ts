@@ -12,6 +12,7 @@ import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { HER_SETTINGS, HER_SWITCHES, changeSettings, openBook, splitPaycheck, wishlistMove, type Book, type Cents, type IsoDate, type SortChoice } from '../src/index.js';
 import { LAST_PAYCHECK, PAYROLL, START_DATE, deposit, paycheck, purchase, refund, takenBack, transfer } from './helpers.js';
+import { runs } from './slow.js';
 
 const MAX = Number.MAX_SAFE_INTEGER;
 const RUNS = Number(process.env['WISHLIST_RANDOM_RUNS'] ?? 150);
@@ -36,7 +37,7 @@ describe('3.3 random: the four parts add up to the paycheck exactly', () => {
         expect(parts.savings - floor(split.savings)).toBeLessThan(4);
         expect(parts.momReserve).toBe(0);
       }),
-      { numRuns: 2_000 },
+      { numRuns: runs(2_000) },
     );
   });
 });
@@ -306,7 +307,7 @@ describe('PR 9 random lives with Wishlist', () => {
           expect(parts).toMatchObject({ savings: three.savings, needs: three.needs, wants: three.wants, wishlist: 0 });
         }
       }),
-      { numRuns: 200 },
+      { numRuns: runs(200) },
     );
   });
 });

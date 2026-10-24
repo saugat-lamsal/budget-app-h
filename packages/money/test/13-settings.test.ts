@@ -2,6 +2,7 @@ import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { FROM_NEXT_PAYCHECK, MOVABLE_POTS, RULE_CHOICES, addDays, checkRules, type Book, type Settings, type SortingRule } from '../src/index.js';
 import { MOM_NAME, PAYROLL, appSide, codeOf, deposit, openTestBook, payPerson, paycheck, purchase, refund, takenBack, type TestBookOptions } from './helpers.js';
+import { runs } from './slow.js';
 
 // What the Settings screen needs from the money math (Phase 4): what is in
 // force this pay period next to the settings (13.1), the change log with what
@@ -502,7 +503,7 @@ describe('random scenarios: the preview of a settings change (13.2, A9)', () => 
           }
         },
       ),
-      { numRuns: 300 },
+      { numRuns: runs(300) },
     );
   });
 });
@@ -657,7 +658,7 @@ describe('random scenarios: moving rules (13.2, A22)', () => {
         expect(b.changeLog()).toHaveLength(logged);
         expect(b.pots()).toEqual(pots);
       }),
-      { numRuns: 300 },
+      { numRuns: runs(300) },
     );
   });
 });

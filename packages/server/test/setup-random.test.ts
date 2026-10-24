@@ -5,6 +5,7 @@ import { checkBankRules } from '../src/bank/reading.js';
 import { madeUpHistory, type MadeUpBank, type MadeUpItem } from '../src/demo/made-up-bank.js';
 import { SetupDesk } from '../src/setup-desk.js';
 import type { SetupStep } from '../src/views/choice.js';
+import { runs } from './slow.js';
 
 // Random banks with random assignments (rulebook 14.2, 14.3; QUESTIONS.md
 // B43, B48): tracking starts only when the assignment adds up to the
@@ -116,7 +117,7 @@ describe('14.2 14.3 random banks, random assignments', () => {
           expect(send({ start: true }, { confirmed: true, seen: key }).ok).toBe(false);
         },
       ),
-      { numRuns: 300, ...(seed === undefined ? {} : { seed }) },
+      { numRuns: runs(300), ...(seed === undefined ? {} : { seed }) },
     );
   });
 });

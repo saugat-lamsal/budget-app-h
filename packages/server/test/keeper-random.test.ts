@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Keeper } from '../src/history/keeper.js';
 import { ACCOUNT_IDS } from './fake-plaid.js';
 import { decisions, lifeInAFile, noonInNewYork, screens, setUpThroughTheDesk, type Life } from './keeper-harness.js';
+import { lives as count } from './slow.js';
 
 // Random scenarios (the real server keeps everything): made-up bank activity
 // and his answers in random order, given to two servers alike. One is
@@ -123,7 +124,7 @@ async function scenario(seed: number): Promise<void> {
   }
 }
 
-const SEEDS = process.env['SEED'] !== undefined ? [Number(process.env['SEED'])] : Array.from({ length: Number(process.env['KEEPER_SCENARIOS'] ?? 8) }, (_, i) => i + 1);
+const SEEDS = process.env['SEED'] !== undefined ? [Number(process.env['SEED'])] : Array.from({ length: Number(process.env['KEEPER_SCENARIOS'] ?? count(8, 4)) }, (_, i) => i + 1);
 
 describe('random scenarios: answers and bank activity in any order, restarts at random moments, the same books every time', () => {
   it.each(SEEDS)('seed %i', async (seed) => scenario(seed), 120_000);

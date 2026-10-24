@@ -22,6 +22,7 @@ import {
   type Settings,
 } from '../src/index.js';
 import { LAST_PAYCHECK, PAYROLL, START_DATE, TestBank, codeOf, deposit, paycheck, purchase, takenBack } from './helpers.js';
+import { runs } from './slow.js';
 
 const HER: Settings = changeSettings(HER_SETTINGS, { paycheckRule: { contains: PAYROLL } });
 const POTS = { savings: 100_000, needs: 50_000, wants: 30_000, momReserve: 0, heldForOthers: 0 };
@@ -642,7 +643,7 @@ describe('3.1 random lives: "Ask before splitting a paycheck"', () => {
         });
         expect(i).toBe(DAYS);
       }),
-      { numRuns: 300 },
+      { numRuns: runs(300) },
     );
   });
 
@@ -673,7 +674,7 @@ describe('3.1 random lives: "Ask before splitting a paycheck"', () => {
           },
         });
       }),
-      { numRuns: 300 },
+      { numRuns: runs(300) },
     );
   });
 
@@ -703,7 +704,7 @@ describe('3.1 random lives: "Ask before splitting a paycheck"', () => {
           expect([...dates].sort()).toEqual(dates);
         }
       }),
-      { numRuns: 300 },
+      { numRuns: runs(300) },
     );
   });
 });

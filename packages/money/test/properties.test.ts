@@ -49,6 +49,7 @@ import {
   withdrawal,
   START_DATE,
 } from './helpers.js';
+import { runs } from './slow.js';
 
 const splitArb = fc
   .integer({ min: 0, max: 100 })
@@ -88,7 +89,7 @@ describe('random scenarios: payday (section 3)', () => {
           expect(s.detail.roundingToSavings).toBeLessThan(3);
         },
       ),
-      { numRuns: 2_000 },
+      { numRuns: runs(2_000) },
     );
   });
 });
@@ -708,7 +709,7 @@ describe('random scenarios: the whole book', () => {
         const bank = new TestBank({ checking: appSide(book.pots()), oldCard: 300_000 });
         runLife(book, bank, steps);
       }),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 });
@@ -729,7 +730,7 @@ describe('random scenarios: low and empty buckets (10.1, 10.2)', () => {
           runLife(book, bank, steps);
         },
       ),
-      { numRuns: 300 },
+      { numRuns: runs(300) },
     );
   });
 });
@@ -742,7 +743,7 @@ describe('random scenarios: money in (6.1)', () => {
         const bank = new TestBank({ checking: appSide(book.pots()), oldCard: 300_000 });
         runLife(book, bank, steps);
       }),
-      { numRuns: 300 },
+      { numRuns: runs(300) },
     );
   });
 });
@@ -817,7 +818,7 @@ describe('random scenarios: setup day (section 14)', () => {
           runLife(result.book, bank, steps, pendingCharges, halves);
         },
       ),
-      { numRuns: 300 },
+      { numRuns: runs(300) },
     );
   });
 });
@@ -848,7 +849,7 @@ describe('random scenarios: the old card payoff countdown (9.5)', () => {
           expect(BigInt(countdown.perPayday - 1) * BigInt(left) < BigInt(owed)).toBe(true);
         }
       }),
-      { numRuns: 2_000 },
+      { numRuns: runs(2_000) },
     );
   });
 });

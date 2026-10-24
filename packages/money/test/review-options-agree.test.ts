@@ -3,6 +3,7 @@ import { ACCOUNTS, startTracking, type BankTransaction, type Book, type IsoDate,
 import { busyBook } from './busy-book.js';
 import { liveALife, type RecordedBankDay } from './sim/life.js';
 import { Random } from './sim/random.js';
+import { lives as count } from './slow.js';
 
 // The choices offered for each waiting item (review-options.ts) must be
 // exactly the ones the book accepts: every offered choice works, every other
@@ -139,7 +140,7 @@ describe('choices offered match the book: a book with every kind of item waiting
 
 // ----- Random simulated lives -----
 
-const LIVES = Number(process.env['SIM_REVIEW_LIVES'] ?? 2);
+const LIVES = Number(process.env['SIM_REVIEW_LIVES'] ?? count(2, 1));
 const FIRST_SEED = Number(process.env['SIM_REVIEW_FIRST_SEED'] ?? 1);
 
 // The simulator's bank, day by day, played into a book up to a random day.

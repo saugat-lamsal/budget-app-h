@@ -6,6 +6,7 @@ import { bankLinesOf, type BankRuleChange, type BankRuleSpec } from '../src/bank
 import { bookEvents, readAccounts, readBankRules, readItems } from '../src/db/store.js';
 import { ACCOUNT_IDS, type FakePlaid } from './fake-plaid.js';
 import { SETUP_DAY, book, connected, setUp, status } from './harness.js';
+import { lives as count } from './slow.js';
 
 // Bank rules kept in the database (section 2, 24c, 13.5): a thin wrapper
 // around the same logic the demo uses. And, through the whole bank
@@ -131,7 +132,7 @@ function randomChange(r: () => number, rules: readonly { readonly id: string }[]
   return { remove: pick(rules).id };
 }
 
-const SCENARIOS = Number(process.env['BANK_RULE_SCENARIOS'] ?? 8);
+const SCENARIOS = Number(process.env['BANK_RULE_SCENARIOS'] ?? count(8, 4));
 const ONLY = process.env['SEED'] === undefined ? null : Number(process.env['SEED']);
 const SEEDS = ONLY === null ? Array.from({ length: SCENARIOS }, (_, i) => i + 1) : [ONLY];
 

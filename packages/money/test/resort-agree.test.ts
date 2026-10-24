@@ -3,6 +3,7 @@ import { ACCOUNTS, MOVABLE_POTS, startTracking, type BankTransaction, type Book,
 import { SORTED, sortedBook } from './sorted-book.js';
 import { liveALife, type RecordedBankDay } from './sim/life.js';
 import { Random } from './sim/random.js';
+import { lives as count } from './slow.js';
 
 // The choices offered for sorting an item again (resortDetail, rule 4.7) must
 // be exactly the ones the book accepts: every offered choice works, every
@@ -138,7 +139,7 @@ describe('choices for sorting again match the book: a book with every kind of so
 
 // ----- Random simulated lives -----
 
-const LIVES = Number(process.env['SIM_RESORT_LIVES'] ?? 2);
+const LIVES = Number(process.env['SIM_RESORT_LIVES'] ?? count(2, 1));
 const FIRST_SEED = Number(process.env['SIM_RESORT_FIRST_SEED'] ?? 1);
 
 // The simulator's bank, day by day, played into a book up to a random day.

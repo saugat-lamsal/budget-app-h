@@ -11,6 +11,7 @@ import { FakeR2 } from './fake-r2.js';
 import { servedAt, stop } from './hosted-harness.js';
 import { lifeInAFile, noonInNewYork, setUpThroughTheDesk, type Life } from './keeper-harness.js';
 import { CAN_RESTORE, CONFIG, backupOf, copied, litestreamBin, replicate, until, type Replicating } from './litestream-harness.js';
+import { SLOW } from './slow.js';
 
 // Phase 6, the backups, with the real Litestream (the image's version) and
 // the project's own litestream.yml, against the stand-in for R2 on this
@@ -108,8 +109,9 @@ describe('Phase 6 Litestream copies the books to the bucket', { timeout: 60_000 
 // the heartbeat comes to the server's beat address on this computer while
 // every copy goes through, also while nothing in the books changes (a quiet
 // night), and stops once a change cannot be copied. Litestream beats at most
-// once a minute, so this takes four or five minutes of real time.
-describe('A43 Litestream\'s heartbeat', { timeout: 420_000 }, () => {
+// once a minute, so this takes four or five minutes of real time: it runs in
+// the slow run only (npm run test:slow; CLAUDE.md, "Two test runs").
+describe.runIf(SLOW)('A43 Litestream\'s heartbeat', { timeout: 420_000 }, () => {
   it('A43 reaches the server while every copy goes through, also while nothing changes, and stops once a change cannot be copied', async () => {
     const r2 = await standIn();
     const beats = new BackupWatch(Date.now);
