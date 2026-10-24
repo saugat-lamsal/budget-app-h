@@ -24,7 +24,10 @@ import { FakeClock } from './fake-clock.js';
 import { FakeKeySource, FakeWebhookSigner, webhookBody } from './fake-plaid-webhooks.js';
 import { HER_START } from '../src/setup-start.js';
 import { ACCOUNT_IDS, FakePlaid, SECOND_BANK, secondCardAccount, twoBanks, type FakeAccountInput } from './fake-plaid.js';
-import { HER_BANK_RULES } from './her-harness.js';
+import { HER_BANK_RULES, setUpHer } from './her-harness.js';
+import { serveBooks } from '../src/serve/serving.js';
+import { FakePhone } from './fake-phone.js';
+import { lifeInAFile } from './keeper-harness.js';
 import { TOKEN_KEY } from './harness.js';
 import { decision, noonInNewYork } from './keeper-harness.js';
 
@@ -674,5 +677,77 @@ describe('1.1 the test bank, without screens: her second bank is connected secon
       [1, t.first.itemId, FIRST_NAME],
       [2, t.second.itemId, SECOND_NAME],
     ]);
+  });
+});
+
+describe('break-it finds (PR 6): the cases no test had', () => {
+  it('1.3 to add a missing account: logging in again to the second bank reads its accounts, before the four are picked', async () => {
+    const t = await both();
+    t.second.accounts.set('acct-second-2', { input: { id: 'acct-second-2', name: 'Made-up Other Card', mask: '6666', kind: 'credit card', posted: 0, limit: 100_000 }, posted: 0 });
+    expect(readAccounts(t.db).map((a) => a.plaidAccountId)).not.toContain('acct-second-2');
+    expect(await t.keeper.bankDesk(t.bank).read({ loggedInAgain: true, bank: 2 })).toMatchObject({ ok: true });
+    expect(readAccounts(t.db).map((a) => a.plaidAccountId)).toContain('acct-second-2');
+  });
+
+  it('12.3 a difference that began before the second bank failed is not told while the check waits, and is told once both are read', async () => {
+    const t = await tracking();
+    t.first.drift(ACCOUNT_IDS.checking, -1_000);
+    await day(t, '2026-10-02');
+    expect(t.keeper.mismatchSince()).toBe(noonInNewYork('2026-10-02').toISOString());
+    t.second.beforeCall = (endpoint) => (endpoint === '/transactions/sync' ? { status: 400, body: { error_type: 'INSTITUTION_ERROR', error_code: 'INSTITUTION_DOWN', error_message: 'made-up', display_message: null, request_id: 'r' } } : undefined);
+    t.clock.now = new Date(t.clock.now.getTime() + 2 * 3_600_000);
+    await t.keeper.sync(t.bank).catch(() => undefined);
+    // Its 12 hours pass while the check waits: nothing is told.
+    t.clock.now = new Date(t.clock.now.getTime() + 12 * 3_600_000);
+    t.keeper.checkAlerts();
+    expect(kinds(t)).not.toContain('totals-mismatch');
+    t.second.beforeCall = undefined;
+    await t.keeper.sync(t.bank);
+    t.keeper.checkAlerts();
+    expect(kinds(t)).toContain('totals-mismatch');
+  });
+
+  it('10.5 the second bank still wanting a new login is told again each evening, on its own count', async () => {
+    const t = await tracking();
+    t.second.needsLogin = true;
+    await day(t, '2026-10-02');
+    t.keeper.checkAlerts();
+    // The evening after: once more, at the review time.
+    t.clock.now = new Date('2026-10-04T00:30:00Z');
+    t.keeper.checkAlerts();
+    expect(alertsOf(t, 'bank-login').map((a) => [a.title, a.facts])).toEqual([
+      [`Log in to ${SECOND_NAME} again`, { kind: 'bank-login', time: 1, day: '2026-10-02', again: false, bank: 2, name: SECOND_NAME }],
+      [`Log in to ${SECOND_NAME} again`, { kind: 'bank-login', time: 1, day: '2026-10-03', again: true, bank: 2, name: SECOND_NAME }],
+    ]);
+  });
+
+  it("section 2 HB11 the running server (serveBooks) takes the second bank's webhook and syncs that bank only", async () => {
+    const life = await lifeInAFile({ herSetup: true, twoBanks: true, secondCard: 25_000, rules: HER_BANK_RULES, start: HER_START });
+    const second = life.h.second;
+    if (second === undefined) throw new Error('her second bank is not there');
+    setUpHer(life);
+    life.now = noonInNewYork('2026-10-02');
+    const clock = new FakeClock(life);
+    let base = '';
+    const serving = serveBooks({ keeper: life.keeper, bank: { plaid: life.h.plaid, box: life.h.box, log: memoryLog([]), pageSize: 3 }, clock, webRoot: 'C:/made-up/no-screens/', origin: () => base, sender: new FakePhone(() => life.now), now: () => life.now });
+    await new Promise<void>((done) => serving.server.listen(0, '127.0.0.1', () => done()));
+    const address = serving.server.address();
+    base = `http://localhost:${typeof address === 'object' && address !== null ? address.port : 0}`;
+    try {
+      const signer = await FakeWebhookSigner.make();
+      life.h.fake.webhookKeys.set(signer.kid, signer.key);
+      second.addPosted({ id: 'cafe-s', account: ACCOUNT_IDS.second, amount: 875, date: '2026-10-02', description: 'MADE UP CAFE' });
+      const firstReads = life.h.fake.calls.filter((c) => c.endpoint === '/transactions/sync').length;
+      const signed = await signer.sign(webhookBody('TRANSACTIONS', 'SYNC_UPDATES_AVAILABLE', {}, second.itemId), life.now);
+      const answer = await fetch(`${base}${WEBHOOK_PATH}`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Plaid-Verification': signed.header }, body: signed.body });
+      expect(answer.status).toBe(200);
+      await clock.advance(5_000, () => serving.webhooks.idle());
+      expect(life.keeper.book()?.purchases().map((p) => p.id)).toEqual(['cafe-s']);
+      expect(life.h.fake.calls.filter((c) => c.endpoint === '/transactions/sync').length).toBe(firstReads);
+    } finally {
+      await serving.webhooks.stop();
+      await new Promise<void>((done) => serving.server.close(() => done()));
+      life.done();
+    }
   });
 });

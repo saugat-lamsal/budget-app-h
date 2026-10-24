@@ -6847,13 +6847,6 @@
   {
     "section": "sync",
     "file": "packages/server/src/history/keeper.ts",
-    "find": "    return this.#waiting() ? null : readGapSince(this.#db);",
-    "replace": "    return readGapSince(this.#db);",
-    "why": "[her-connections] 12.3 a difference is told while the check waits"
-  },
-  {
-    "section": "sync",
-    "file": "packages/server/src/history/keeper.ts",
     "find": "    if (this.#waiting()) return true;\n",
     "replace": "",
     "why": "[her-connections] 12.3 the screens do not say still catching up while the check waits"
