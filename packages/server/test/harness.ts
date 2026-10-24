@@ -10,7 +10,7 @@ import { plaidKeysFromEnv } from '../src/plaid/sandbox-lock.js';
 import { setUpTracking, setupPreview, type SetupOutcome } from '../src/setup-day.js';
 import { bankStatus } from '../src/status.js';
 import { syncBank, type SyncInput, type SyncResult } from '../src/sync/sync.js';
-import { ACCOUNT_IDS, FakePlaid, fourAccounts, secondCardAccount } from './fake-plaid.js';
+import { ACCOUNT_IDS, FakePlaid, SECOND_BANK, fourAccounts, secondCardAccount, twoBanks } from './fake-plaid.js';
 
 // A bank connection to the made-up test bank, in a database that lives only
 // in memory. Every name and number is made up.
@@ -51,6 +51,8 @@ export const SORTING_RULES: readonly SortingRule[] = [
 
 export interface Harness {
   readonly fake: FakePlaid;
+  // Her rulebook, 1.1 (PR 6): her second bank, with her second card; only with twoBanks.
+  readonly second?: FakePlaid;
   readonly db: Db;
   readonly lines: LogLine[];
   readonly plaid: PlaidClient;
@@ -65,19 +67,29 @@ export async function connected(
   // path: a database file, for tests that open it again (a restart); in memory otherwise.
   // herSetup: her setup's picks (1.2, "Off in this setup"): the old card is never picked, so its account is never read;
   // her second card is (secondCard: what it owes at the start, 0 when left out).
-  options: { posted?: typeof POSTED_AT_START; history?: (fake: FakePlaid) => void; rules?: readonly BankRule[]; today?: IsoDate; path?: string; herSetup?: boolean; secondCard?: Cents } = {},
+  // twoBanks (her setup, PR 6): her second card at a second made-up bank, its
+  // own connection, and each sync reads both banks, the first first.
+  options: { posted?: typeof POSTED_AT_START; history?: (fake: FakePlaid) => void; rules?: readonly BankRule[]; today?: IsoDate; path?: string; herSetup?: boolean; secondCard?: Cents; twoBanks?: boolean } = {},
 ): Promise<Harness> {
   const today = options.today ?? SETUP_DAY;
   const her = options.herSetup === true;
-  const fake = new FakePlaid([...fourAccounts(options.posted ?? POSTED_AT_START), ...(her ? [secondCardAccount(options.secondCard ?? 0)] : [])]);
-  options.history?.(fake);
+  const two = her && options.twoBanks === true;
+  const fake = new FakePlaid([...fourAccounts(options.posted ?? POSTED_AT_START), ...(her && !two ? [secondCardAccount(options.secondCard ?? 0)] : [])]);
+  const second = two ? new FakePlaid([secondCardAccount(options.secondCard ?? 0)], SECOND_BANK) : undefined;
+  options.history?.(second === undefined ? fake : bothBanks(fake, second));
   const db = openDatabase(options.path ?? ':memory:');
   const lines: LogLine[] = [];
   const log = memoryLog(lines, [fake.clientId, fake.secret]);
-  const plaid = new PlaidClient(plaidKeysFromEnv({ PLAID_ENV: 'sandbox', PLAID_CLIENT_ID: fake.clientId, PLAID_SECRET: fake.secret }), { fetch: fake.fetch, log });
+  const plaid = new PlaidClient(plaidKeysFromEnv({ PLAID_ENV: 'sandbox', PLAID_CLIENT_ID: fake.clientId, PLAID_SECRET: fake.secret }), { fetch: second === undefined ? fake.fetch : twoBanks(fake, second), log });
   const box = new TokenBox(TOKEN_KEY);
-  await connectTestBank({ db, plaid, box, log, today, institutionId: 'ins_109508' });
-  const sync = (day: IsoDate, extra: Partial<SyncInput> = {}): Promise<SyncResult> => syncBank({ db, plaid, box, log, today: day, pageSize: 3, ...extra });
+  await connectTestBank({ db, plaid, box, log, today, institutionId: 'ins_109508', ...(two ? { name: 'Made-up First Bank' } : {}) });
+  if (second !== undefined) await connectTestBank({ db, plaid, box, log, today, institutionId: second.institutionId, bank: 2, name: 'Made-up Second Bank' });
+  const sync = async (day: IsoDate, extra: Partial<SyncInput> = {}): Promise<SyncResult> => {
+    const first = await syncBank({ db, plaid, box, log, today: day, pageSize: 3, ...extra });
+    if (second === undefined) return first;
+    const other = await syncBank({ db, plaid, box, log, today: day, pageSize: 3, ...extra, bank: 2 });
+    return { ...other, changed: first.changed || other.changed, sent: first.sent + other.sent, attention: [...first.attention, ...other.attention] };
+  };
   await sync(today);
   setAccountRoles(db, {
     [ACCOUNT_IDS.checking]: 'checking',
@@ -86,7 +98,28 @@ export async function connected(
     ...(her ? { [ACCOUNT_IDS.second]: 'second-card' as const } : { [ACCOUNT_IDS.old]: 'old-card' as const }),
   });
   setBankRules(db, options.rules ?? BANK_RULES, today);
-  return { fake, db, lines, plaid, box, sync };
+  return { fake, ...(second === undefined ? {} : { second }), db, lines, plaid, box, sync };
+}
+
+// Her rulebook, 1.1 (PR 6): her two made-up banks as one, for whatever puts
+// activity on them: each item goes to the bank its account is at (her second
+// card is at the second), and a change to an item to the bank that has it.
+export function bothBanks(first: FakePlaid, second: FakePlaid): FakePlaid {
+  const at = (account: string): FakePlaid => (account === ACCOUNT_IDS.second ? second : first);
+  const holding = (id: string): FakePlaid => (second.transactions.has(id) ? second : first);
+  const both: Pick<FakePlaid, 'addPending' | 'addPosted' | 'postPending' | 'postInPlace' | 'dropPending' | 'modify' | 'removePosted' | 'drift' | 'setStatement' | 'posted'> = {
+    addPending: (input) => at(input.account).addPending(input),
+    addPosted: (input, o) => at(input.account).addPosted(input, o),
+    postPending: (id, posted, o) => holding(id).postPending(id, posted, o),
+    postInPlace: (id, changes) => holding(id).postInPlace(id, changes),
+    dropPending: (id) => holding(id).dropPending(id),
+    modify: (id, patch) => holding(id).modify(id, patch),
+    removePosted: (id, o) => holding(id).removePosted(id, o),
+    drift: (account, cents) => at(account).drift(account, cents),
+    setStatement: (account, statement) => at(account).setStatement(account, statement),
+    posted: (account) => at(account).posted(account),
+  };
+  return both as FakePlaid;
 }
 
 // Setup day with everything not in savings, the mom reserve, or wants put in needs.

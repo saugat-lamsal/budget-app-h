@@ -6703,5 +6703,341 @@
     "find": "  secondCardClosingDay: (v) => (v === null ? null : whole(v)),\n",
     "replace": "",
     "why": "[her-second-card] 9.8 the second card's closing day cannot be sent"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank/connections.ts",
+    "find": "  if (bank === 1) connection = readConnection(db);",
+    "replace": "  if (bank === 1 || bank === 2) connection = readConnection(db);",
+    "why": "[her-connections] 1.1 the second connection read as the first"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank/connections.ts",
+    "find": ".run(bank, c.institutionId, c.name ?? null);",
+    "replace": ".run(bank, c.institutionId, null);",
+    "why": "[her-connections] HB8 the bank's name not kept"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank/connections.ts",
+    "find": "last_read = excluded.last_read, failing_since = NULL",
+    "replace": "last_read = excluded.last_read",
+    "why": "[her-connections] 12.3 a bank read again still counts as failing"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank/connections.ts",
+    "find": "  return connectionsOf(db).find((c) => c.itemId === itemId) ?? null;",
+    "replace": "  return connectionsOf(db)[0] ?? null;",
+    "why": "[her-connections] HB11 any item is taken as the first bank"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/bank/connections.ts",
+    "find": "historyComplete: connections.every((c) => c.historyComplete)",
+    "replace": "historyComplete: connections.some((c) => c.historyComplete)",
+    "why": "[her-connections] 14.1 setup day starts with one bank's history still coming"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank/connections.ts",
+    "find": "  const her = bank === 2 || c.name !== undefined;",
+    "replace": "  const her = bank === 2;",
+    "why": "[her-connections] 1.1 her first bank keeps no name"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank-desk.ts",
+    "find": "      if (same !== undefined) return refuse('same-bank',",
+    "replace": "      if (false) return refuse('same-bank',",
+    "why": "[her-connections] 1.1 the same bank connected twice"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank-desk.ts",
+    "find": "      if (institution === null) return refuse('bank-said-no',",
+    "replace": "      if (false) return refuse('bank-said-no',",
+    "why": "[her-connections] HB8 a Link answer that names no bank swapped for a key"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank-desk.ts",
+    "find": "    return connectionsOf(this.#input.db).length < this.#banks;",
+    "replace": "    return connectionsOf(this.#input.db).length <= this.#banks;",
+    "why": "[her-connections] 1.1 a third connection offered"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank-desk.ts",
+    "find": "    const connection = connectionAt(db, request.bank ?? 1);",
+    "replace": "    const connection = connectionAt(db, 1);",
+    "why": "[her-connections] 1.3 logging in again to the second bank opens the first"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank-desk.ts",
+    "find": "    const bank = options.bank ?? 1;\n    const connection = connectionAt(db, bank);",
+    "replace": "    const bank = 1 as BankNumber;\n    const connection = connectionAt(db, bank);",
+    "why": "[her-connections] 1.3 the second bank read again as the first"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank-desk.ts",
+    "find": "    const bank: BankNumber = connectionsOf(db).length === 0 ? 1 : 2;",
+    "replace": "    const bank: BankNumber = 1;",
+    "why": "[her-connections] 1.1 the second connection kept as the first"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank-desk.ts",
+    "find": "        ...(this.#banks === 2 ? { name: institution?.name ?? null } : {}),",
+    "replace": "        name: institution?.name ?? null,",
+    "why": "[her-connections] 1.1 upstream's setup gets her steps"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank-desk.ts",
+    "find": "      ...(this.#banks === 2 ? { banks: connectionsOf(db).map((c) => this.#lineOf(c)), canConnect: this.#canConnect() } : {}),",
+    "replace": "",
+    "why": "[her-connections] 1.1 the screen is not told of her banks"
+  },
+  {
+    "section": "sync",
+    "file": "packages/server/src/sync/sync.ts",
+    "find": "  const bank = input.bank ?? 1;\n  for (let attempt",
+    "replace": "  const bank = 1 as BankNumber;\n  for (let attempt",
+    "why": "[her-connections] section 2 every sync reads the first bank"
+  },
+  {
+    "section": "sync",
+    "file": "packages/server/src/sync/sync.ts",
+    "find": "  if (at !== undefined) noteBankRead(db, bank, at);\n",
+    "replace": "",
+    "why": "[her-connections] 10.7 12.3 a good read of a bank not noted"
+  },
+  {
+    "section": "sync",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "    return connectionsOf(this.#db).some((c) => c.failingSince !== null);",
+    "replace": "    return false;",
+    "why": "[her-connections] 12.3 the check never waits for a bank"
+  },
+  {
+    "section": "sync",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "        noteBankFailing(this.#db, one, this.#now().toISOString());\n",
+    "replace": "",
+    "why": "[her-connections] 12.3 a bank that fails not noted"
+  },
+  {
+    "section": "sync",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "      } catch (error) {\n        failed ??= { error };\n      }",
+    "replace": "      } catch (error) {\n        throw error;\n      }",
+    "why": "[her-connections] section 2 one bank failing stops the other being read"
+  },
+  {
+    "section": "sync",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "          if (!laterGap) this.#noteGap();",
+    "replace": "          this.#noteGap();",
+    "why": "[her-connections] 12.3 a difference starts counting before both banks are synced"
+  },
+  {
+    "section": "sync",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "    return this.#waiting() ? null : readGapSince(this.#db);",
+    "replace": "    return readGapSince(this.#db);",
+    "why": "[her-connections] 12.3 a difference is told while the check waits"
+  },
+  {
+    "section": "sync",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "    if (this.#waiting()) return true;\n",
+    "replace": "",
+    "why": "[her-connections] 12.3 the screens do not say still catching up while the check waits"
+  },
+  {
+    "section": "alerts",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "bank: this.#waiting() ? null : this.#bank()",
+    "replace": "bank: this.#bank()",
+    "why": "[her-connections] 12.3 the alerts see the bank while the check waits"
+  },
+  {
+    "section": "webhooks",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "    return banks.length === 0 ? Promise.resolve(null) : this.sync(bank, banks);",
+    "replace": "    return this.sync(bank);",
+    "why": "[her-connections] HB11 a webhook for one bank syncs both"
+  },
+  {
+    "section": "home",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "      ...(this.#banksInSetup() === 2 ? { banksToLogIn:",
+    "replace": "      ...(false ? { banksToLogIn:",
+    "why": "[her-connections] 0.5 10.5 Home not told which bank wants a login"
+  },
+  {
+    "section": "sync",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "              const last = this.#lastSyncs.get(c.bank);",
+    "replace": "              const last = this.#lastSyncs.get(1);",
+    "why": "[her-connections] 0.7 every bank shows the first bank's last sync"
+  },
+  {
+    "section": "sync",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "    return this.#switches().secondCard === 'on' ? 2 : 1;",
+    "replace": "    return 1;",
+    "why": "[her-connections] 1.1 her setup has one connection"
+  },
+  {
+    "section": "alerts",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "    const banks = this.#banksInSetup() === 2 ? connections.map(",
+    "replace": "    const banks = false ? connections.map(",
+    "why": "[her-connections] HB10 the alerts are not told of her banks"
+  },
+  {
+    "section": "alerts",
+    "file": "packages/server/src/alerts/alerts.ts",
+    "find": "const ofBank = (f: { readonly bank?: 2 }): string => (f.bank === 2 ? ' bank 2' : '');",
+    "replace": "const ofBank = (f: { readonly bank?: 2 }): string => '';",
+    "why": "[her-connections] HB10 the second bank's alerts share the first's keys"
+  },
+  {
+    "section": "alerts",
+    "file": "packages/server/src/alerts/alerts.ts",
+    "find": "  return f.bank === 2 ? `${f.kind}-2` : f.kind;",
+    "replace": "  return f.kind;",
+    "why": "[her-connections] HB10 the second bank's lasting alerts share the first's"
+  },
+  {
+    "section": "alerts",
+    "file": "packages/server/src/alerts/alerts.ts",
+    "find": "      if (f.name !== undefined) return { title: `Log in to ${f.name} again`",
+    "replace": "      if (false) return { title: `Log in to ${f.name} again`",
+    "why": "[her-connections] 10.5 the login alert does not name the bank"
+  },
+  {
+    "section": "alerts",
+    "file": "packages/server/src/alerts/alerts.ts",
+    "find": "        title: `${f.name ?? 'The bank'} has not been read for",
+    "replace": "        title: `${'The bank'} has not been read for",
+    "why": "[her-connections] 10.7 the not-read alert does not name the bank"
+  },
+  {
+    "section": "alerts",
+    "file": "packages/server/src/alerts/plan.ts",
+    "find": "...(b.name === null ? {} : { name: b.name })",
+    "replace": "...{}",
+    "why": "[her-connections] HB10 her alerts carry no bank name"
+  },
+  {
+    "section": "alerts",
+    "file": "packages/server/src/alerts/plan.ts",
+    "find": "  if ((f.kind === 'bank-login' || f.kind === 'bank-permission') && f.bank === 2) return `${f.kind} bank 2`;\n",
+    "replace": "",
+    "why": "[her-connections] 10.9 the second bank's alert is the same kind as the first's"
+  },
+  {
+    "section": "alerts",
+    "file": "packages/server/src/alerts/plan.ts",
+    "find": "  const at = banksOf(world).find((b) => b.bank === (f.bank ?? 1))?.permissionEnds ?? null;",
+    "replace": "  const at = banksOf(world).find((b) => b.bank === 1)?.permissionEnds ?? null;",
+    "why": "[her-connections] 10.13 the second bank's permission checked against the first's date"
+  },
+  {
+    "section": "alerts",
+    "file": "packages/server/src/alerts/plan.ts",
+    "find": "  for (const b of world.banks ?? [{ bank: 1 as const, lastRead: world.lastRead }]) {",
+    "replace": "  for (const b of [{ bank: 1 as const, lastRead: world.lastRead }]) {",
+    "why": "[her-connections] 10.7 the timer does not wake for the second bank"
+  },
+  {
+    "section": "alerts",
+    "file": "packages/server/src/alerts/plan.ts",
+    "find": "    const login = ledger.lasting[b.bank === 2 ? 'bank-login-2' : 'bank-login'];",
+    "replace": "    const login = ledger.lasting['bank-login'];",
+    "why": "[her-connections] 10.5 the second bank's login told again on the first's count"
+  },
+  {
+    "section": "webhooks",
+    "file": "packages/server/src/sync/webhook-desk.ts",
+    "find": "        await (syncItems === undefined ? this.#input.sync() : syncItems(items));",
+    "replace": "        await this.#input.sync();",
+    "why": "[her-connections] HB11 a webhook syncs every bank"
+  },
+  {
+    "section": "webhooks",
+    "file": "packages/server/src/sync/webhook-desk.ts",
+    "find": "    const mine = this.#input.itemIds?.() ?? ",
+    "replace": "    const mine = ",
+    "why": "[her-connections] HB11 the second bank's webhooks refused"
+  },
+  {
+    "section": "webhooks",
+    "file": "packages/server/src/sync/webhook-desk.ts",
+    "find": "        this.#items = new Set();\n",
+    "replace": "",
+    "why": "[her-connections] HB11 a burst names the banks of the bursts before it"
+  },
+  {
+    "section": "webhooks",
+    "file": "packages/server/src/serve/serving.ts",
+    "find": "    ...(keeper.twoBanks() ? { itemIds:",
+    "replace": "    ...(false ? { itemIds:",
+    "why": "[her-connections] HB11 the hosted server takes only the first bank's webhooks"
+  },
+  {
+    "section": "webhooks",
+    "file": "packages/server/src/bank-webhook.ts",
+    "find": "  for (const connection of connections) {",
+    "replace": "  for (const connection of connections.slice(0, 1)) {",
+    "why": "[her-connections] HB11 only the first bank is pointed at the hosted server"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/connect.ts",
+    "find": "  if (bank === 2 && connectionAt(db, 1) === null) throw new Error('her first bank is connected first');\n",
+    "replace": "",
+    "why": "[her-connections] 1.1 the test bank connects her second bank first"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/http/server.ts",
+    "find": "  return typeof id === 'string' && /^ins_[0-9]{1,12}$/.test(id) && typeof name === 'string'",
+    "replace": "  return typeof id === 'string' && typeof name === 'string'",
+    "why": "[her-connections] HB8 anything taken as the bank Link named"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/http/server.ts",
+    "find": "name.trim().length > 0 && name.length <= 100",
+    "replace": "name.length <= 100",
+    "why": "[her-connections] HB8 a bank with no name taken"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/http/server.ts",
+    "find": "  if (exactly(sent, ['mode', 'bank']) && sent['mode'] === 'login-again' && isBank(sent['bank']))",
+    "replace": "  if (exactly(sent, ['mode', 'bank']) && sent['mode'] === 'login-again')",
+    "why": "[her-connections] 1.3 logging in again to a bank that is not one of hers"
+  },
+  {
+    "section": "home",
+    "file": "packages/server/src/views/home.ts",
+    "find": "...(notRead.length === 0 ? {} : { notRead }) };",
+    "replace": "};",
+    "why": "[her-connections] 0.5 Home does not say which bank cannot be read"
+  },
+  {
+    "section": "home",
+    "file": "packages/server/src/views/home.ts",
+    "find": "for (const b of input.banksToLogIn) attention.push({ kind: 'bank-login', bank: b.bank, name: b.name });",
+    "replace": "for (const b of input.banksToLogIn) attention.push({ kind: 'bank-login' });",
+    "why": "[her-connections] 10.5 Home's login row does not name the bank"
   }
 ]

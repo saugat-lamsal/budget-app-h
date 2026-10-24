@@ -13,7 +13,7 @@ import { Keeper } from '../src/history/keeper.js';
 import { setUpTracking } from '../src/setup-day.js';
 import { bankStatus } from '../src/status.js';
 import { ACCOUNT, inPlaidFormat, simBankRules } from './sim-bank.js';
-import { connected } from './harness.js';
+import { bothBanks, connected } from './harness.js';
 
 // Her rulebook, "Off in this setup": the simulated life shaped like hers (no
 // mom reserve, no old card) through the bank connection and through the
@@ -23,7 +23,9 @@ import { connected } from './harness.js';
 //   has its own made-up activity now and then, which is never read, so the
 //   self-check and the money stay the simulator's;
 // - every day her book has her switches, nothing in a mom reserve, and no
-//   old card debt, the server stopped and started again or not.
+//   old card debt, the server stopped and started again or not;
+// - PR 6: through two bank connections (her rulebook, 1.1): her second card
+//   at a second made-up bank, its own Item, each sync reading both.
 // SIM_HER_BANK_SEEDS, SIM_HER_BANK_FIRST_SEED, SIM_HER_BANK_YEARS and
 // SIM_HER_DB_SEEDS, SIM_HER_DB_FIRST_SEED, SIM_HER_DB_YEARS run more.
 
@@ -75,7 +77,11 @@ async function throughTheBankConnection(seed: number, years: number): Promise<{ 
     today: setup.input.date,
     herSetup: true,
     secondCard: setup.start.secondCard ?? 0,
+    twoBanks: true,
   });
+  const second = h.second;
+  if (second === undefined) throw new Error('her second bank is not there');
+  const banks = bothBanks(h.fake, second);
   expect(readAccounts(h.db).map((a) => a.role).filter((r) => r !== null).sort(), `seed ${seed}: her four accounts`).toEqual(['checking', 'everyday-card', 'savings', 'second-card']);
   const outcome = setUpTracking(
     h.db,
@@ -92,7 +98,7 @@ async function throughTheBankConnection(seed: number, years: number): Promise<{ 
   expect(outcome, `seed ${seed}: setup day`).toEqual({ ok: true, startingMoney: setup.totals.appSide });
   let unread = 0;
   for (const [i, day] of days.entries()) {
-    for (const txn of day.feed) inPlaidFormat(h.fake, txn);
+    for (const txn of day.feed) inPlaidFormat(banks, txn);
     // Made-up activity on the account she never picked.
     if (i % 9 === 0) {
       h.fake.addPosted({ id: `unread-${i}`, account: ACCOUNT['old-card'], amount: 1_000 + i, date: day.date, description: 'MADE UP SHOP ON THE OTHER CARD' });
@@ -100,7 +106,7 @@ async function throughTheBankConnection(seed: number, years: number): Promise<{ 
     }
     await h.sync(day.date, { pageSize: 100 });
     const where = `seed ${seed}, ${day.date}`;
-    expect([h.fake.posted(ACCOUNT.checking), h.fake.posted(ACCOUNT.savings), h.fake.posted(ACCOUNT['everyday-card'])], `${where}: posted balances`).toEqual([day.posted.checking, day.posted.savings, day.posted.everydayCard]);
+    expect([h.fake.posted(ACCOUNT.checking), h.fake.posted(ACCOUNT.savings), h.fake.posted(ACCOUNT['everyday-card']), second.posted(ACCOUNT['second-card'])], `${where}: posted balances, at each bank`).toEqual([day.posted.checking, day.posted.savings, day.posted.everydayCard, day.posted.secondCard ?? 0]);
     const status = bankStatus(h.db);
     expect(status.selfCheck, `${where}: the self-check`).toMatchObject({ ok: true, difference: 0 });
     const check = status.selfCheck;
