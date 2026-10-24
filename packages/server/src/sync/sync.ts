@@ -1,6 +1,7 @@
 import type { Book, Cents, IsoDate } from '@budget-app/money';
 import { bankAtRead, bankView } from '../bank/balances.js';
 import { connectionAt, noteBankRead, saveConnectionStateAt, savePermissionEndsAt, type BankNumber } from '../bank/connections.js';
+import { keepStatement } from '../bank/kept-statements.js';
 import type { BankAtRead } from '../bank/why.js';
 import type { TokenBox } from '../crypto/token-box.js';
 import type { Db } from '../db/database.js';
@@ -264,7 +265,11 @@ function save(input: SyncInput, startCursor: string | null, fetched: Fetched): S
 
   for (const account of changedAccounts) saveAccount(db, account, JSON.stringify(account), sync);
   if (fetched.permissionEnds !== undefined && fetched.permissionEnds !== connection.permissionEnds) savePermissionEndsAt(db, bank, fetched.permissionEnds);
-  for (const { accountId, card } of changedCards) saveStatement(db, accountId, JSON.stringify(card), sync);
+  for (const { accountId, card } of changedCards) {
+    saveStatement(db, accountId, JSON.stringify(card), sync);
+    // Her rulebook, 52.5: each one kept, in her setup.
+    keepStatement(db, accountId, card, sync);
+  }
   for (const item of plan.items) saveItem(db, item);
   // Each with the day of the sync, and the book's totals after it.
   plan.events.forEach((txn, i) => appendEvent(db, { event: { kind: 'receive', txn }, date: input.today, sync, totals: plan.totals[i] ?? null }));

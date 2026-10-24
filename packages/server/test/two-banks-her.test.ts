@@ -581,7 +581,8 @@ describe('her database steps: step 2, her second connection', () => {
     open.push(db);
     migrateHer(db);
     expect((db.prepare('SELECT version FROM her_schema').get() as { version: number }).version).toBe(HER_SCHEMA_VERSION);
-    expect(HER_SCHEMA_VERSION).toBe(2);
+    // PR 7+8 adds her step 3 (52.5, her_statements).
+    expect(HER_SCHEMA_VERSION).toBe(3);
     const old = openDatabase(':memory:');
     open.push(old);
     old.exec('CREATE TABLE her_schema (id INTEGER PRIMARY KEY CHECK (id = 1), version INTEGER NOT NULL)');
@@ -589,8 +590,9 @@ describe('her database steps: step 2, her second connection', () => {
     old.exec('INSERT INTO her_schema (id, version) VALUES (1, 1)');
     migrateHer(old);
     migrateHer(old);
-    expect((old.prepare('SELECT version FROM her_schema').get() as { version: number }).version).toBe(2);
+    expect((old.prepare('SELECT version FROM her_schema').get() as { version: number }).version).toBe(HER_SCHEMA_VERSION);
     expect(old.prepare("SELECT 1 FROM sqlite_master WHERE name = 'her_connections'").get()).toBeDefined();
+    expect(old.prepare("SELECT 1 FROM sqlite_master WHERE name = 'her_statements'").get()).toBeDefined();
   });
 
   it('her steps: upstream\'s setup never gets them, and connects one bank only', async () => {

@@ -77,8 +77,8 @@ export function cardNotices(today: IsoDate, statement: CardStatement, payments: 
 // What the app has seen paid toward a statement, and what has to be paid
 // for the reminders to stop (9.3). On the everyday card that is the full
 // statement balance (paying less means interest on the rest); on the old
-// card it is the minimum.
-function paidAgainst(today: IsoDate, statement: CardStatement, payments: readonly CardPayment[]): { readonly paid: Cents; readonly toPay: Cents } {
+// card it is the minimum. Her rulebook, 52.1: Home shows what is paid.
+export function paidAgainst(today: IsoDate, statement: CardStatement, payments: readonly CardPayment[]): { readonly paid: Cents; readonly toPay: Cents } {
   assertIsoDate(today, 'today');
   checkStatement(statement);
   const { card, closingDate, statementBalance, minimumPayment } = statement;

@@ -1,6 +1,8 @@
 // Everything the phone is sent, and what it sends back. Types only on the
 // phone's side: the numbers are worked out here, from the money math.
 export * from './home.js';
+export type * from './home-cards.js';
+export type * from './statement.js';
 export * from './buckets.js';
 export * from './trends.js';
 export * from './review.js';

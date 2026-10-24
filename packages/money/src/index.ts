@@ -86,6 +86,7 @@ export {
 export {
   cardDue,
   cardNotices,
+  paidAgainst,
   payoffCountdown,
   type CardDue,
   type CardNotice,
