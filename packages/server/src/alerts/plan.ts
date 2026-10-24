@@ -1,7 +1,7 @@
 import { addDays, bucketLevel, cardDue, cardNotices, payoffCountdown, type BankBalances, type Book, type CardStatement, type IsoDate } from '@budget-app/money';
 import { ReplayFailed } from '../history/history.js';
 import { instantIn, timeIn, todayIn } from '../history/today.js';
-import { alertRecord, type AlertFacts, type AlertRecord, type LastingKind } from './alerts.js';
+import { alertRecord, lastingKindOf, type AlertFacts, type AlertRecord, type LastingKind } from './alerts.js';
 
 // Which alerts are due, worked out from the book and what is known of the
 // bank at one moment, and the alerts already given (the ledger). Nothing here
@@ -87,7 +87,7 @@ export const NO_ALERTS: AlertLedger = {
   nextEvening: null,
   given: new Set(),
   known: new Set(),
-  lasting: { 'totals-mismatch': OFF, 'bank-login': OFF, 'bank-not-read': OFF },
+  lasting: { 'totals-mismatch': OFF, 'bank-login': OFF, 'bank-not-read': OFF, 'bank-login-2': OFF, 'bank-not-read-2': OFF },
   payPeriod: null,
 };
 
@@ -115,7 +115,30 @@ export interface AlertWorld {
   // Her setup (HB6): each card's name as its bank gives it; null or left out
   // in upstream's, whose alerts keep their own words.
   readonly cardNames?: Readonly<Record<'everyday-card' | 'second-card', string>> | null;
+  // Her rulebook, 10.5, 10.7 and 10.13 (PR 6, HB10): each of her banks, by
+  // its name, in place of needsLogin, lastRead and permissionEnds, which are
+  // then about her first bank only. Null or left out in upstream's setup.
+  readonly banks?: readonly AlertBank[] | null;
 }
+
+// One of her banks, as the alerts know it.
+export interface AlertBank {
+  readonly bank: 1 | 2;
+  readonly name: string;
+  readonly needsLogin: boolean;
+  // Its last good read, as an instant; null before the first (10.7).
+  readonly lastRead: string | null;
+  readonly permissionEnds: string | null;
+}
+
+// The banks the alerts are about: her banks, or upstream's one connection,
+// from the world's own fields (its alerts carry no bank and no name).
+function banksOf(world: Pick<AlertWorld, 'banks' | 'needsLogin' | 'lastRead' | 'permissionEnds'>): readonly (Omit<AlertBank, 'name'> & { readonly name: string | null })[] {
+  return world.banks ?? [{ bank: 1, name: null, needsLogin: world.needsLogin, lastRead: world.lastRead, permissionEnds: world.permissionEnds ?? null }];
+}
+
+// What one bank's alerts carry: her second bank's number, and her bank's name.
+const tagOf = (b: { readonly bank: 1 | 2; readonly name: string | null }): { readonly bank?: 2; readonly name?: string } => ({ ...(b.bank === 2 ? { bank: 2 as const } : {}), ...(b.name === null ? {} : { name: b.name }) });
 
 const HOUR = 3_600_000;
 
@@ -134,19 +157,21 @@ export function applyAlerts(ledger: AlertLedger, event: AlertsEvent): AlertLedge
     const f = alert.facts;
     const outOfTurn = (): ReplayFailed => new ReplayFailed(`the alert "${alert.key}" is out of turn`);
     if (f.kind === 'totals-mismatch' || f.kind === 'bank-login') {
-      const state = lasting[f.kind];
+      const kind = lastingKindOf(f);
+      const state = lasting[kind];
       if (!f.again) {
         if (state.on || f.time !== state.times + 1) throw outOfTurn();
-        lasting[f.kind] = { on: true, times: f.time, lastDay: f.day, about: null };
+        lasting[kind] = { on: true, times: f.time, lastDay: f.day, about: null };
       } else {
         if (!state.on || f.time !== state.times || (state.lastDay !== null && f.day <= state.lastDay)) throw outOfTurn();
-        lasting[f.kind] = { ...state, lastDay: f.day };
+        lasting[kind] = { ...state, lastDay: f.day };
       }
     }
     if (f.kind === 'bank-not-read') {
-      const state = lasting[f.kind];
+      const kind = lastingKindOf(f);
+      const state = lasting[kind];
       if (state.on || f.time !== state.times + 1) throw outOfTurn();
-      lasting[f.kind] = { on: true, times: f.time, lastDay: null, about: f.lastRead };
+      lasting[kind] = { on: true, times: f.time, lastDay: null, about: f.lastRead };
     }
   }
   for (const kind of event.cleared) {
@@ -209,11 +234,15 @@ export function nextAlertsEvent(world: AlertWorld, ledger: AlertLedger): AlertsE
 // Milliseconds until the next alert comes due by the clock alone: the next
 // evening, or the bank's last good read becoming too old (10.7). 0 or less
 // when one is due; null before the start.
-export function nextDueIn(world: Pick<AlertWorld, 'book' | 'zone' | 'now' | 'lastRead' | 'mismatchSince'>, ledger: AlertLedger): number | null {
+export function nextDueIn(world: Pick<AlertWorld, 'book' | 'zone' | 'now' | 'lastRead' | 'mismatchSince' | 'banks'>, ledger: AlertLedger): number | null {
   if (!ledger.started || ledger.nextEvening === null) return null;
   const now = world.now.getTime();
   let next = eveningAt(world, ledger.nextEvening).getTime() - now;
-  if (!ledger.lasting['bank-not-read'].on && world.lastRead !== null) next = Math.min(next, Date.parse(world.lastRead) + world.book.settings().bankNotReadAlertHours * HOUR - now);
+  // 10.7: each bank's last good read (her setup), or the bank's.
+  for (const b of world.banks ?? [{ bank: 1 as const, lastRead: world.lastRead }]) {
+    const kind = b.bank === 2 ? 'bank-not-read-2' : 'bank-not-read';
+    if (!ledger.lasting[kind].on && b.lastRead !== null) next = Math.min(next, Date.parse(b.lastRead) + world.book.settings().bankNotReadAlertHours * HOUR - now);
+  }
   // 10.4 (A47): the moment a difference has lasted the setting's hours.
   const mismatch = mismatchDueAt(world);
   if (!ledger.lasting['totals-mismatch'].on && mismatch !== null && mismatch > now) next = Math.min(next, mismatch - now);
@@ -232,7 +261,10 @@ function mismatchDueAt(world: Pick<AlertWorld, 'book' | 'mismatchSince'>): numbe
 // evenings came while the server was down (10.9): one daily review, one
 // reminder per card, one more of each lasting alert.
 function kindOf(f: AlertFacts): string {
-  return f.kind === 'card-reminder' || f.kind === 'card-overdue' ? `card ${f.card}` : f.kind;
+  if (f.kind === 'card-reminder' || f.kind === 'card-overdue') return `card ${f.card}`;
+  // Her second bank's are kinds of their own (HB10).
+  if ((f.kind === 'bank-login' || f.kind === 'bank-permission') && f.bank === 2) return `${f.kind} bank 2`;
+  return f.kind;
 }
 
 // The evenings from `from` to `to`, all due by now. Each evening's alerts are
@@ -288,24 +320,27 @@ function eveningAlerts(world: AlertWorld, ledger: AlertLedger, date: IsoDate): A
   const mismatch = ledger.lasting['totals-mismatch'];
   const check = world.bank === null ? null : book.selfCheck(world.bank);
   if (again(mismatch) && check !== null && !check.ok) facts.push({ kind: 'totals-mismatch', time: mismatch.times, difference: check.difference, day: date, again: true });
-  const login = ledger.lasting['bank-login'];
-  if (again(login) && world.needsLogin) facts.push({ kind: 'bank-login', time: login.times, day: date, again: true });
-  // 10.13: from the setting's days before the day it runs out, until that day.
-  const ends = permissionEndsOn(world);
-  if (ends !== null && date >= addDays(ends, -settings.bankPermissionWarnDays) && date < ends) facts.push({ kind: 'bank-permission', ends });
+  for (const b of banksOf(world)) {
+    const login = ledger.lasting[b.bank === 2 ? 'bank-login-2' : 'bank-login'];
+    if (again(login) && b.needsLogin) facts.push({ kind: 'bank-login', time: login.times, day: date, again: true, ...tagOf(b) });
+  }
+  // 10.13: from the setting's days before the day it runs out, until that day; each bank's own.
+  for (const b of banksOf(world)) {
+    const ends = permissionEndsOn(world.zone, b.permissionEnds);
+    if (ends !== null && date >= addDays(ends, -settings.bankPermissionWarnDays) && date < ends) facts.push({ kind: 'bank-permission', ends, ...tagOf(b) });
+  }
   return facts;
 }
 
-// 10.13: the day the bank's permission runs out, on his clock; null when the bank gave no date.
-function permissionEndsOn(world: Pick<AlertWorld, 'zone' | 'permissionEnds'>): IsoDate | null {
-  const at = world.permissionEnds ?? null;
-  return at === null ? null : todayIn(world.zone, new Date(at));
+// 10.13: the day a bank's permission runs out, on his clock; null when the bank gave no date.
+function permissionEndsOn(zone: string, at: string | null): IsoDate | null {
+  return at === null ? null : todayIn(zone, new Date(at));
 }
 
-// 10.13: still the date the bank gives, and not run out yet.
+// 10.13: still the date that bank gives, and not run out yet.
 function permissionStillTrue(world: AlertWorld, f: Extract<AlertFacts, { kind: 'bank-permission' }>): boolean {
-  const at = world.permissionEnds ?? null;
-  return at !== null && permissionEndsOn(world) === f.ends && world.now.getTime() < Date.parse(at);
+  const at = banksOf(world).find((b) => b.bank === (f.bank ?? 1))?.permissionEnds ?? null;
+  return at !== null && permissionEndsOn(world.zone, at) === f.ends && world.now.getTime() < Date.parse(at);
 }
 
 // 10.9: an evening's alert is still true now. A reminder: the card is still
@@ -342,7 +377,7 @@ export function stillTrueNow(world: AlertWorld, ledger: AlertLedger, f: AlertFac
     case 'totals-mismatch':
     case 'bank-login':
     case 'bank-not-read': {
-      const state = ledger.lasting[f.kind];
+      const state = ledger.lasting[lastingKindOf(f)];
       return state.on && state.times === f.time;
     }
     case 'bank-took-back':
@@ -395,7 +430,7 @@ function changeEvent(world: AlertWorld, ledger: AlertLedger, at: string): Alerts
   // 10.4 and 10.5: told when they start, cleared when they stop.
   const today = todayIn(world.zone, world.now);
   const cleared: LastingKind[] = [];
-  const lasting = (kind: 'totals-mismatch' | 'bank-login', now: boolean | null, facts: (time: number) => AlertFacts, dueAt?: string): void => {
+  const lasting = (kind: 'totals-mismatch' | 'bank-login' | 'bank-login-2', now: boolean | null, facts: (time: number) => AlertFacts, dueAt?: string): void => {
     if (now === null) return;
     const state = ledger.lasting[kind];
     if (now && !state.on) give(facts(state.times + 1), dueAt);
@@ -406,16 +441,20 @@ function changeEvent(world: AlertWorld, ledger: AlertLedger, at: string): Alerts
   const mismatchDue = mismatchDueAt(world);
   const lasted = check !== null && !check.ok && mismatchDue !== null && mismatchDue <= world.now.getTime();
   lasting('totals-mismatch', check === null ? null : lasted, (time) => ({ kind: 'totals-mismatch', time, difference: check?.difference ?? 0, day: today, again: false }), lasted ? new Date(mismatchDue).toISOString() : undefined);
-  lasting('bank-login', world.needsLogin, (time) => ({ kind: 'bank-login', time, day: today, again: false }));
-  // 10.7: once, when the last good read is the setting's hours old; cleared by a newer read.
-  const notRead = ledger.lasting['bank-not-read'];
-  if (notRead.on) {
-    if (world.lastRead !== notRead.about) cleared.push('bank-not-read');
-  } else if (world.lastRead !== null) {
-    const hours = book.settings().bankNotReadAlertHours;
-    const due = Date.parse(world.lastRead) + hours * HOUR;
-    if (due <= world.now.getTime()) {
-      give({ kind: 'bank-not-read', time: notRead.times + 1, hours, lastRead: world.lastRead, lastReadLocal: timeIn(world.zone, new Date(world.lastRead)) }, new Date(due).toISOString());
+  for (const b of banksOf(world)) lasting(b.bank === 2 ? 'bank-login-2' : 'bank-login', b.needsLogin, (time) => ({ kind: 'bank-login', time, day: today, again: false, ...tagOf(b) }));
+  // 10.7: once, when the last good read is the setting's hours old; cleared by
+  // a newer read. Each of her banks on its own.
+  for (const b of banksOf(world)) {
+    const kind = b.bank === 2 ? 'bank-not-read-2' : 'bank-not-read';
+    const notRead = ledger.lasting[kind];
+    if (notRead.on) {
+      if (b.lastRead !== notRead.about) cleared.push(kind);
+    } else if (b.lastRead !== null) {
+      const hours = book.settings().bankNotReadAlertHours;
+      const due = Date.parse(b.lastRead) + hours * HOUR;
+      if (due <= world.now.getTime()) {
+        give({ kind: 'bank-not-read', time: notRead.times + 1, hours, lastRead: b.lastRead, lastReadLocal: timeIn(world.zone, new Date(b.lastRead)), ...tagOf(b) }, new Date(due).toISOString());
+      }
     }
   }
   // 10.14: a paycheck counted since the last look, once per pay period; in a

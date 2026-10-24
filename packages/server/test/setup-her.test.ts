@@ -61,7 +61,8 @@ describe('1.2 her setup: which account is which', () => {
     const bank: SyncBank = { plaid, box: new TokenBox(TOKEN_KEY), log, pageSize: 3 };
     const desk = keeper.bankDesk(bank);
     expect(await desk.link({ mode: 'connect', yes: true })).toMatchObject({ ok: true });
-    expect(await desk.connected({ publicToken: fake.publicToken })).toMatchObject({ ok: true });
+    // PR 6 (HB8): her setup takes Link's answer only with the bank it names.
+    expect(await desk.connected({ publicToken: fake.publicToken, institution: { id: fake.institutionId, name: 'Made-up Bank' } })).toMatchObject({ ok: true });
     return { db, desk };
   }
 

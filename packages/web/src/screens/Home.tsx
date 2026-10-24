@@ -133,7 +133,7 @@ function HomeReady({ view, onChanged }: { readonly view: Tracking; readonly onCh
           <Money cents={safeToSpend.lastChecked.amount} hero stale testId="safe-to-spend-stale" />
           <p className="hero__stale" data-testid="as-of">
             <Icon name="clock" size={16} />
-            <span>As of {asOfText(safeToSpend.lastChecked.at, view.timeZone)}. Can't reach the bank to check it now.</span>
+            <span>As of {asOfText(safeToSpend.lastChecked.at, view.timeZone)}. Can't reach {notReadWords(safeToSpend.notRead)} to check it now.</span>
           </p>
           {paydayLine}
         </ScrollHero>
@@ -352,9 +352,17 @@ function CheckFigures({ check, detail, timeZone }: { readonly check: SelfCheck; 
   );
 }
 
+// Her rulebook, 0.5 (PR 6): the banks that could not be read, by name; "the bank" in upstream's setup.
+function notReadWords(names: readonly string[] | undefined): string {
+  if (names === undefined || names.length === 0) return 'the bank';
+  return names.length === 1 ? (names[0] ?? 'the bank') : `${names.slice(0, -1).join(', ')} and ${names.at(-1) ?? ''}`;
+}
+
 function rowKey(item: Attention): string {
   if (item.kind === 'card-due' || item.kind === 'card-overdue' || item.kind === 'card-reminders-off') return `${item.kind}-${item.card}`;
   if (item.kind === 'bank-took-back' || item.kind === 'paycheck-waiting') return `${item.kind}-${item.id}`;
+  // Her setup (PR 6): each bank's own row.
+  if (item.kind === 'bank-login' && item.bank !== undefined) return `${item.kind}-${item.bank}`;
   return item.kind;
 }
 
@@ -379,7 +387,7 @@ function AttentionRow({ item, onSavings, onTakeBack }: { readonly item: Attentio
         />
       );
     case 'bank-login':
-      return <ListRow icon="lock" tone="warning" title="Log in to the bank again" detail="New activity can't come in until you do." testId={testId} />;
+      return <ListRow icon="lock" tone="warning" title={item.name === undefined ? 'Log in to the bank again' : `Log in to ${item.name} again`} detail="New activity can't come in until you do." testId={testId} />;
     case 'card-overdue':
       return (
         <ListRow

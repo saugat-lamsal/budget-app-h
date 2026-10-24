@@ -58,6 +58,8 @@ export function serveBooks(input: ServeInput): Serving {
     keys: new WebhookKeys({ source: plaidKeySource(bank.plaid), now, log: bank.log }),
     itemId: () => keeper.itemId(),
     sync: () => keeper.sync(bank),
+    // Her setup (section 2, HB11): either connection's webhooks, each syncing its bank.
+    ...(keeper.twoBanks() ? { itemIds: () => keeper.itemIds(), syncItems: (items: readonly string[]) => keeper.syncItems(bank, items) } : {}),
     onItsWay: () => keeper.syncOnItsWay(),
     clock: input.clock,
     now,

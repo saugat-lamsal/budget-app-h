@@ -77,3 +77,23 @@ export const BANK_WORDS = {
   changePicks: 'Change which account is which',
   fixed: 'Tracking has started, so these cannot change.',
 } as const;
+
+// Her setup's words (her rulebook, 1.1 and 1.3, PR 6): two banks, each named
+// as Plaid named it when she connected it (HB8).
+export const HER_BANK_WORDS = {
+  noneTitle: 'Connect a bank',
+  noneReal: 'The app reads your Capital One and American Express accounts through Plaid, each bank on its own connection: first Capital One, then American Express. It never moves money.',
+  noneTest: "Plaid's test bank, with made-up accounts, as two banks. Nothing here is real money.",
+  otherTitle: 'Connect your other bank',
+  otherDetail: 'Your other bank connects on its own: first Capital One, then American Express.',
+  connect: 'Connect a bank',
+  askTitle: 'Connect a bank?',
+  banksTitle: 'Banks',
+  missing: 'Not all four here? Connect your other bank, or log in to the bank that has the missing one again (below).',
+  needsLogin: (name: string): string => `${name} wants you to log in again. Until you do, nothing new is read from it.`,
+  permission: (name: string): string => `${name}'s permission runs out`,
+  loginAgain: (name: string): string => `Log in to ${name} again`,
+  loginAgainDetail: 'The same connection: logging in again never uses another of the 10.',
+  // A bank Plaid gave no name for.
+  unnamed: (bank: 1 | 2): string => `Bank ${bank}`,
+} as const;

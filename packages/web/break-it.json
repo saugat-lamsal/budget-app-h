@@ -100,15 +100,15 @@
   {
     "section": "home",
     "file": "packages/server/src/views/home.ts",
-    "find": "if (bank === null) safeToSpend = { shown: false, why: 'bank-not-read', lastChecked: checkedLastChecked(input.lastChecked) };",
+    "find": "if (bank === null) safeToSpend = { shown: false, why: 'bank-not-read', lastChecked: checkedLastChecked(input.lastChecked), ...(notRead.length === 0 ? {} : { notRead }) };",
     "replace": "if (bank === null) safeToSpend = { shown: true, amount: plain.amount };",
     "why": "0.5 show safe to spend when the bank cannot be read"
   },
   {
     "section": "home",
     "file": "packages/server/src/views/home.ts",
-    "find": "why: 'bank-not-read', lastChecked: checkedLastChecked(input.lastChecked) };",
-    "replace": "why: 'bank-not-read', lastChecked: null };",
+    "find": "why: 'bank-not-read', lastChecked: checkedLastChecked(input.lastChecked), ...(notRead",
+    "replace": "why: 'bank-not-read', lastChecked: null, ...(notRead",
     "why": "0.5 forget the last checked safe to spend (B82)"
   },
   {
@@ -2242,8 +2242,8 @@
   {
     "section": "home",
     "file": "packages/web/src/screens/Bank.tsx",
-    "find": "        <Button wide disabled={busy} onClick={() => void start(false)} testId=\"bank-connect\">",
-    "replace": "        <Button wide disabled={busy} onClick={() => void start(true)} testId=\"bank-connect\">",
+    "find": "        <Button variant={other ? 'secondary' : 'primary'} wide disabled={busy} onClick={() => void start(false)} testId=\"bank-connect\">",
+    "replace": "        <Button variant={other ? 'secondary' : 'primary'} wide disabled={busy} onClick={() => void start(true)} testId=\"bank-connect\">",
     "why": "[bank-connect] 1.1 the screen connects without asking first"
   },
   {

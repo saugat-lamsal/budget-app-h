@@ -14,6 +14,11 @@ import { statusLines, type StatusLine } from './status-text.js';
 const ICONS: Readonly<Record<StatusLine['id'], IconName>> = {
   'last-read': 'bank',
   'last-sync': 'clock',
+  // Her setup (0.7, PR 6): each bank's own.
+  'last-read-1': 'bank',
+  'last-sync-1': 'clock',
+  'last-read-2': 'bank',
+  'last-sync-2': 'clock',
   backups: 'tray',
   started: 'info',
   history: 'check',

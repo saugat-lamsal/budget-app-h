@@ -10,9 +10,14 @@ interface LinkHandler {
   destroy(): void;
 }
 
+// What Link says with its answer. Only the bank is kept (her rulebook, 1.1, HB8).
+interface LinkMetadata {
+  readonly institution?: { readonly institution_id?: unknown; readonly name?: unknown } | null;
+}
+
 interface LinkConfig {
   readonly token: string;
-  readonly onSuccess: (publicToken: string) => void;
+  readonly onSuccess: (publicToken: string, metadata?: LinkMetadata) => void;
   readonly onExit: (error: unknown) => void;
 }
 
@@ -26,9 +31,18 @@ declare global {
   }
 }
 
-// How Link ended: he logged in (Link's answer for the server), he closed it
-// (or it failed) and nothing changed, or Link could not be loaded at all.
-export type LinkOutcome = { readonly kind: 'logged-in'; readonly publicToken: string } | { readonly kind: 'closed'; readonly failed: boolean } | { readonly kind: 'unavailable' };
+// How Link ended: he logged in (Link's answer for the server, with the bank
+// Link says it was, when it says), he closed it (or it failed) and nothing
+// changed, or Link could not be loaded at all.
+export type LinkOutcome =
+  | { readonly kind: 'logged-in'; readonly publicToken: string; readonly institution: { readonly id: string; readonly name: string } | null }
+  | { readonly kind: 'closed'; readonly failed: boolean }
+  | { readonly kind: 'unavailable' };
+
+function institutionOf(metadata: LinkMetadata | undefined): { readonly id: string; readonly name: string } | null {
+  const i = metadata?.institution;
+  return i !== null && i !== undefined && typeof i.institution_id === 'string' && typeof i.name === 'string' ? { id: i.institution_id, name: i.name } : null;
+}
 
 // How long to wait for Plaid's script.
 const LOAD_LIMIT_MS = 20_000;
@@ -94,7 +108,7 @@ export async function runLink(linkToken: string): Promise<LinkOutcome> {
     };
     handler = plaid.create({
       token: linkToken,
-      onSuccess: (publicToken) => end({ kind: 'logged-in', publicToken }),
+      onSuccess: (publicToken, metadata) => end({ kind: 'logged-in', publicToken, institution: institutionOf(metadata) }),
       onExit: (error) => end({ kind: 'closed', failed: error !== null && error !== undefined }),
     });
     handler.open();

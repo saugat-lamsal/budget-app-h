@@ -1661,8 +1661,8 @@
   {
     "section": "history",
     "file": "packages/server/src/history/keeper.ts",
-    "find": "    if (connection === null || connection.needsLogin) return { bank: null, pendingIn: [], postingExamples: [] };",
-    "replace": "    if (connection === null) return { bank: null, pendingIn: [], postingExamples: [] };",
+    "find": "    return connections.length === 0 || connections.some((c) => c.needsLogin);",
+    "replace": "    return connections.length === 0;",
     "why": "[keeper] 0.5 read the bank while it wants a new login"
   },
   {
@@ -2095,8 +2095,8 @@
   {
     "section": "sync",
     "file": "packages/server/src/history/keeper.ts",
-    "find": "    this.#lastTry = this.#now().getTime();\n    const running = syncBank({",
-    "replace": "    const running = syncBank({",
+    "find": "    this.#lastTry = this.#now().getTime();\n    const connected = connectionsOf(this.#db)",
+    "replace": "    const connected = connectionsOf(this.#db)",
     "why": "[sync] B168 the next sync is counted from the last read, so a failed one is tried again at once"
   },
   {
@@ -2123,8 +2123,8 @@
   {
     "section": "sync",
     "file": "packages/server/src/history/keeper.ts",
-    "find": "    if (readConnection(this.#db) === null || !rolesComplete(readAccounts(this.#db), this.#roles())) return null;\n",
-    "replace": "    if (readConnection(this.#db) !== null && !rolesComplete(readAccounts(this.#db), this.#roles())) return null;\n",
+    "find": "    if (connectionsOf(this.#db).length === 0 || !rolesComplete(readAccounts(this.#db), this.#roles())) return null;\n",
+    "replace": "    if (connectionsOf(this.#db).length > 0 && !rolesComplete(readAccounts(this.#db), this.#roles())) return null;\n",
     "why": "[sync] B168 with no bank connection it tries to sync anyway"
   },
   {
@@ -2158,7 +2158,7 @@
   {
     "section": "sync",
     "file": "packages/server/src/sync/sync.ts",
-    "find": "  if (!changed) {\n    if (input.readAt !== undefined) saveBankRead(db, { at: input.readAt(), changed, sync: null, ...whatTheReadFound(db, book, sync - 1) });\n    return result;\n  }\n",
+    "find": "  if (!changed) {\n    if (at !== undefined) saveBankRead(db, { at, changed, sync: null, ...whatTheReadFound(db, book, sync - 1) });\n    return result;\n  }\n",
     "replace": "  if (!changed) return result;\n",
     "why": "[sync] B171 a sync with nothing new is not counted as a read"
   },
@@ -2494,8 +2494,8 @@
   {
     "section": "alerts",
     "file": "packages/server/src/alerts/plan.ts",
-    "find": "lasting('bank-login', world.needsLogin, (time) => ({ kind: 'bank-login', time, day: today, again: false }));",
-    "replace": "lasting('bank-login', false, (time) => ({ kind: 'bank-login', time, day: today, again: false }));",
+    "find": "  for (const b of banksOf(world)) lasting(b.bank === 2 ? 'bank-login-2' : 'bank-login', b.needsLogin, (time) =>",
+    "replace": "  for (const b of banksOf(world)) lasting(b.bank === 2 ? 'bank-login-2' : 'bank-login', false, (time) =>",
     "why": "[alerts] 10.5 no alert when the bank wants a login"
   },
   {
@@ -2655,15 +2655,15 @@
   {
     "section": "outbox",
     "file": "packages/server/src/history/keeper.ts",
-    "find": "        this.#noteGap();\n        this.#changed();",
-    "replace": "        this.#noteGap();",
+    "find": "          if (!laterGap) this.#noteGap();\n          this.#changed();",
+    "replace": "          if (!laterGap) this.#noteGap();",
     "why": "[outbox] the alerts are not looked at right after a sync"
   },
   {
     "section": "outbox",
     "file": "packages/server/src/history/keeper.ts",
-    "find": "    return book === null ? null : nextDueIn({ book, zone: this.timeZone(), now: this.#now(), lastRead: this.lastRead(), mismatchSince: this.mismatchSince() }, this.#state.alerts);",
-    "replace": "    return book === null ? null : (nextDueIn({ book, zone: this.timeZone(), now: this.#now(), lastRead: this.lastRead(), mismatchSince: this.mismatchSince() }, this.#state.alerts) ?? 0) + 60_000;",
+    "find": "    return book === null ? null : nextDueIn({ book, zone: this.timeZone(), now: this.#now(), lastRead: this.lastRead(), mismatchSince: this.mismatchSince(), banks: this.#alertWorld()?.banks ?? null }, this.#state.alerts);",
+    "replace": "    return book === null ? null : (nextDueIn({ book, zone: this.timeZone(), now: this.#now(), lastRead: this.lastRead(), mismatchSince: this.mismatchSince(), banks: this.#alertWorld()?.banks ?? null }, this.#state.alerts) ?? 0) + 60_000;",
     "why": "[outbox] 10.3 the timer wakes a minute after the evening"
   },
   {
@@ -2711,8 +2711,8 @@
   {
     "section": "alerts",
     "file": "packages/server/src/alerts/plan.ts",
-    "find": "if (again(login) && world.needsLogin) facts.push(",
-    "replace": "if (again(login)) facts.push(",
+    "find": "    if (again(login) && b.needsLogin) facts.push(",
+    "replace": "    if (again(login)) facts.push(",
     "why": "[a37] 10.5 the login alert is told again though the bank no longer wants it"
   },
   {
@@ -2725,29 +2725,29 @@
   {
     "section": "alerts",
     "file": "packages/server/src/alerts/plan.ts",
-    "find": "    const due = Date.parse(world.lastRead) + hours * HOUR;",
-    "replace": "    const due = Date.parse(world.lastRead) + (hours + 1) * HOUR;",
+    "find": "      const due = Date.parse(b.lastRead) + hours * HOUR;",
+    "replace": "      const due = Date.parse(b.lastRead) + (hours + 1) * HOUR;",
     "why": "[a38] 10.7 the bank-not-read alert comes an hour late"
   },
   {
     "section": "alerts",
     "file": "packages/server/src/alerts/plan.ts",
-    "find": "    if (world.lastRead !== notRead.about) cleared.push('bank-not-read');",
-    "replace": "    if (world.lastRead !== notRead.about || Date.parse(world.lastRead ?? '') + book.settings().bankNotReadAlertHours * HOUR > world.now.getTime()) cleared.push('bank-not-read');",
+    "find": "      if (b.lastRead !== notRead.about) cleared.push(kind);",
+    "replace": "      if (b.lastRead !== notRead.about || Date.parse(b.lastRead ?? '') + book.settings().bankNotReadAlertHours * HOUR > world.now.getTime()) cleared.push(kind);",
     "why": "[a38] 10.7 a longer setting clears it, so it is told again with no good read"
   },
   {
     "section": "alerts",
     "file": "packages/server/src/alerts/plan.ts",
-    "find": "lastReadLocal: timeIn(world.zone, new Date(world.lastRead)) }, new Date(due).toISOString());",
-    "replace": "lastReadLocal: timeIn(world.zone, new Date(world.lastRead)) });",
+    "find": "lastReadLocal: timeIn(world.zone, new Date(b.lastRead)), ...tagOf(b) }, new Date(due).toISOString());",
+    "replace": "lastReadLocal: timeIn(world.zone, new Date(b.lastRead)), ...tagOf(b) });",
     "why": "[a38] 10.7 the bank-not-read alert is due when it is found, not when it came due"
   },
   {
     "section": "alerts",
     "file": "packages/server/src/alerts/plan.ts",
-    "find": "  if (!ledger.lasting['bank-not-read'].on && world.lastRead !== null) next = Math.min(",
-    "replace": "  if (false && world.lastRead !== null) next = Math.min(",
+    "find": "    if (!ledger.lasting[kind].on && b.lastRead !== null) next = Math.min(",
+    "replace": "    if (false && b.lastRead !== null) next = Math.min(",
     "why": "[a38] 10.7 the timer does not wake when the bank becomes a day unread"
   },
   {
@@ -3838,7 +3838,7 @@
   {
     "section": "bank",
     "file": "packages/server/src/bank-desk.ts",
-    "find": "      if (connection !== null) return refuse('connected-already', 'The bank is connected already. The app never makes a second connection.');\n      if (!request.yes)",
+    "find": "      if (!this.#canConnect()) return this.#full();\n      if (!request.yes)",
     "replace": "      if (!request.yes)",
     "why": "[bank-connect] 1.1 a link key for a second connection"
   },
@@ -3859,8 +3859,8 @@
   {
     "section": "bank",
     "file": "packages/server/src/bank-desk.ts",
-    "find": "    if (readConnection(db) !== null) return refuse('connected-already', 'The bank is connected already. The app never makes a second connection.');\n    let exchanged",
-    "replace": "    let exchanged",
+    "find": "    if (!this.#canConnect()) return this.#full();\n    const bank: BankNumber",
+    "replace": "    const bank: BankNumber",
     "why": "[bank-connect] 1.1 a second answer from Link exchanged"
   },
   {
@@ -3894,8 +3894,8 @@
   {
     "section": "bank",
     "file": "packages/server/src/bank-desk.ts",
-    "find": "    if (picked.some((a) => a === undefined)) return refuse(",
-    "replace": "    if (picked.every((a) => a === undefined)) return refuse(",
+    "find": "    if (picked.some((a) => a === undefined)) {",
+    "replace": "    if (picked.every((a) => a === undefined)) {",
     "why": "[bank-connect] 1.2 an account the bank did not send taken"
   },
   {
@@ -3936,15 +3936,15 @@
   {
     "section": "bank",
     "file": "packages/server/src/history/keeper.ts",
-    "find": "    if (readConnection(this.#db) !== null && !rolesComplete(readAccounts(this.#db), this.#roles())) return Promise.reject(",
+    "find": "    if (connectionsOf(this.#db).length > 0 && !rolesComplete(readAccounts(this.#db), this.#roles())) return Promise.reject(",
     "replace": "    if (false) return Promise.reject(",
     "why": "[bank-connect] 1.2 a sync before the four are picked"
   },
   {
     "section": "bank",
     "file": "packages/server/src/history/keeper.ts",
-    "find": "    if (readConnection(this.#db) === null || !rolesComplete(readAccounts(this.#db), this.#roles())) return null;\n",
-    "replace": "    if (readConnection(this.#db) === null) return null;\n",
+    "find": "    if (connectionsOf(this.#db).length === 0 || !rolesComplete(readAccounts(this.#db), this.#roles())) return null;\n",
+    "replace": "    if (connectionsOf(this.#db).length === 0) return null;\n",
     "why": "[bank-connect] 1.2 a sync due before the four are picked"
   },
   {
@@ -3985,8 +3985,8 @@
   {
     "section": "bank",
     "file": "packages/server/src/http/server.ts",
-    "find": "      return typeof token === 'string' && /^public-[a-z]+-[A-Za-z0-9-]{1,200}$/.test(token) ? bank.connected(",
-    "replace": "      return typeof token === 'string' ? bank.connected(",
+    "find": "      if (typeof token !== 'string' || !/^public-[a-z]+-[A-Za-z0-9-]{1,200}$/.test(token)) return null;",
+    "replace": "      if (typeof token !== 'string') return null;",
     "why": "[bank-connect] 1.1 something that is not a link key sent to the bank"
   },
   {
@@ -4013,21 +4013,21 @@
   {
     "section": "alerts",
     "file": "packages/server/src/alerts/plan.ts",
-    "find": "  return at !== null && permissionEndsOn(world) === f.ends && world.now.getTime() < Date.parse(at);",
-    "replace": "  return at !== null && permissionEndsOn(world) === f.ends;",
+    "find": "  return at !== null && permissionEndsOn(world.zone, at) === f.ends && world.now.getTime() < Date.parse(at);",
+    "replace": "  return at !== null && permissionEndsOn(world.zone, at) === f.ends;",
     "why": "[a45] 10.13 a warning after it has run out"
   },
   {
     "section": "alerts",
     "file": "packages/server/src/alerts/plan.ts",
-    "find": "  return at !== null && permissionEndsOn(world) === f.ends && world.now.getTime() < Date.parse(at);",
+    "find": "  return at !== null && permissionEndsOn(world.zone, at) === f.ends && world.now.getTime() < Date.parse(at);",
     "replace": "  return at !== null && world.now.getTime() < Date.parse(at);",
     "why": "[a45] 10.13 a warning for a date the bank no longer gives"
   },
   {
     "section": "alerts",
     "file": "packages/server/src/alerts/plan.ts",
-    "find": "  return at === null ? null : todayIn(world.zone, new Date(at));",
+    "find": "  return at === null ? null : todayIn(zone, new Date(at));",
     "replace": "  return at === null ? null : at.slice(0, 10);",
     "why": "[a45] 10.13 the end day in UTC, not on his clock"
   },
@@ -4048,14 +4048,14 @@
   {
     "section": "alerts",
     "file": "packages/server/src/alerts/alerts.ts",
-    "find": "      return `bank-permission ends ${f.ends}`;",
+    "find": "      return `bank-permission ends ${f.ends}${ofBank(f)}`;",
     "replace": "      return 'bank-permission';",
     "why": "[a45] 10.13 a new date never told: one key for every date"
   },
   {
     "section": "sync",
     "file": "packages/server/src/sync/sync.ts",
-    "find": "  if (fetched.permissionEnds !== undefined && fetched.permissionEnds !== connection.permissionEnds) savePermissionEnds(db, fetched.permissionEnds);\n",
+    "find": "  if (fetched.permissionEnds !== undefined && fetched.permissionEnds !== connection.permissionEnds) savePermissionEndsAt(db, bank, fetched.permissionEnds);\n",
     "replace": "",
     "why": "[a45] 10.13 the date the bank gave not kept"
   },
@@ -4069,8 +4069,8 @@
   {
     "section": "sync",
     "file": "packages/server/src/history/keeper.ts",
-    "find": "permissionEnds: connection?.permissionEnds ?? null, mismatchSince: this.mismatchSince(), cardNames: this.cardNames() };",
-    "replace": "permissionEnds: null, mismatchSince: this.mismatchSince(), cardNames: this.cardNames() };",
+    "find": "permissionEnds: connection?.permissionEnds ?? null, mismatchSince: this.mismatchSince(), cardNames: this.cardNames(), banks };",
+    "replace": "permissionEnds: null, mismatchSince: this.mismatchSince(), cardNames: this.cardNames(), banks };",
     "why": "[a45] 10.13 the alerts never see the date"
   },
   {
@@ -4258,15 +4258,15 @@
   {
     "section": "history",
     "file": "packages/server/src/history/keeper.ts",
-    "find": "    if (!matches && since === null) saveGapSince(",
-    "replace": "    if (!matches) saveGapSince(",
+    "find": "    if (!matches && since === null && !this.#waiting()) saveGapSince(",
+    "replace": "    if (!matches && !this.#waiting()) saveGapSince(",
     "why": "[a47] 10.4 each read with a difference moves when the gap began"
   },
   {
     "section": "history",
     "file": "packages/server/src/history/keeper.ts",
-    "find": "        this.#noteGap();\n        this.#changed();",
-    "replace": "        this.#changed();",
+    "find": "          if (!laterGap) this.#noteGap();\n          this.#changed();",
+    "replace": "          this.#changed();",
     "why": "[a47] 10.4 a sync does not note when the gap began"
   },
   {
@@ -4608,8 +4608,8 @@
   {
     "section": "webhooks",
     "file": "packages/server/src/sync/webhook-desk.ts",
-    "find": "    if (mine === null || webhook.itemId !== mine) {",
-    "replace": "    if (mine === null) {",
+    "find": "    if (webhook.itemId === null || !mine.includes(webhook.itemId)) {",
+    "replace": "    if (mine.length === 0) {",
     "why": "[webhooks] A47 another connection's webhook is taken"
   },
   {
@@ -4713,7 +4713,7 @@
   {
     "section": "webhooks",
     "file": "packages/server/src/history/keeper.ts",
-    "find": "    return readConnection(this.#db)?.itemId ?? null;",
+    "find": "    return connectionsOf(this.#db)[0]?.itemId ?? null;",
     "replace": "    return null;",
     "why": "[webhooks] A47 his own connection is not known"
   },
@@ -5042,8 +5042,8 @@
   {
     "section": "bank",
     "file": "packages/server/src/history/keeper.ts",
-    "find": "    if (connection === null || connection.needsLogin) return { bank: null, pendingIn: [], postingExamples: [] };\n    const accounts = readAccounts(this.#db);",
-    "replace": "    if (connection === null) return { bank: null, pendingIn: [], postingExamples: [] };\n    if (connection.needsLogin) {\n      const v = bankView(readAccounts(this.#db), readItems(this.#db));\n      return { bank: null, pendingIn: v.ok ? v.view.pendingIn : [], postingExamples: [] };\n    }\n    const accounts = readAccounts(this.#db);",
+    "find": "    if (this.#cannotRead()) return { bank: null, pendingIn: [], postingExamples: [] };\n    const accounts = readAccounts(this.#db);",
+    "replace": "    if (connectionsOf(this.#db).length === 0) return { bank: null, pendingIn: [], postingExamples: [] };\n    if (this.#cannotRead()) {\n      const v = bankView(readAccounts(this.#db), readItems(this.#db));\n      return { bank: null, pendingIn: v.ok ? v.view.pendingIn : [], postingExamples: [] };\n    }\n    const accounts = readAccounts(this.#db);",
     "why": "[a56] 11.4 0.5 money on its way in shown while the bank cannot be read"
   },
   {
@@ -5231,15 +5231,15 @@
   {
     "section": "sync",
     "file": "packages/server/src/sync/sync.ts",
-    "find": "  if (input.readAt !== undefined) saveBankRead(db, { at: input.readAt(), changed, sync, ...whatTheReadFound(db, book, sync) });",
-    "replace": "  if (input.readAt !== undefined) saveBankRead(db, { at: input.readAt(), changed, sync: null, ...whatTheReadFound(db, book, sync) });",
+    "find": "  if (at !== undefined) saveBankRead(db, { at, changed, sync, ...whatTheReadFound(db, book, sync) });",
+    "replace": "  if (at !== undefined) saveBankRead(db, { at, changed, sync: null, ...whatTheReadFound(db, book, sync) });",
     "why": "[layer1] 12.6 11.4 the sync a read saved not kept"
   },
   {
     "section": "sync",
     "file": "packages/server/src/sync/sync.ts",
-    "find": "    if (input.readAt !== undefined) saveBankRead(db, { at: input.readAt(), changed, sync: null, ...whatTheReadFound(db, book, sync - 1) });",
-    "replace": "    if (input.readAt !== undefined) saveBankRead(db, { at: input.readAt(), changed, sync: null });",
+    "find": "    if (at !== undefined) saveBankRead(db, { at, changed, sync: null, ...whatTheReadFound(db, book, sync - 1) });",
+    "replace": "    if (at !== undefined) saveBankRead(db, { at, changed, sync: null });",
     "why": "[layer1] 12.6 a read that brought nothing new keeps nothing of the bank"
   },
   {
@@ -6575,8 +6575,8 @@
   {
     "section": "alerts",
     "file": "packages/server/src/history/keeper.ts",
-    "find": ", mismatchSince: this.mismatchSince(), cardNames: this.cardNames() };",
-    "replace": ", mismatchSince: this.mismatchSince() };",
+    "find": ", mismatchSince: this.mismatchSince(), cardNames: this.cardNames(), banks };",
+    "replace": ", mismatchSince: this.mismatchSince(), banks };",
     "why": "[her-second-card] 9.1 the alerts never get the cards' names"
   },
   {

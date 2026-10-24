@@ -43,12 +43,36 @@ interface FakeError {
 
 export const dollars = (cents: Cents): number => Number((cents / 100).toFixed(2));
 
+// Her rulebook, 1.1 (PR 6): her second bank is a FakePlaid of its own, with
+// its own keys and item (SECOND_BANK), joined to the first by twoBanks().
+export interface FakeBank {
+  readonly accessToken: string;
+  readonly publicToken: string;
+  readonly itemId: string;
+  readonly institutionId: string;
+}
+
+export const FIRST_BANK: FakeBank = {
+  accessToken: 'access-sandbox-11111111-2222-4333-8444-555555555555',
+  publicToken: 'public-sandbox-11111111-2222-4333-8444-666666666666',
+  itemId: 'item-made-up-1',
+  institutionId: 'ins_109508',
+};
+
+export const SECOND_BANK: FakeBank = {
+  accessToken: 'access-sandbox-22222222-3333-4444-8555-666666666666',
+  publicToken: 'public-sandbox-22222222-3333-4444-8555-777777777777',
+  itemId: 'item-made-up-2',
+  institutionId: 'ins_109509',
+};
+
 export class FakePlaid {
   readonly clientId = 'client-made-up-123';
   readonly secret = 'secret-made-up-456';
-  readonly accessToken = 'access-sandbox-11111111-2222-4333-8444-555555555555';
-  readonly publicToken = 'public-sandbox-11111111-2222-4333-8444-666666666666';
-  readonly itemId = 'item-made-up-1';
+  readonly accessToken: string;
+  readonly publicToken: string;
+  readonly itemId: string;
+  readonly institutionId: string;
   readonly accounts = new Map<string, { input: FakeAccountInput; posted: Cents }>();
   // What the bank shows now, removed transactions left out.
   readonly transactions = new Map<string, PlaidTransaction>();
@@ -73,8 +97,12 @@ export class FakePlaid {
   readonly #availableHold = new Map<string, Cents>();
   readonly #noAvailable = new Set<string>();
 
-  constructor(accounts: readonly FakeAccountInput[]) {
+  constructor(accounts: readonly FakeAccountInput[], bank: FakeBank = FIRST_BANK) {
     for (const input of accounts) this.accounts.set(input.id, { input, posted: input.posted });
+    this.accessToken = bank.accessToken;
+    this.publicToken = bank.publicToken;
+    this.itemId = bank.itemId;
+    this.institutionId = bank.institutionId;
   }
 
   // ----- The bank -----
@@ -256,7 +284,7 @@ export class FakePlaid {
     }
     if (body['access_token'] !== this.accessToken) return error(400, 'INVALID_INPUT', 'INVALID_ACCESS_TOKEN');
     if (this.needsLogin) return error(400, 'ITEM_ERROR', 'ITEM_LOGIN_REQUIRED');
-    const item = { item_id: this.itemId, institution_id: 'ins_109508', error: null, products: ['transactions', 'liabilities'], consent_expiration_time: this.consentExpiration };
+    const item = { item_id: this.itemId, institution_id: this.institutionId, error: null, products: ['transactions', 'liabilities'], consent_expiration_time: this.consentExpiration };
     switch (endpoint) {
       case '/transactions/sync':
         return this.#sync(body, requestId, error);
@@ -382,6 +410,22 @@ export class FakePlaid {
   #change(change: Change): void {
     this.changes.push(change);
   }
+}
+
+// Her rulebook, 1.1 (PR 6): two made-up banks as one Plaid. Each call goes to
+// the bank its key, its Link answer or its institution is from; a call with
+// none of them (a link key to connect, the webhook keys) to the first.
+export function twoBanks(first: FakePlaid, second: FakePlaid): Fetch {
+  const banks = [first, second];
+  return async (url, init) => {
+    const body = JSON.parse(init.body) as Record<string, unknown>;
+    const bank =
+      banks.find((b) => body['access_token'] === b.accessToken) ??
+      banks.find((b) => body['public_token'] === b.publicToken) ??
+      banks.find((b) => body['institution_id'] === b.institutionId && body['access_token'] === undefined) ??
+      first;
+    return bank.fetch(url, init);
+  };
 }
 
 // His four accounts, as the made-up test bank shows them.

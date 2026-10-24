@@ -29,4 +29,14 @@ export interface StatusView {
   readonly mismatchSince: string | null;
   // Alerts worked out and not sent yet (quiet hours, or the phone not reached).
   readonly alertsWaiting: number;
+  // Her rulebook, 0.7 (PR 6): each of her banks, by name, with its own last
+  // good read and how its last sync went. Left out in upstream's setup.
+  readonly banks?: readonly StatusBank[];
+}
+
+export interface StatusBank {
+  readonly bank: 1 | 2;
+  readonly name: string;
+  readonly lastRead: string | null;
+  readonly lastSync: { readonly at: string; readonly result: 'new' | 'nothing-new' | 'needs-login' | 'failed' } | null;
 }

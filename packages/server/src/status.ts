@@ -2,7 +2,8 @@ import { subtractCents, type Cents, type InTransit, type Pots, type SelfCheck } 
 import { bankView, type BankViewResult } from './bank/balances.js';
 import { cardStatement, closingDayOf, type StatementResult } from './bank/statements.js';
 import type { Db } from './db/database.js';
-import { loadBook, readAccounts, readAttention, readConnection, readItems, readStatements } from './db/store.js';
+import { connectionsOf } from './bank/connections.js';
+import { loadBook, readAccounts, readAttention, readItems, readStatements } from './db/store.js';
 
 // Where things stand, from what is saved: the self-check against the bank's
 // balances (section 12), the old card debt against the old card's balance,
@@ -27,10 +28,11 @@ export interface BankStatus {
 }
 
 export function bankStatus(db: Db): BankStatus {
-  const connection = readConnection(db);
+  // Her setup: both of her banks (her rulebook, 1.1).
+  const connections = connectionsOf(db);
   const book = loadBook(db);
   const accounts = readAccounts(db);
-  const bank = connection === null || accounts.length === 0 ? null : bankView(accounts, readItems(db));
+  const bank = connections.length === 0 || accounts.length === 0 ? null : bankView(accounts, readItems(db));
   const stored = readStatements(db);
   const statements = accounts.flatMap((a) => {
     const raw = stored.get(a.plaidAccountId)?.raw;
@@ -45,9 +47,9 @@ export function bankStatus(db: Db): BankStatus {
       ? { book: book.oldCardDebt(), bank: bank.view.oldCardWithPending, difference: subtractCents(bank.view.oldCardWithPending, book.oldCardDebt()) }
       : null;
   return {
-    connected: connection !== null,
-    needsLogin: connection?.needsLogin ?? false,
-    historyComplete: connection?.historyComplete ?? false,
+    connected: connections.length > 0,
+    needsLogin: connections.some((c) => c.needsLogin),
+    historyComplete: connections.length > 0 && connections.every((c) => c.historyComplete),
     tracking: book !== null,
     bank,
     selfCheck,

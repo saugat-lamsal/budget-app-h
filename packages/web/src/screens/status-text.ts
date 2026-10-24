@@ -6,7 +6,7 @@ import { checkedAtText } from '../ui/dates.js';
 // words, never colour alone. No amounts: the server sends none.
 
 export interface StatusLine {
-  readonly id: 'last-read' | 'last-sync' | 'backups' | 'started' | 'history' | 'difference' | 'alerts';
+  readonly id: 'last-read' | 'last-sync' | `last-read-${1 | 2}` | `last-sync-${1 | 2}` | 'backups' | 'started' | 'history' | 'difference' | 'alerts';
   readonly title: string;
   readonly detail: string;
   // True when something is not as it should be.
@@ -23,14 +23,29 @@ const SYNC_WORDS = {
 export function statusLines(view: StatusView): StatusLine[] {
   const when = (at: string): string => checkedAtText(at, view.today, view.timeZone);
   const sync = view.lastSync;
+  // Her setup (her rulebook, 0.7, PR 6): each bank's own, by name.
+  const banks: StatusLine[] =
+    view.banks === undefined
+      ? [
+          { id: 'last-read', title: 'Bank last read', detail: view.lastRead === null ? 'Not read yet.' : when(view.lastRead), look: false },
+          {
+            id: 'last-sync',
+            title: 'Last sync',
+            detail: sync === null ? 'None since the server started.' : `${when(sync.at)}: ${SYNC_WORDS[sync.result].words}`,
+            look: sync !== null && SYNC_WORDS[sync.result].look,
+          },
+        ]
+      : view.banks.flatMap((b): StatusLine[] => [
+          { id: `last-read-${b.bank}`, title: `${b.name} last read`, detail: b.lastRead === null ? 'Not read yet.' : when(b.lastRead), look: false },
+          {
+            id: `last-sync-${b.bank}`,
+            title: `${b.name}: last sync`,
+            detail: b.lastSync === null ? 'None since the server started.' : `${when(b.lastSync.at)}: ${SYNC_WORDS[b.lastSync.result].words}`,
+            look: b.lastSync !== null && SYNC_WORDS[b.lastSync.result].look,
+          },
+        ]);
   return [
-    { id: 'last-read', title: 'Bank last read', detail: view.lastRead === null ? 'Not read yet.' : when(view.lastRead), look: false },
-    {
-      id: 'last-sync',
-      title: 'Last sync',
-      detail: sync === null ? 'None since the server started.' : `${when(sync.at)}: ${SYNC_WORDS[sync.result].words}`,
-      look: sync !== null && SYNC_WORDS[sync.result].look,
-    },
+    ...banks,
     backupsLine(view, when),
     { id: 'started', title: 'Server started', detail: when(view.started), look: false },
     { id: 'history', title: 'History', detail: historyText(view.history), look: false },
