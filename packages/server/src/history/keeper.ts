@@ -281,9 +281,10 @@ export class Keeper {
   }
 
   // 10.4 (A47): when the totals stopped matching the bank; null while they match.
-  // Her setup: none while the check waits for a bank (12.3, HB9).
+  // Her setup: while the check waits for a bank (12.3, HB9) the alerts do
+  // not see the bank (#alertWorld), so nothing is told until both are read.
   mismatchSince(): string | null {
-    return this.#waiting() ? null : readGapSince(this.#db);
+    return readGapSince(this.#db);
   }
 
   // 10.4 (A47): a difference younger than the setting's hours: the bank is
