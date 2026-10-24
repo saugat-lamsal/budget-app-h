@@ -335,3 +335,26 @@ or "Due" on Wishlist items and cards, never color alone.
   paycheck). Readings HB12 to HB18. Random test: her lives, every day each
   card's owed against the simulated bank, every statement adds up with
   nothing not matched (cards-random-her.test.ts).
+- PR 7+8 merged (Oct 24, 2026). HB12 to HB18 agreed by him (Oct 24).
+- PR 9, the Wishlist bucket and 50.4 (branch her-wishlist). A fourth switch,
+  wishlist (off is upstream's and any book saved before it, B242; on is
+  hers), and Settings.split.wishlist (optional; with the switch on the split
+  always names it; HER_SETTINGS starts it at 0%). Money: Pots.wishlist and
+  PaycheckSplit.wishlist only where the switch is on; 3.3 four parts, 3.4
+  never asked, 3.8 savings plus Wishlist, 4.2 and 4.4 sorting and splits to
+  it (not a payment to a person), 6.1 payback into it and other income four
+  ways, 11.3, 12.2, 13.4 out-of-wishlist, 14.2, 52.4's Wishlist group;
+  Book.movablePots(), Book.wishlistFlows() (a read hook) and wishlist.ts
+  (50.4: $X, when, the cards). No sorting rule picks Wishlist (HB21).
+  Server: Buckets' wishlist, Wishlist's list at /buckets/wishlist
+  (HER_POT_SLUGS, HER_BUCKET_PATHS, kept apart from upstream's), the desks
+  (setup day, review, hand moves, the four-way split), history totals,
+  Home's 50.4 line (views/home-wishlist.ts) and the card reminders' line.
+  Web: Buckets, Move, Payday, Review, Settings, Setup day, the Statement
+  screen, Home's "Wishlist" card. Trends' Wishlist parts (40.2, 40.4,
+  40.5, 40.11) are built in PR 10+11 (HA6) and stay in section H.
+  Readings HB19 to HB25.
+  Her simulated life buys from Wishlist, splits three ways, refunds, moves
+  money by hand and does 50.4's move.
+- His answer to HA6 (Oct 24): Trends' Wishlist parts are built in PR 10+11
+  (rulebook 60f; section H's PR 10+11 block).

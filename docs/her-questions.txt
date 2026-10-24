@@ -15,6 +15,19 @@ PART A. WAITING FOR AN ANSWER
 
 PART A, ANSWERED
 
+HA6 (PR 9). ANSWERED Oct 24: option 1, in PR 10+11 with the rest of her
+    Trends. Rulebook 60f; the four texts are under PR 10+11 in section H.
+    Was: the rulebook's section H lists, under PR 9, 40.2 and 40.4 (Wishlist spending its own part of each
+    pay period's bar), 40.5 (Wishlist over time beside savings) and 40.11
+    (no estimate for Wishlist). The roadmap and docs/her-plan.txt put
+    "Trends for her setup: Wishlist's part" in PR 10+11. PR 9 does not build
+    them: those four texts stay in section H, and until then Trends reads
+    needs and wants only, as 40.2 says now (a Wishlist purchase is not on
+    Trends; nothing on Trends is wrong, it is left out).
+    Options: (1) build them in PR 10+11 with the rest of her Trends, the
+    view and read-only bar (recommended: they only read, and that PR already
+    reworks Trends for her); (2) a small PR 9b before 10+11.
+
 HA1 (plan Q2). ANSWERED Oct 23: option 1 and (a). Rulebook 60a.
     A Wishlist item bought for less or more than its price is marked bought,
     and the bucket goes down by what it really cost; nothing more is asked.
@@ -49,6 +62,7 @@ Plan Q8, Oct 23: the bank names stay (Capital One, American Express).
 PART B. READINGS FOR HIM TO CHECK
 
 HB1 to HB5: PR 4, merged with them. HB6 to HB11: agreed by him, Oct 24.
+HB12 to HB18: agreed by him, Oct 24 (PR 9's request).
 
 HB1 (PR 4). Turning "Ask before splitting a paycheck" off while a paycheck
     waits for her yes: it keeps waiting for her yes. Only paychecks that
@@ -200,3 +214,58 @@ HB18 (52.4, 52.5). Before setup day, the bank history on the card is read
     one sent again with a change replaces it. Her step 3 starts from the
     statement each card already had. Upstream's setup has no section 52:
     no cards on Home and no statement screen.
+
+HB19 (PR 9, section 2). Wishlist is a switch, like the second card: on in her
+    setup (HER_SWITCHES), off in upstream's and in any book saved before it
+    existed (B242), fixed on setup day. Off, the split has no Wishlist share
+    at all, not even 0%, and nothing can be assigned, sorted, paid back or
+    moved to it. On, the split always names it, and a split without it is
+    refused. Her starting split is upstream's 50/30/20 with Wishlist at 0%;
+    she picks it on setup day (section 2).
+
+HB20 (4.2, 4.4, 6.1). What can go to Wishlist: a purchase (either card or
+    the debit card), a card fee or interest charge, and money leaving savings
+    (4.9), each whole or as a part of a split with needs and wants. A payment
+    to a person keeps 7.6's own choices (needs, wants, not mine), so not
+    Wishlist. Money in can be payback into Wishlist (6.1, "the bucket you
+    pick"), and other income is split four ways, by this pay period's
+    percentages.
+
+HB21 (4.2, 6.2, 13.6, 13.8). Sorting rules stay exactly as they are (her
+    plan, Piece I): a purchase rule picks needs or wants, a deposit rule
+    cannot pay back into Wishlist. So Wishlist is picked by hand in review:
+    "always do this" is not offered for it, and 13.8 offers no rule for it.
+
+HB22 (50.4, $X). "Everything sorted to Wishlist" is what each purchase takes
+    from Wishlist now, so a refund matched to it (4.5) already lowers it;
+    "Wishlist refunds" also counts money in sorted as payback into Wishlist.
+    A purchase that left savings is not counted: its money already left the
+    savings account. "Every move from savings to checking": a whole transfer,
+    or its leaving half from the day it leaves (12.5; an arrival seen first
+    counts until its leaving half shows), not one the bank took back, and
+    not a half that was on its way on setup day. A payment from savings
+    straight to a card is not a move to checking, but it lowers the extra in
+    savings, so $X still follows it. While the bank cannot be read, or the
+    check waits for one bank (HB9), nothing is said.
+
+HB23 (50.4, when). The moves and the money back cover the oldest Wishlist
+    purchases first; when is worked out from the ones still to move. A card
+    purchase is on the first statement the app has (52.5) that closed on or
+    after the day the bank posted it; still pending, or after the last
+    closing day, it is "before the card's next due date". On the due date it
+    says "today", after it "now", as 9.6 says due and overdue. "Now" (a
+    debit card purchase) comes before any due date, and a known due date
+    before a next due date.
+
+HB24 (50.4, reminders). A card's reminder says "Move $X from savings to
+    checking for Wishlist first" while that card has a Wishlist purchase
+    still to move; with amounts off the lock screen (10.10), "Move the
+    Wishlist money from savings to checking first", with no amount.
+
+HB25 (screens). Buckets shows Wishlist in the Savings card ("Kept in your
+    savings account for the things on your list. Not part of safe to
+    spend."), with its own list at /buckets/wishlist, kept apart from
+    upstream's buckets as the statement screen is. Home shows 50.4's line in
+    its own "Wishlist" card. In Review the two quick choices stay needs and
+    wants; Wishlist is under "More choices". Payday says "Savings plus
+    Wishlist" for what should be in the savings account (3.8).

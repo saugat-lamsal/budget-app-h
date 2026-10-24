@@ -32,6 +32,8 @@ export type BucketsView =
       readonly needs: BucketBar;
       readonly wants: BucketBar;
       readonly savings: Cents;
+      // Her rulebook, section 2: the Wishlist bucket, only where the setup has it.
+      readonly wishlist?: Cents;
       readonly momReserve: MomReserveView;
       // 7.3
       readonly heldForOthers: OthersMoney;
@@ -95,6 +97,7 @@ export function bucketsView(input: BucketsInput): BucketsView {
     needs: bar(pots.needs, started.needs),
     wants: bar(pots.wants, started.wants),
     savings: pots.savings,
+    ...(pots.wishlist === undefined ? {} : { wishlist: pots.wishlist }),
     momReserve: { amount: pots.momReserve, month: month.month, sent: month.sent, target: month.target, position },
     heldForOthers: book.othersMoney(),
     waiting: { count: book.reviewItems().length, moneyIn: pots.unsortedIn, spending: pots.unsortedOut },

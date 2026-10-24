@@ -19,7 +19,7 @@ export interface PaycheckReport {
   readonly split: PaycheckSplit;
   // What it was worked out with, which is not always what the settings say
   // now: a change to the split applies from the next paycheck (13.1).
-  readonly percent: { readonly savings: number; readonly needs: number; readonly wants: number };
+  readonly percent: { readonly savings: number; readonly needs: number; readonly wants: number; readonly wishlist?: number };
   readonly reservePerPaycheck: Cents;
   readonly reserveCap: Cents;
   // What the mom reserve held before the paycheck.

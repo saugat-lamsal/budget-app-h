@@ -8,6 +8,7 @@ import {
   changeSettings,
   daysBetween,
   startTracking,
+  wishlistMove,
   withPendingCharges,
   type BankBalances,
   type BankTransaction,
@@ -20,6 +21,7 @@ import {
   type LeftoverAnswer,
   type LeftoverChoice,
   type PersonPayment,
+  type AnyPot,
   type Pot,
   type Pots,
   type Purchase,
@@ -333,6 +335,13 @@ export const HER_STAT_NAMES = [
   'cardPaymentsFromSavings',
   'secondCardRemindersChecked',
   'secondCardAtSetup',
+  // PR 9: her Wishlist bucket.
+  'wishlistPaychecks',
+  'wishlistPurchases',
+  'wishlistSplits',
+  'wishlistRefunds',
+  'wishlistHandMoves',
+  'wishlistMoves',
 ] as const;
 // What a life shaped like hers never has.
 export const OFF_IN_HER_LIFE: readonly (typeof STAT_NAMES)[number][] = [
@@ -371,7 +380,7 @@ const START_RULES: readonly SortingRule[] = [
 ];
 
 // How the person sorts something from a store when it waits in review.
-type Sorting = 'needs' | 'wants' | 'split' | 'either';
+type Sorting = 'needs' | 'wants' | 'split' | 'either' | 'wishlist';
 
 interface Store {
   readonly name: string;
@@ -406,6 +415,20 @@ const SPLITS: readonly Settings['split'][] = [
   { savings: 60, needs: 25, wants: 15 },
 ];
 
+// Her life (PR 9): her splits name Wishlist (her rulebook, section 2), now
+// and then at 0%.
+const HER_SPLITS: readonly Settings['split'][] = [
+  { savings: 40, needs: 30, wants: 20, wishlist: 10 },
+  { savings: 35, needs: 30, wants: 20, wishlist: 15 },
+  { savings: 45, needs: 30, wants: 15, wishlist: 10 },
+  { savings: 50, needs: 30, wants: 20, wishlist: 0 },
+  { savings: 30, needs: 35, wants: 20, wishlist: 15 },
+];
+
+// Her life (PR 9): things off her Wishlist, sorted to it by hand in review
+// (no rule picks Wishlist, 4.2), and now and then sent back.
+const HER_STORES: readonly Store[] = [{ name: 'MADE UP GADGET SHOP', sorting: 'wishlist', min: 2_500, max: 45_000, perThousandDays: 35, debitOutOf10: 2, how: 'pending', refundsOutOf100: 20 }];
+
 // How the person sorts a payment to a person: one place, for mom, or split
 // across needs, wants, and not mine (7.6).
 type PersonSorting = 'needs' | 'wants' | 'not-mine' | 'mom' | 'split';
@@ -416,13 +439,16 @@ type Intent =
   | { readonly type: 'person'; readonly sorting: PersonSorting }
   | { readonly type: 'from-savings'; readonly sorting: 'needs' | 'wants' }
   | { readonly type: 'money-in'; readonly choice: 'paycheck' | 'other-income' | 'not-mine' | 'needs' | 'wants' }
-  | { readonly type: 'refund'; readonly bucket: 'needs' | 'wants' };
+  | { readonly type: 'refund'; readonly bucket: 'needs' | 'wants' | 'wishlist' };
 
 // Where a purchase stands, as the simulator keeps track of it: the bucket it
 // is in, waiting in review, split, counted on setup day, on the old card, or
 // taken back by the bank (4.10), or refunded in full while it waited, so
 // kept as a record sorted nowhere (4.5, A26).
-type Standing = 'needs' | 'wants' | 'unsorted' | 'split' | 'setup' | 'old-card' | 'gone' | 'refunded';
+type Standing = 'needs' | 'wants' | 'wishlist' | 'unsorted' | 'split' | 'setup' | 'old-card' | 'gone' | 'refunded';
+
+// Sorted into one bucket (her life: Wishlist too).
+const inABucket = (s: Standing | undefined): s is 'needs' | 'wants' | 'wishlist' => s === 'needs' || s === 'wants' || s === 'wishlist';
 
 type PotName = keyof Pots;
 const POT_NAMES: readonly PotName[] = ['savings', 'needs', 'wants', 'momReserve', 'heldForOthers', 'unsortedIn', 'unsortedOut'];
@@ -461,6 +487,8 @@ export function liveALife(options: LifeOptions): LifeResult {
 class Life {
   readonly #seed: number;
   readonly #her: boolean;
+  // The buckets the book has: her life has Wishlist too (PR 9).
+  readonly #potNames: readonly PotName[];
   readonly #days: number;
   readonly #sabotageOnDay: number | undefined;
   readonly #record: LifeRecorder | undefined;
@@ -491,7 +519,7 @@ class Life {
   // them back for a full refund (A26).
   readonly #awaitingReturn = new Set<string>();
   // How the person split each split purchase, by the id it first had.
-  readonly #splitParts = new Map<string, { readonly needs: Cents; readonly wants: Cents }>();
+  readonly #splitParts = new Map<string, { readonly needs: Cents; readonly wants: Cents; readonly wishlist?: Cents }>();
   readonly #momSent = new Map<string, Cents>();
   // 13.2, A9: now and then the person clears the mom rule, and sets it again
   // a few days later. Payments to mom wait in review meanwhile, and the bank
@@ -572,6 +600,7 @@ class Life {
   constructor(options: LifeOptions) {
     this.#seed = options.seed;
     this.#her = options.profile === 'her';
+    this.#potNames = this.#her ? [...POT_NAMES, 'wishlist'] : POT_NAMES;
     this.#plan = options.plan;
     this.#days = options.plan === undefined ? Math.round(options.years * 365) : options.plan.days;
     this.#sabotageOnDay = options.sabotageOnDay;
@@ -725,8 +754,10 @@ class Life {
       const savings = balances.savings - momReserve;
       const rest = startingMoney - savings - momReserve;
       const needs = rest > 0 ? share(rest, 60) : rest;
+      // Her rulebook, 14.2: she gives some to Wishlist, and picks its share (section 2).
+      const wishlist = this.#her && rest > 0 ? share(rest, r.int(0, 20)) : 0;
       this.#settings = this.#her
-        ? changeSettings(HER_SETTINGS, { paycheckRule: { contains: PAYROLL } })
+        ? changeSettings(HER_SETTINGS, { paycheckRule: { contains: PAYROLL }, split: r.pick(HER_SPLITS) })
         : changeSettings(DEFAULT_SETTINGS, { paycheckRule: { contains: PAYROLL }, momRule: { contains: MOM } });
       this.#periodSplit = this.#settings.split;
       this.#setupInput = {
@@ -735,7 +766,7 @@ class Life {
         pendingCharges: this.#bank.pendingCharges(),
         transfersInTransit: this.#bank.halvesShowing(),
         oldCardBalance: this.#bank.posted.oldCard,
-        assignment: { savings, needs, wants: rest - needs, momReserve, heldForOthers: 0 },
+        assignment: { savings, needs, wants: rest - needs - wishlist, momReserve, heldForOthers: 0, ...(this.#her ? { wishlist } : {}) },
         lastPaycheckDate: lastPaycheck,
         settings: this.#settings,
         rules: START_RULES,
@@ -866,6 +897,7 @@ class Life {
     this.#later.delete(today);
 
     for (const store of STORES) if (r.chance(store.perThousandDays, 1_000)) events.push(() => this.#shop(store));
+    if (this.#her) for (const store of HER_STORES) if (r.chance(store.perThousandDays, 1_000)) events.push(() => this.#shop(store));
     // Now and then the rent goes from savings; the landlord's rule still sorts it (A16).
     if (dayOfMonth === 1) events.push(() => this.#payPerson(this.#person.rent, 'MADE UP LANDLORD', 'needs', r.chance(1, 12) ? 'savings' : 'checking'));
     if (dayOfMonth === 5) events.push(() => this.#bill('MADE UP STREAMING', 1_599, 'everyday-card'));
@@ -981,14 +1013,16 @@ class Life {
   // first, as much as fits under the cap (a smaller paycheck gives all it
   // has); what does not fit goes to savings; the rest is split by the
   // percentages, each rounded down, with the leftover cents to savings.
-  #expectedSplit(amount: Cents, reserveBefore: Cents): { momReserve: Cents; savings: Cents; needs: Cents; wants: Cents } {
+  // Her rulebook, 3.3: Wishlist rounded down too, where the split names it.
+  #expectedSplit(amount: Cents, reserveBefore: Cents): { momReserve: Cents; savings: Cents; needs: Cents; wants: Cents; wishlist?: Cents } {
     const { momReservePerPaycheck, momReserveCap, split } = this.#settings;
     const forReserve = Math.min(momReservePerPaycheck, amount);
     const fits = Math.max(0, Math.min(forReserve, momReserveCap - reserveBefore));
     const rest = amount - forReserve;
     const needs = share(rest, split.needs);
     const wants = share(rest, split.wants);
-    return { momReserve: fits, savings: forReserve - fits + rest - needs - wants, needs, wants };
+    const wishlist = split.wishlist === undefined ? 0 : share(rest, split.wishlist);
+    return { momReserve: fits, savings: forReserve - fits + rest - needs - wants - wishlist, needs, wants, ...(split.wishlist === undefined ? {} : { wishlist }) };
   }
 
   // `asked` is which buckets had a leftover question open before payday;
@@ -1000,7 +1034,8 @@ class Life {
     const fromReview = how === 'review';
     const record = this.#book.paychecks().at(-1);
     const expected = this.#expectedSplit(amount, before.momReserve);
-    const got = record && { momReserve: record.split.momReserve, savings: record.split.savings, needs: record.split.needs, wants: record.split.wants };
+    const got = record && partsOf(record.split);
+    if ((expected.wishlist ?? 0) > 0) this.#stats.wishlistPaychecks++;
     if (!record || record.amount !== amount || record.date !== date || !same(got, expected)) {
       throw new CheckFailed('3.2 and 3.3 the paycheck split', `a paycheck of ${amount} with the reserve at ${before.momReserve}: expected ${JSON.stringify(expected)}, the book has ${JSON.stringify(got)} on ${record?.date}`);
     }
@@ -1016,7 +1051,9 @@ class Life {
       }
     }
     if ([...asked].some((bucket) => this.#settings.leftoverAtPayday[bucket] !== 'ask')) {
-      this.#expectChange(before, { momReserve: expected.momReserve, ...(fromReview ? { unsortedIn: -amount } : {}) }, '3.2 the mom reserve at payday', `paycheck of ${amount}`, ['savings', 'needs', 'wants']);
+      // Her rulebook, 3.4: Wishlist is never asked about, so its share is checked here too.
+      const wishlist = expected.wishlist === undefined ? {} : { wishlist: expected.wishlist };
+      this.#expectChange(before, { momReserve: expected.momReserve, ...wishlist, ...(fromReview ? { unsortedIn: -amount } : {}) }, '3.2 the mom reserve at payday', `paycheck of ${amount}`, ['savings', 'needs', 'wants']);
     } else {
       this.#expectChange(before, change, '3.2 to 3.4 the buckets at payday', `paycheck of ${amount}`);
     }
@@ -1051,7 +1088,8 @@ class Life {
     const move = (): void => {
       const pots = this.#book.pots();
       const onItsWay = this.#bank.halvesShowing().reduce((sum, h) => sum + (h.kind === 'transfer-sent' && h.to === 'savings' ? h.amount : 0), 0);
-      const shouldBeInSavings = pots.savings + pots.momReserve;
+      // Her rulebook, 3.8: plus Wishlist, where the setup has it.
+      const shouldBeInSavings = pots.savings + pots.momReserve + (pots.wishlist ?? 0);
       const savingsAccountBalance = this.#bank.posted.savings;
       const gap = shouldBeInSavings - (savingsAccountBalance + onItsWay);
       const expected = gap >= 0 ? { shouldBeInSavings, savingsAccountBalance, stillToMove: gap } : { shouldBeInSavings, savingsAccountBalance, stillToMove: 0, extraInSavings: -gap };
@@ -1134,7 +1172,7 @@ class Life {
     const outcome = this.#receive(txn);
     if (outcome !== 'dropped') throw new CheckFailed('4.6 a dropped pending charge (A2)', `${txn.id} came back as ${outcome}`);
     let change: Change = {};
-    if (standing === 'needs' || standing === 'wants') change = { [standing]: hold.amount };
+    if (inABucket(standing)) change = { [standing]: hold.amount };
     else if (standing === 'unsorted') change = { unsortedOut: -hold.amount };
     else if (standing === 'split') change = { ...this.#splitParts.get(first) };
     this.#expectChange(before, change, '4.6 a dropped pending charge gives its money back (A2)', txn.id);
@@ -1203,7 +1241,7 @@ class Life {
   #expectNewAmount(before: Pots, first: string, oldAmount: Cents, newAmount: Cents, check: string, what: string): void {
     const difference = newAmount - oldAmount;
     const standing = this.#standing.get(first);
-    if (standing === 'needs' || standing === 'wants') this.#expectChange(before, { [standing]: -difference }, check, what);
+    if (inABucket(standing)) this.#expectChange(before, { [standing]: -difference }, check, what);
     else if (standing === 'unsorted') this.#expectChange(before, { unsortedOut: difference }, check, what);
     else if (standing === 'setup') this.#expectChange(before, { unsortedOut: difference }, '14.2 a charge pending on setup day leaves only the difference (A10)', what);
     else if (standing === 'old-card') this.#expectChange(before, {}, '5.4 old card purchases touch no bucket', what);
@@ -1211,7 +1249,7 @@ class Life {
     else if (standing === 'split') {
       const parts = this.#splitParts.get(first);
       if (parts === undefined) throw new CheckFailed(check, `the simulator has no split for ${first}`);
-      this.#expectChange(before, { needs: parts.needs, wants: parts.wants, unsortedOut: newAmount }, '4.5 a split that no longer adds up goes back to review (A1)', what);
+      this.#expectChange(before, { ...parts, unsortedOut: newAmount }, '4.5 a split that no longer adds up goes back to review (A1)', what);
       this.#standing.set(first, 'unsorted');
     } else {
       throw new CheckFailed(check, `the simulator lost track of ${first} (${String(standing)})`);
@@ -1225,7 +1263,7 @@ class Life {
     if (!store.refundsOutOf100 || !r.chance(store.refundsOutOf100, 100)) return;
     const back = r.chance(3, 5) ? amount : Math.max(1, share(amount, r.int(20, 80)));
     const linked = r.chance(17, 20);
-    const bucket = store.sorting === 'wants' ? 'wants' : 'needs';
+    const bucket = store.sorting === 'wants' || store.sorting === 'wishlist' ? store.sorting : 'needs';
     const waitsForIt = this.#firstId.get(purchaseId) ?? purchaseId;
     if (linked && back === amount && this.#standing.get(waitsForIt) === 'unsorted' && r.chance(1, 2)) this.#awaitingReturn.add(waitsForIt);
     this.#laterOn(addDays(this.#date, r.int(5, 20)), () => {
@@ -1248,13 +1286,14 @@ class Life {
       // off the unsorted spending (B7). A full refund of a split purchase
       // gives each bucket its part back; a partial one sends the purchase
       // back to review to be split again (4.5, A1).
-      if (standing === 'needs' || standing === 'wants') this.#expectChange(before, { [standing]: back }, '4.5 a refund goes back to its bucket', txn.id);
+      if (standing === 'wishlist') this.#stats.wishlistRefunds++;
+      if (inABucket(standing)) this.#expectChange(before, { [standing]: back }, '4.5 a refund goes back to its bucket', txn.id);
       else if (standing === 'unsorted') {
         this.#expectChange(before, { unsortedOut: -back }, '4.5 a refund of a purchase not sorted yet', txn.id);
         if (back === amount) this.#refundedInFull(first, txn);
       } else if (standing === 'split') {
         const parts = this.#splitParts.get(first);
-        if (back === amount && parts) this.#expectChange(before, { needs: parts.needs, wants: parts.wants }, '4.5 a full refund of a split purchase', txn.id);
+        if (back === amount && parts) this.#expectChange(before, { ...parts }, '4.5 a full refund of a split purchase', txn.id);
         else this.#standing.set(first, 'unsorted');
       }
     });
@@ -1463,7 +1502,7 @@ class Life {
     const outcome = this.#receive(txn);
     if (outcome !== 'taken-back') throw new CheckFailed('4.10 the bank takes back a charge (A14)', `${txn.id} came back as ${outcome}`);
     let change: Change;
-    if (standing === 'needs' || standing === 'wants') change = { [standing]: copy.amount };
+    if (inABucket(standing)) change = { [standing]: copy.amount };
     else if (standing === 'unsorted') change = { unsortedOut: -copy.amount };
     else if (standing === 'split') change = { ...this.#splitParts.get(copy.id) };
     else throw new CheckFailed('4.10 the bank takes back a charge (A14)', `the simulator did not expect the copy ${copy.id} to be ${String(standing)}`);
@@ -1508,7 +1547,10 @@ class Life {
   #otherIncome(amount: Cents): Change {
     const needs = share(amount, this.#periodSplit.needs);
     const wants = share(amount, this.#periodSplit.wants);
-    return { needs, wants, savings: amount - needs - wants };
+    // Her rulebook, 6.1: and Wishlist's share, where the split names it.
+    if (this.#periodSplit.wishlist === undefined) return { needs, wants, savings: amount - needs - wants };
+    const wishlist = share(amount, this.#periodSplit.wishlist);
+    return { needs, wants, wishlist, savings: amount - needs - wants - wishlist };
   }
 
   // 5.4: a new purchase on the old card raises the debt and is only a flag to see.
@@ -1889,7 +1931,7 @@ class Life {
     if (this.#settings.askBeforeSplittingPaycheck === true) {
       const wouldGet = this.#expectedSplit(txn.amount, before.momReserve);
       const got = first?.kind === 'paycheck-waiting' ? first.wouldGet : null;
-      if (preview.items.length !== 1 || first?.kind !== 'paycheck-waiting' || first.id !== txn.id || first.amount !== txn.amount || first.date !== txn.date || got === null || !same({ momReserve: got.momReserve, savings: got.savings, needs: got.needs, wants: got.wants }, wouldGet)) {
+      if (preview.items.length !== 1 || first?.kind !== 'paycheck-waiting' || first.id !== txn.id || first.amount !== txn.amount || first.date !== txn.date || got === null || !same(partsOf(got), wouldGet)) {
         throw new CheckFailed('13.2 with asking on, setting the paycheck rule makes it a paycheck waiting for her yes', `${txn.id} waits; the preview says ${JSON.stringify(preview.items)}`);
       }
       const { rechecked } = this.#changeSettings(patch);
@@ -1905,7 +1947,7 @@ class Life {
       throw new CheckFailed('13.2 A9 what setting the paycheck rule would do', `${txn.id} waits; the preview says ${JSON.stringify(preview.items)}`);
     }
     const expectedSplit = this.#expectedSplit(txn.amount, before.momReserve);
-    if (!same({ momReserve: first.split.momReserve, savings: first.split.savings, needs: first.split.needs, wants: first.split.wants }, expectedSplit)) {
+    if (!same(partsOf(first.split), expectedSplit)) {
       throw new CheckFailed('13.2 A9 3.2 3.3 the paycheck the rule would make', `expected ${JSON.stringify(expectedSplit)}, the preview says ${JSON.stringify(first.split)}`);
     }
     const { rechecked } = this.#changeSettings(patch);
@@ -2098,15 +2140,15 @@ class Life {
       attempt();
       this.#notAPaycheck.delete(id);
       this.#note(`${id}: her paycheck after all`);
-      const base: Record<PotName, Cents> = { ...before };
-      for (const [pot, part] of Object.entries(was.parts) as [PotName, Cents][]) base[pot] -= part;
+      const base: Record<string, Cents> = { ...before };
+      for (const [pot, part] of Object.entries(was.parts) as [PotName, Cents][]) base[pot] = (base[pot] ?? 0) - part;
       this.#stats.yesAfterNotAPaycheck++;
       this.#stats.myPaycheckChoices++;
-      this.#onPaycheck(base, asked, was.amount, was.date, 'resort');
+      this.#onPaycheck(base as unknown as Pots, asked, was.amount, was.date, 'resort');
     }
   }
 
-  #moneyInChoice(item: Extract<ReviewItem, { type: 'money-in' }>): 'paycheck' | 'other-income' | 'not-mine' | 'needs' | 'wants' {
+  #moneyInChoice(item: Extract<ReviewItem, { type: 'money-in' }>): 'paycheck' | 'other-income' | 'not-mine' | 'needs' | 'wants' | 'wishlist' {
     const intent = this.#intents.get(item.id);
     if (intent?.type === 'refund') return intent.bucket;
     return intent?.type === 'money-in' ? intent.choice : 'other-income';
@@ -2227,6 +2269,17 @@ class Life {
         this.#book.sort(item.id, { to: sorting }, today);
         change = sorting === 'not-mine' ? { heldForOthers: -item.amount } : { [sorting]: -item.amount };
       }
+    } else if (intent?.type === 'store' && intent.sorting === 'split' && item.amount >= 3 && this.#her && r.chance(1, 3)) {
+      // Her rulebook, 4.4: split across needs, wants and Wishlist.
+      const needs = r.int(1, item.amount - 2);
+      const wants = r.int(1, item.amount - needs - 1);
+      const wishlist = item.amount - needs - wants;
+      this.#book.sort(item.id, { split: [{ bucket: 'needs', amount: needs }, { bucket: 'wants', amount: wants }, { bucket: 'wishlist', amount: wishlist }] }, today);
+      change = { needs: -needs, wants: -wants, wishlist: -wishlist };
+      this.#standing.set(item.id, 'split');
+      this.#splitParts.set(item.id, { needs, wants, wishlist });
+      this.#stats.splitPurchases++;
+      this.#stats.wishlistSplits++;
     } else if (intent?.type === 'store' && intent.sorting === 'split' && item.amount >= 2) {
       const needs = r.int(1, item.amount - 1);
       this.#book.sort(item.id, { split: [{ bucket: 'needs', amount: needs }, { bucket: 'wants', amount: item.amount - needs }] }, today);
@@ -2236,18 +2289,20 @@ class Life {
       this.#stats.splitPurchases++;
     } else {
       const sorting = intent?.type === 'store' ? intent.sorting : 'either';
-      const to = sorting === 'needs' || sorting === 'wants' ? sorting : r.pick(['needs', 'wants'] as const);
+      const to = sorting === 'needs' || sorting === 'wants' || sorting === 'wishlist' ? sorting : r.pick(['needs', 'wants'] as const);
       this.#book.sort(item.id, { to }, today);
       change = { [to]: -item.amount };
       if (intent?.type === 'store') {
         this.#standing.set(item.id, to);
-        this.#handSorted.push({ id: item.id, to });
+        if (to === 'wishlist') this.#stats.wishlistPurchases++;
+        else this.#handSorted.push({ id: item.id, to });
         if (this.#handSorted.length > 50) this.#handSorted.shift();
       }
     }
     this.#note(`sort spending ${item.id} (${item.reason}) ${JSON.stringify(change)}`);
     this.#expectChange(before, { unsortedOut: -item.amount, ...change }, '4.2, 4.4 and 7.6 sorting spending', item.id);
     if (cover !== null) this.#move('savings', cover, item.amount, true);
+    if (this.#her && (change.wishlist ?? 0) < 0 && r.chance(2, 3)) this.#moveForWishlist();
   }
 
   // 13.6 and 7.6: "always do this" for a payment for mom. The new rule sorts
@@ -2411,6 +2466,12 @@ class Life {
       this.#move(from, to, r.int(2_000, 10_000), r.chance(1, 2));
     }
     if (pots.heldForOthers > 0 && r.chance(1, 90)) this.#move('heldForOthers', 'wants', pots.heldForOthers, true);
+    // Her life (PR 9): money into Wishlist by hand, and now and then out of it.
+    if (this.#her && r.chance(1, 45)) {
+      const [from, to] = r.pick([['wants', 'wishlist'], ['savings', 'wishlist'], ['wishlist', 'wants'], ['wishlist', 'savings']] as const);
+      this.#move(from, to, r.int(1_000, 15_000), r.chance(4, 5));
+      this.#stats.wishlistHandMoves++;
+    }
     if (!this.#her && pots.momReserve > 5_000 && r.chance(1, 200)) this.#move('momReserve', 'needs', 5_000, true);
     // Rarely more comes out of the mom reserve than it holds, so the next
     // payment to mom meets a reserve below zero (8.3, B27).
@@ -2426,13 +2487,14 @@ class Life {
   // 13.4: it asks first when money leaves savings or the mom reserve, or
   // would leave the bucket it comes out of below zero (B51), and nothing
   // moves until you confirm. 13.5: every move is logged.
-  #move(from: Pot, to: Pot, amount: Cents, confirmIfAsked: boolean): void {
+  #move(from: AnyPot, to: AnyPot, amount: Cents, confirmIfAsked: boolean): void {
     const before = this.#book.pots();
     const logBefore = this.#book.changeLog().length;
     const reasons = [
       ...(from === 'savings' ? ['out-of-savings'] : []),
       ...(from === 'momReserve' ? ['out-of-mom-reserve'] : []),
-      ...(before[from] - amount < 0 ? ['below-zero'] : []),
+      ...(from === 'wishlist' ? ['out-of-wishlist'] : []),
+      ...((before[from] ?? 0) - amount < 0 ? ['below-zero'] : []),
     ];
     let result = this.#book.moveMoney({ from, to, amount }, this.#date);
     if (reasons.length === 0 && !result.moved) throw new CheckFailed('13.4 asking to confirm', `moving ${amount} ${from} -> ${to} asked: ${JSON.stringify(result)}`);
@@ -2455,13 +2517,33 @@ class Life {
     this.#note(`move ${amount} ${from} -> ${to}`);
   }
 
+  // Her rulebook, 50.4: she moves $X from savings to checking, all of it at
+  // once or in two halves (12.5); either way it is $0.00 once it has left
+  // savings, and moving it changes no bucket (5.3).
+  #moveForWishlist(): void {
+    const x = this.#wishlistMoveNow();
+    if (x.amount === 0) return;
+    this.#moveBetweenOwn('savings', 'checking', x.amount);
+    const after = this.#wishlistMoveNow();
+    if (after.amount !== 0 || after.when !== null) throw new CheckFailed('50.4 it goes away once $X is moved', `moved ${x.amount}, now ${JSON.stringify(after)}`);
+    this.#stats.wishlistMoves++;
+    this.#note(`50.4: moved ${x.amount} from savings to checking`);
+  }
+
+  // 50.4 as the app works it out, from the savings account as 3.8 reads it.
+  #wishlistMoveNow(): NonNullable<ReturnType<typeof wishlistMove>> {
+    const x = wishlistMove(this.#book, { savingsAccountBalance: this.#bank.balances().savings, statements: {}, today: this.#date });
+    if (x === null) throw new CheckFailed('50.4 moving Wishlist money', 'no amount while the bank is read');
+    return x;
+  }
+
   // About once a year, on a day picked at random, some settings change
   // (13.1), and the first time, a new rule for the cinema (13.2).
   #maybeChangeSettings(): void {
     const r = this.#random;
     if (this.#date !== this.#nextSettingsChange) return;
     this.#nextSettingsChange = addDays(this.#date, r.int(300, 420));
-    const patch: { -readonly [K in keyof Settings]?: Settings[K] } = { split: r.pick(SPLITS) };
+    const patch: { -readonly [K in keyof Settings]?: Settings[K] } = { split: r.pick(this.#her ? HER_SPLITS : SPLITS) };
     if (!this.#her && r.chance(2, 5)) patch.momReservePerPaycheck = r.pick([100_000, 150_000, 200_000]);
     if (!this.#her && r.chance(1, 4)) patch.momReserveCap = r.pick([300_000, 400_000]);
     if (r.chance(1, 4)) patch.lowBucketAlertPercent = r.pick([10, 20, 25]);
@@ -2613,8 +2695,8 @@ class Life {
     const standing = this.#standing.get(first);
     const parts = this.#splitParts.get(first);
     const change: Change = { unsortedIn: -item.amount };
-    if (standing === 'needs' || standing === 'wants') change[standing] = item.amount;
-    else if (standing === 'split' && parts !== undefined && item.amount === left) Object.assign(change, { needs: parts.needs, wants: parts.wants });
+    if (inABucket(standing)) change[standing] = item.amount;
+    else if (standing === 'split' && parts !== undefined && item.amount === left) Object.assign(change, { ...parts });
     else if (standing === 'unsorted' && item.amount < left) change.unsortedOut = -item.amount;
     else throw new Error(`the plan matches ${item.id} to ${first}, ${String(standing)}, a case it does not cover`);
     this.#book.sort(item.id, { refundOf: match }, this.#date);
@@ -2735,7 +2817,14 @@ class Life {
     // No cent created or lost: the running totals equal a recount from scratch.
     const pots = book.pots();
     const recount = book.recountPots();
-    for (const key of POT_NAMES) {
+    // Her rulebook, 50.4: never above the extra in savings nor the Wishlist
+    // purchases not yet moved, and nothing to say at $0.00.
+    if (this.#her) {
+      const x = this.#wishlistMoveNow();
+      const extra = book.savingsTransfer(bank.savings).extraInSavings ?? 0;
+      if (x.extra !== extra || x.amount !== Math.min(extra, x.notMoved) || x.notMoved < 0 || (x.when === null) !== (x.amount === 0)) throw new CheckFailed('50.4 moving Wishlist money', JSON.stringify({ x, extra }));
+    }
+    for (const key of this.#potNames) {
       if (pots[key] !== recount[key]) throw new CheckFailed('recount', `${key} is ${pots[key]}, a recount gives ${recount[key]}`);
       if (!Number.isSafeInteger(pots[key])) throw new CheckFailed('0.1 whole cents', `${key} is ${pots[key]}`);
     }
@@ -2894,9 +2983,9 @@ class Life {
   // (apart from any buckets this check leaves out).
   #expectChange(before: Pots, change: Change, check: string, what: string, leaveOut: readonly PotName[] = []): void {
     const after = this.#book.pots();
-    for (const key of POT_NAMES) {
+    for (const key of this.#potNames) {
       if (leaveOut.includes(key)) continue;
-      const expected = before[key] + (change[key] ?? 0);
+      const expected = (before[key] ?? 0) + (change[key] ?? 0);
       if (after[key] !== expected) throw new CheckFailed(check, `${what}: ${key} went from ${before[key]} to ${after[key]}, expected ${expected}`);
     }
   }
@@ -2924,6 +3013,12 @@ function splitInto<B extends string>(r: Random, amount: Cents, buckets: readonly
 }
 
 // The same plain data, whatever order the keys are in.
+// A paycheck's parts, Wishlist's where the split names it.
+function partsOf(split: { readonly momReserve: Cents; readonly savings: Cents; readonly needs: Cents; readonly wants: Cents; readonly wishlist?: Cents }) {
+  const { momReserve, savings, needs, wants, wishlist } = split;
+  return { momReserve, savings, needs, wants, ...(wishlist === undefined ? {} : { wishlist }) };
+}
+
 function same(a: unknown, b: unknown): boolean {
   return JSON.stringify(sortedKeys(a)) === JSON.stringify(sortedKeys(b));
 }

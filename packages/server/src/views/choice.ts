@@ -7,7 +7,7 @@ import type {
   LeftoverAnswer,
   PersonPaymentChoice,
   PickTo,
-  Pot,
+  AnyPot,
   RecheckedItem,
   RuleOffer,
   Settings,
@@ -23,7 +23,7 @@ import type { BankRulePreview, BankRuleSpec } from './bank-rules.js';
 // A part of a split (4.4, 7.6). 'rest' is whatever the other parts leave: the
 // money math works it out, so the screen never subtracts.
 export interface ChoicePart {
-  readonly bucket: 'needs' | 'wants' | 'not-mine';
+  readonly bucket: 'needs' | 'wants' | 'wishlist' | 'not-mine';
   readonly amount: Cents | 'rest';
 }
 
@@ -107,8 +107,8 @@ export type ChoiceResponse =
 // ----- Moving money between buckets by hand (13.3, 13.4; B103) -----
 
 export interface Moved {
-  readonly from: Pot;
-  readonly to: Pot;
+  readonly from: AnyPot;
+  readonly to: AnyPot;
   readonly amount: Cents;
 }
 
@@ -209,10 +209,10 @@ export type SetupStep =
   | { readonly lastPaycheck: IsoDate }
   // 14.2: how much of the starting money goes in one bucket. Any whole number
   // of cents: zero, or below zero when the card owes more than he has (B43).
-  | { readonly assign: { readonly pot: Pot; readonly amount: Cents } }
+  | { readonly assign: { readonly pot: AnyPot; readonly amount: Cents } }
   // 14.2: whatever is left to assign goes in this bucket, worked out by the
   // money math, not the screen.
-  | { readonly assign: { readonly pot: Pot; readonly rest: true } }
+  | { readonly assign: { readonly pot: AnyPot; readonly rest: true } }
   // 20a: his answer to a bank rule suggested from the bank's labels: add it
   // as it is, or skip it; or add it as he changed it, which asks first, with
   // what it would match.
@@ -239,7 +239,7 @@ export interface SetupRequest {
 export type SetupDone =
   | { readonly step: 'on-its-way'; readonly half: string; readonly answer: boolean; readonly startingMoney: Cents }
   | { readonly step: 'last-paycheck'; readonly date: IsoDate; readonly nextPayday: IsoDate }
-  | { readonly step: 'assign'; readonly pot: Pot; readonly amount: Cents; readonly leftToAssign: Cents }
+  | { readonly step: 'assign'; readonly pot: AnyPot; readonly amount: Cents; readonly leftToAssign: Cents }
   // 20a: ruleId names the bank rule it added; null when skipped.
   | { readonly step: 'suggestion'; readonly id: string; readonly answer: 'added' | 'changed' | 'skipped'; readonly ruleId: string | null }
   // A25: asked is how many transfers setup day asks about now.

@@ -1,6 +1,6 @@
 import type { SelfCheck } from '@budget-app/money';
 // Her setup (52.1): Home with each card, as her server sends it; upstream's has none.
-import type { Attention, BankDetail, HomeWithCards as HomeView } from '@budget-app/server/views';
+import type { Attention, BankDetail, HomeWithWishlist as HomeView } from '@budget-app/server/views';
 import { Fragment, useState } from 'react';
 import { markTakeBackSeen, type Load, type Reload } from '../app/api.js';
 import { activityPath, pathOf, setupPath, statementPath } from '../app/routes.js';
@@ -8,7 +8,7 @@ import { Banner, BottomSheet, BucketTile, Button, Card, CountTile, LinkButton, L
 import { asOfText, checkedAtText, longDate, shortDate } from '../ui/dates.js';
 import { Icon } from '../ui/Icon.js';
 import { cardNames, withCardNames } from '../ui/card-names.js';
-import { WHY_NOT_SPENDING, cardName, cardStateText, inSavingsText, noStatementText, setAsideText } from './cards-text.js';
+import { WHY_NOT_SPENDING, cardName, cardStateText, inSavingsText, noStatementText, setAsideText, wishlistMoveText } from './cards-text.js';
 import { cardsOffText, dueText, onItsWayInText, paydayText, stillToSetText, waitingText } from './home-text.js';
 import { WhyList } from './why.js';
 
@@ -177,6 +177,12 @@ function HomeReady({ view, onChanged }: { readonly view: Tracking; readonly onCh
         <BucketTile name="Needs" {...view.buckets.needs} href={activityPath('needs')} testId="bucket-needs" />
         <CountTile name="To sort" count={view.waitingInReview} go="Review" href={pathOf('review')} testId="to-sort" />
       </Tiles>
+      {/* Her rulebook, 50.4: Wishlist money to move from savings to checking, until it is moved. */}
+      {'wishlistMove' in view && view.wishlistMove !== undefined && (
+        <Card title="Wishlist" testId="wishlist-move">
+          <ListRow icon="move" {...wishlistMoveText(view.wishlistMove)} testId="wishlist-move-row" />
+        </Card>
+      )}
       {view.cards !== undefined && <CardRows cards={view.cards} onWhy={() => setSheet('cards')} />}
       <Card testId="home-links">
         <ListRow title="All buckets" href={pathOf('buckets')} testId="all-buckets" />

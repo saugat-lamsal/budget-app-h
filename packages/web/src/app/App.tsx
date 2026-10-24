@@ -1,4 +1,4 @@
-import type { Pot } from '@budget-app/money';
+import type { AnyPot } from '@budget-app/money';
 import { MotionConfig } from 'motion/react';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityScreen, type Back } from '../screens/Activity.js';
@@ -42,7 +42,7 @@ function SettingsTab({ onChanged }: { readonly onChanged: Reload }) {
   return <SettingsScreen load={load} onRetry={reload} onChanged={onChanged} />;
 }
 
-function ActivityTab({ pot, onChanged, back }: { readonly pot: Pot; readonly onChanged: Reload; readonly back: Back }) {
+function ActivityTab({ pot, onChanged, back }: { readonly pot: AnyPot; readonly onChanged: Reload; readonly back: Back }) {
   const [load, reload] = useActivity(pot);
   return <ActivityScreen pot={pot} load={load} onRetry={reload} onChanged={onChanged} back={back} />;
 }

@@ -1,6 +1,6 @@
 import { formatDollars, type Cents } from '@budget-app/money';
 import type { Db } from '../db/database.js';
-import type { Totals } from './history.js';
+import type { HerTotals, Totals } from './history.js';
 import { acceptRetotal, checkRetotal } from './retotal.js';
 
 // npm run replay-check (QUESTIONS.md A28): what it says and asks, apart from
@@ -16,12 +16,13 @@ export interface ReplayCheckInput {
 
 export type ReplayCheckResult = 'nothing to do' | 'cannot replay' | 'left as it was' | 'taken';
 
-const NAMES: Readonly<Record<keyof Totals, string>> = {
+const NAMES: Readonly<Record<keyof HerTotals, string>> = {
   savings: 'Savings',
   needs: 'Needs',
   wants: 'Wants',
   momReserve: 'Mom reserve',
   heldForOthers: 'Held for others',
+  wishlist: 'Wishlist',
   unsortedIn: 'Money in waiting in Review',
   unsortedOut: 'Spending waiting in Review',
   oldCardDebt: 'Old card owes',
@@ -36,14 +37,16 @@ function day(date: string): string {
   return `${MONTHS[(month ?? 1) - 1] ?? ''} ${d ?? ''}, ${year ?? ''}`;
 }
 
-function value(key: keyof Totals, n: number): string {
+function value(key: keyof HerTotals, n: number): string {
   return key === 'waiting' ? String(n) : formatDollars(n as Cents);
 }
 
 // What differs between two totals, one line each.
 export function totalsChanges(before: Totals | null, after: Totals | null): string[] {
   if (before === null || after === null) return [`Totals: ${before === null ? 'none' : 'saved'} → ${after === null ? 'none' : 'new'}`];
-  return (Object.keys(NAMES) as (keyof Totals)[]).filter((key) => before[key] !== after[key]).map((key) => `${NAMES[key]}: ${value(key, before[key])} → ${value(key, after[key])}`);
+  const was = before as HerTotals;
+  const now = after as HerTotals;
+  return (Object.keys(NAMES) as (keyof HerTotals)[]).filter((key) => was[key] !== now[key]).map((key) => `${NAMES[key]}: ${value(key, was[key] ?? 0)} → ${value(key, now[key] ?? 0)}`);
 }
 
 export async function runReplayCheck(input: ReplayCheckInput): Promise<ReplayCheckResult> {

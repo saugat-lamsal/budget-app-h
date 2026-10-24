@@ -12,7 +12,9 @@ texts already moved here from section H in their places (PR 3: "Off in this
 setup" after section 1, section 2, 12.2, 40.2 and 40.4; PR 4: section 2,
 3.1, 10.15, 13.2 and section 51; PR 5: section 1, 1.2, 4.1, 4.8, 5.1, 9.1,
 9.3, 9.8, 12.1, 12.6 and 14.2; PR 6: 0.5, 0.7, 1.1, 1.3, section 2's sync
-line, 10.5, 10.7, 10.13 and 12.3; PR 7+8: section 52). The rest of her
+line, 10.5, 10.7, 10.13 and 12.3; PR 7+8: section 52; PR 9: section 2's
+split, 3.3, 3.4, 3.8, 4.2, 4.4, 11.3, 12.2, 13.1, 13.4, 14.2, 50.4 and
+52.4's buckets). The rest of her
 setup is in section "H. Approved for her setup, not built yet" at the end:
 the texts he approved on Oct 23, 2026 (docs/her-plan.txt). A text there is not in
 force until the pull request named above it moves it into its place here,
@@ -101,7 +103,9 @@ offered anywhere.
 
 ## 2. Settings and starting values
 
-- Split: savings 50%, needs 30%, wants 20% (must add up to 100)
+- Split: savings, needs, wants, Wishlist (whole percents that add up to
+  100; you pick on setup day). It starts at savings 50%, needs 30%, wants
+  20%, Wishlist 0%.
 - Low-bucket alert: 20% of what the bucket started the pay period with
 - Card reminders: 7 days and 2 days before the due date
 - Statement closing day, for each card: the day of the month its statement
@@ -173,16 +177,18 @@ offered anywhere.
      a new pay period.
 3.2  The mom reserve comes off first. If the reserve is already at its cap,
      the part that does not fit goes to savings instead.
-3.3  The rest is split by the percentages. Needs and wants are each rounded
-     down to the cent, and savings gets the rest, so the parts always add up
-     to the paycheck exactly.
+3.3  The paycheck is split by the percentages. Needs, wants and Wishlist
+     are each rounded down to the cent, and savings gets the rest, so the
+     parts always add up to the paycheck exactly. (No reserve comes off
+     first in this setup.)
 3.4  At each payday, unspent needs and unspent wants either roll over into
      the next pay period or move to savings. You choose for each bucket
      separately. Until you answer, the money stays where it is, and you can
      still move it by hand later (13.3). While the question is open,
      spending made before payday that shows up or changes after it (4.1)
      changes the amount asked about by as much, never below zero and never
-     above what was asked at payday.
+     above what was asked at payday. Wishlist is never asked about: it
+     always rolls over. (3.5 applies to Wishlist too.)
 3.5  An overspent bucket carries over as a negative, so the next period
      starts smaller. At payday nothing is asked about it and nothing moves;
      the new share is added on top.
@@ -190,7 +196,7 @@ offered anywhere.
 3.7  A paycheck-looking deposit that arrives less than 10 days after the last
      one goes to review instead of splitting automatically.
 3.8  On payday the app tells you how much should be sitting in the savings
-     account (savings plus mom reserve) and how much you still need to move.
+     account (savings plus Wishlist) and how much you still need to move.
      If the account already holds more than it should, the amount to move
      is $0 and the extra is shown separately.
 
@@ -200,11 +206,11 @@ offered anywhere.
 4.1  A purchase on the debit card or on either card comes out of a
      bucket on the day of the purchase.
 4.2  The bucket is picked by your rules. No matching rule means "unsorted".
-     Spending goes to needs or wants only; to pay for something out of
-     savings, move the money by hand (13.3).
+     Spending goes to needs, wants or Wishlist; to pay for something out
+     of savings, move the money by hand (13.3).
 4.3  Unsorted spending is held back from safe-to-spend until you sort it.
 4.4  A purchase can be split across buckets. The parts must add up to the
-     total.
+     total. A purchase can be split across needs, wants and Wishlist.
 4.5  A refund goes back into the bucket the purchase came from. A full
      refund of a split purchase goes back to each bucket as it was split;
      a partial one sends the purchase back to review to be split again. If
@@ -447,8 +453,11 @@ offered anywhere.
 11.2  It is shown with the number of days until the next payday, from the
       pay schedule. If that day passes with no paycheck, the days go
       negative instead of jumping ahead (B35).
-11.3  Savings, mom reserve, held for others, and unsorted money in are never
-      part of it.
+11.3  Savings, Wishlist, held for others, and unsorted money in are never
+      part of it. (11.1 is unchanged: safe to spend is wants only.
+      Wishlist money is kept for the things on your list; counting it in
+      safe to spend would let it go on everyday wants, and the list would
+      never fill.)
 11.4  Money still pending into checking or savings (a deposit, which the
       app counts only once it posts, 12.1) is shown on Home with its
       amount and account: "Paycheck on its way" when the paycheck rule
@@ -478,8 +487,8 @@ offered anywhere.
       transfer arriving). If the bank gives no available balance, its
       posted balance less pending charges. For each card, what it owes, including pending charges
       (they already count in the buckets under 4.6).
-12.2  App side: savings + needs + wants + held for others + unsorted
-      money in - unsorted spending.
+12.2  App side: savings + needs + wants + Wishlist + held for others
+      + unsorted money in - unsorted spending.
       Unsorted money in: deposits and refunds waiting in review
       (3.7, 4.5, 6.1).
 12.3  The two must be equal. If not, the app shows a warning with the
@@ -532,7 +541,8 @@ offered anywhere.
 13.1  A change to the split or the mom reserve applies from the next
       paycheck. Settings shows the split and the mom reserve in force this
       pay period next to what the next paycheck will use. Every other
-      setting applies right away.
+      setting applies right away. A change to Wishlist's share waits for
+      the next paycheck, like the rest of the split.
 13.2  A new or changed sorting rule applies to new and unsorted transactions.
       Already-sorted ones stay put unless you re-sort them. Setting the
       paycheck rule or the mom rule does the same with what is waiting: a
@@ -549,7 +559,7 @@ offered anywhere.
       move is logged (13.5), and what is waiting in review that a moved rule
       is now the first match for is sorted, as after a changed rule.
 13.3  You can move money between buckets by hand at any time.
-13.4  Moving money out of savings or the mom reserve asks you to confirm
+13.4  Moving money out of savings or Wishlist asks you to confirm
       first. So does any move that would leave the bucket it comes out of
       below zero, since that is usually a typo.
 13.5  Every change and every manual move is logged with the date.
@@ -591,7 +601,8 @@ offered anywhere.
 
 14.1  The app reads your current balances.
 14.2  You assign the starting money (checking + savings - both cards'
-      balances) across savings, needs, wants and held for others. Charges
+      balances) across savings, needs, wants, Wishlist and held for
+      others. Charges
       still pending that day are part of the starting
       money. If one later posts at a different amount, is refunded, or is
       dropped, only the difference waits in review. Money on its way
@@ -1125,6 +1136,31 @@ a.  Future and Habits on the Trends tab, as 40.10 to 40.17: Needs and Wants
     numbers are not settings (QUESTIONS.md A59).
 
 
+## 50. Wishlist
+
+50.1 to 50.3 (Wishlist items) are in section H, for PR 10.
+
+50.4  Moving Wishlist money for a purchase. Wishlist money is kept in the
+      savings account (3.8), and purchases are paid from checking or a
+      card. So when a purchase is sorted to Wishlist, the app tells you to
+      move that amount from savings to checking. Home says "Move $X from
+      savings to checking" with when: "before the Amex card is due, Nov 3"
+      for a purchase on a card whose statement has its due date, "before
+      the Amex card's next due date" while the statement it is on has not
+      closed yet, and "now" for a debit card purchase, which has already
+      left checking. With purchases on both cards, it names the earliest
+      due date. $X is the smaller of two amounts. One is the extra in
+      savings (3.8), so money still to move into savings is netted in and
+      one move covers both. The other is everything sorted to Wishlist
+      since tracking started, less Wishlist refunds and less every move
+      from savings to checking since tracking started. The card's
+      reminders (9.1, 9.7) say it too while it is not moved. It goes away
+      once $X is $0.00. A move from savings to checking is not spending
+      (5.3).
+
+Readings HB19 to HB25 (docs/her-questions.txt), for his check.
+
+
 ## 51. A paycheck waiting for your yes
 
 51.1  A paycheck waiting for your yes is money in waiting in review: it
@@ -1170,7 +1206,8 @@ a.  Future and Habits on the Trends tab, as 40.10 to 40.17: Needs and Wants
       - what was carried in from the statement before, less the payments
         and credits that reached the card in this statement's days;
       - each purchase, fee and interest charge, less refunds, by the
-        bucket it is sorted to now (needs, wants, or still unsorted), and
+        bucket it is sorted to now (needs, wants, Wishlist, or still
+        unsorted), and
         again by the pay period (paycheck) it was counted in, each with
         its total;
       - purchases from before setup day, read by today's rules and marked
@@ -1216,6 +1253,10 @@ d.  Her starting values: the pay schedule every 14 days, counted from the
     HA3). Both are upstream's starting values too.
 e.  The app runs on Fly.io in ewr (Secaucus, New Jersey), as upstream's
     (HA5).
+f.  Trends' Wishlist parts (40.2, 40.4, 40.5, 40.11) are built in PR 10+11,
+    with the rest of her Trends, not in PR 9 (Oct 24, 2026,
+    docs/her-questions.txt HA6). Until then Trends reads needs and wants
+    only.
 
 
 ## H. Approved for her setup, not built yet
@@ -1254,62 +1295,11 @@ change with the answer.
 
 ### PR 9. The Wishlist bucket
 
-  Section 2, the split: savings, needs, wants, Wishlist (whole percents
-  that add up to 100; you pick on setup day).
+  In place: section 2's split, 3.3, 3.4, 3.8, 4.2, 4.4, 11.3, 12.2, 13.1,
+  13.4, 14.2, 50.4 and 52.4's buckets. 10.1 and 10.2 are unchanged: the low
+  and empty alerts are for needs and wants only.
 
-  3.3   The paycheck is split by the percentages. Needs, wants and Wishlist
-        are each rounded down to the cent, and savings gets the rest, so
-        the parts always add up to the paycheck exactly. (No reserve comes
-        off first in this setup.)
-  3.4, a sentence added: Wishlist is never asked about: it always rolls
-  over. (3.5 applies to Wishlist too.)
-  3.8   On payday the app tells you how much should be sitting in the
-        savings account (savings plus Wishlist) and how much you still need
-        to move. If the account already holds more than it should, the
-        amount to move is $0 and the extra is shown separately.
-  4.2, the second sentence: Spending goes to needs, wants or Wishlist.
-  4.4, a sentence added: A purchase can be split across needs, wants and
-  Wishlist.
-  11.3  Savings, Wishlist, held for others, and unsorted money in are never
-        part of it. (11.1 is unchanged: safe to spend is wants only.
-        Wishlist money is kept for the things on your list; counting it in
-        safe to spend would let it go on everyday wants, and the list would
-        never fill.)
-  12.2  App side: savings + needs + wants + Wishlist + held for others
-        + unsorted money in - unsorted spending.
-  14.2  You assign the starting money (checking + savings - both cards'
-        balances) across savings, needs, wants, Wishlist and held for
-        others. (The rest of 14.2 as now.)
-  13.1, a sentence added: a change to Wishlist's share waits for the next
-  paycheck, like the rest of the split.
-  13.4  Moving money out of savings or Wishlist asks you to confirm first.
-        So does any move that would leave the bucket it comes out of below
-        zero, since that is usually a typo.
-  10.1 and 10.2 are unchanged: the low and empty alerts are for needs and
-  wants only.
-  52.4, the buckets a purchase is listed by: needs, wants, Wishlist, or
-  still unsorted.
-  40.2 and 40.4: Wishlist spending is its own part of each pay period's
-  bar. 40.5: Wishlist over time beside savings, its own amount. 40.11: no
-  estimate for Wishlist.
-
-  50.4  Moving Wishlist money for a purchase. Wishlist money is kept in the
-        savings account (3.8), and purchases are paid from checking or a
-        card. So when a purchase is sorted to Wishlist, the app tells you
-        to move that amount from savings to checking. Home says "Move $X
-        from savings to checking" with when: "before the Amex card is due,
-        Nov 3" for a purchase on a card whose statement has its due date,
-        "before the Amex card's next due date" while the statement it is on
-        has not closed yet, and "now" for a debit card purchase, which has
-        already left checking. With purchases on both cards, it names the
-        earliest due date. $X is the smaller of two amounts. One is the
-        extra in savings (3.8), so money still to move into savings is
-        netted in and one move covers both. The other is everything sorted
-        to Wishlist since tracking started, less Wishlist refunds and less
-        every move from savings to checking since tracking started. The
-        card's reminders (9.1, 9.7) say it too while it is not moved. It
-        goes away once $X is $0.00. A move from savings to checking is not
-        spending (5.3).
+  Trends' Wishlist parts are built in PR 10+11 (60f, below).
 
 ### PR 10. Wishlist items
 
@@ -1332,6 +1322,14 @@ change with the answer.
         marked bought can be changed back from its row on Wishlist's list.
         A refund goes back to the Wishlist bucket (4.5). The item does not
         come back by itself; you can add it again. (60a)
+
+### PR 10+11. Trends for her setup: Wishlist's part (60f)
+
+  Until this PR, 40.2, 40.4, 40.5 and 40.11 stand as they are, and Trends
+  reads needs and wants only.
+  40.2 and 40.4: Wishlist spending is its own part of each pay period's
+  bar. 40.5: Wishlist over time beside savings, its own amount. 40.11: no
+  estimate for Wishlist.
 
 ### Unchanged for her setup
 

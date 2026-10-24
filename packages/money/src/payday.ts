@@ -7,6 +7,8 @@ export interface PaycheckSplit {
   readonly savings: Cents;
   readonly needs: Cents;
   readonly wants: Cents;
+  // Her rulebook, 3.3: Wishlist's part, only where the split names Wishlist.
+  readonly wishlist?: Cents;
   // How the parts were worked out, for showing the steps.
   readonly detail: {
     // What came off the top for the reserve (never more than the paycheck).
@@ -25,7 +27,8 @@ export type SplitSettings = Pick<Settings, 'split' | 'momReservePerPaycheck' | '
 // Rules 3.2 and 3.3. The mom reserve comes off first; whatever does not fit
 // under the cap goes to savings. The rest is split by the percentages, each
 // share rounded down, and the leftover cents go to savings. The parts always
-// add up to the paycheck exactly.
+// add up to the paycheck exactly. Her rulebook, 3.3: with Wishlist in the
+// split, Wishlist's share is rounded down too, like needs and wants.
 export function splitPaycheck(amount: Cents, momReserveNow: Cents, settings: SplitSettings): PaycheckSplit {
   assertPositiveCents(amount, 'paycheck');
   assertCents(momReserveNow, 'mom reserve');
@@ -37,12 +40,14 @@ export function splitPaycheck(amount: Cents, momReserveNow: Cents, settings: Spl
   const savingsShare = percentOf(rest, settings.split.savings);
   const needs = percentOf(rest, settings.split.needs);
   const wants = percentOf(rest, settings.split.wants);
-  const roundingToSavings = rest - savingsShare - needs - wants;
+  const wishlist = settings.split.wishlist === undefined ? undefined : percentOf(rest, settings.split.wishlist);
+  const roundingToSavings = rest - savingsShare - needs - wants - (wishlist ?? 0);
   return {
     momReserve: toReserve,
     savings: overflowToSavings + savingsShare + roundingToSavings,
     needs,
     wants,
+    ...(wishlist === undefined ? {} : { wishlist }),
     detail: { reserveTaken, overflowToSavings, rest, savingsShare, roundingToSavings },
   };
 }

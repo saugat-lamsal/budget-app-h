@@ -5,8 +5,9 @@ import { matchesTextRule } from './settings.js';
 // The choices for money coming in (6.1): this is my paycheck (a new pay
 // period: the mom reserve first, then the split), other income (split by
 // the percentages only), payback into a bucket you pick, or not mine (held
-// for others).
-export type MoneyInChoice = { readonly to: 'paycheck' | DepositRuleChoice['to'] };
+// for others). Her rulebook, 6.1: payback can go into Wishlist too, where
+// the setup has it; a deposit rule still cannot pick it (6.2).
+export type MoneyInChoice = { readonly to: 'paycheck' | 'wishlist' | DepositRuleChoice['to'] };
 
 // What a deposit rule can pick (6.2): anything but "this is my paycheck".
 // Paychecks are found by the paycheck rule in settings (section 2), which
@@ -14,7 +15,7 @@ export type MoneyInChoice = { readonly to: 'paycheck' | DepositRuleChoice['to'] 
 export type DepositRuleChoice = { readonly to: 'other-income' | 'not-mine' | Bucket };
 
 export function isMoneyInChoice(choice: unknown): choice is MoneyInChoice {
-  return isDepositRuleChoice(choice) || (typeof choice === 'object' && choice !== null && 'to' in choice && choice.to === 'paycheck');
+  return isDepositRuleChoice(choice) || (typeof choice === 'object' && choice !== null && 'to' in choice && (choice.to === 'paycheck' || choice.to === 'wishlist'));
 }
 
 export function isDepositRuleChoice(choice: unknown): choice is DepositRuleChoice {

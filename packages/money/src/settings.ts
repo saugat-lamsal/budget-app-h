@@ -19,8 +19,11 @@ export interface TextRule {
 }
 
 export interface Settings {
-  // Percent of each paycheck (after the mom reserve) for each bucket.
-  readonly split: { readonly savings: number; readonly needs: number; readonly wants: number };
+  // Percent of each paycheck (after the mom reserve) for each bucket. Her
+  // rulebook, section 2: her setup's split names Wishlist too. Upstream's has
+  // no Wishlist share (switches.ts, checkWishlistSplit), so DEFAULT_SETTINGS
+  // stay as they are, and a history saved before it opens as upstream (B242).
+  readonly split: { readonly savings: number; readonly needs: number; readonly wants: number; readonly wishlist?: number };
   readonly momReservePerPaycheck: Cents;
   readonly momReserveCap: Cents;
   readonly momMonthlyTarget: { readonly low: Cents; readonly high: Cents };
@@ -123,11 +126,12 @@ export function changeSettings(current: Settings, patch: Partial<Settings>): Set
 // Returns a frozen copy, or refuses with code "bad-setting".
 export function validateSettings(settings: Settings): Settings {
   const s = settings;
+  const shares = [s.split.savings, s.split.needs, s.split.wants, ...(s.split.wishlist === undefined ? [] : [s.split.wishlist])];
   check(
-    [s.split.savings, s.split.needs, s.split.wants].every((p) => Number.isInteger(p) && p >= 0 && p <= 100),
+    shares.every((p) => Number.isInteger(p) && p >= 0 && p <= 100),
     'split percentages must be whole numbers from 0 to 100',
   );
-  const sum = s.split.savings + s.split.needs + s.split.wants;
+  const sum = shares.reduce((a, b) => a + b, 0);
   check(sum === 100, `split must add up to 100, not ${sum}`);
   checkCents(s.momReservePerPaycheck, 'mom reserve per paycheck');
   checkCents(s.momReserveCap, 'mom reserve cap');

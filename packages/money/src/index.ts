@@ -40,7 +40,7 @@ export type {
   TransferArrived,
   TransferSent,
 } from './transactions.js';
-export { BUCKETS, SPENDING_BUCKETS, type Bucket, type SplitBucket } from './buckets.js';
+export { BUCKETS, SPENDING_BUCKETS, isSortBucket, type Bucket, type SortBucket, type SplitBucket } from './buckets.js';
 export { RULE_CHOICES, checkRules, findRule, type DepositRuleChoice, type MoneyInChoice, type PersonPaymentChoice, type SortingRule } from './rules.js';
 export { ACTIVITY_KINDS, type ActivityKind, type ActivityRow, type ActivityWhat, type BucketActivity, type PeriodSummary } from './activity.js';
 export type { LeftoverReport, PaycheckReport, PaydayReport } from './payday-report.js';
@@ -59,7 +59,9 @@ export {
   type OpenBookInput,
   type OthersMoney,
   type PaycheckRecord,
+  type AnyPot,
   type Pot,
+  type PotAmounts,
   type Period,
   type Pots,
   type PurchaseView,
@@ -82,6 +84,8 @@ export {
   type SpendingSort,
   type SplitPart,
   type StartingPots,
+  type WishlistFlows,
+  type WishlistPurchase,
 } from './book.js';
 export {
   cardDue,
@@ -105,4 +109,5 @@ export { UPSTREAM_SWITCHES, checkSwitches, rolesFor, settingsWhenOff, type Switc
 export { HER_SETTINGS, HER_SWITCHES } from './her-setup.js';
 export { OLDER_PAYCHECK_FIRST, type WaitingPaycheck } from './paycheck-ask.js';
 export { cardOwes, owedAtSetup, setAside, type CardSetAside, type SetAside } from './set-aside.js';
+export { wishlistMove, type DueStatement, type WishlistMove, type WishlistMoveInput, type WishlistMoveWhen } from './wishlist.js';
 export { cardStatementView, type BeforeSetupLine, type CarriedIn, type StatementBucket, type StatementInput, type StatementItem, type StatementPeriod, type StatementView } from './statement.js';

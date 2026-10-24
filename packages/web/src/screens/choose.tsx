@@ -569,6 +569,15 @@ export function PaycheckParts({ preview: p, prefix, testId }: { readonly preview
       <dd>
         <Money cents={p.wants} testId={`${prefix}-wants`} />
       </dd>
+      {/* Her rulebook, 3.3: Wishlist's part, where the split names it. */}
+      {p.wishlist !== undefined && (
+        <>
+          <dt>Wishlist</dt>
+          <dd>
+            <Money cents={p.wishlist} testId={`${prefix}-wishlist`} />
+          </dd>
+        </>
+      )}
     </dl>
   );
 }
@@ -810,7 +819,7 @@ function SplitForm({
   onChoose,
 }: {
   readonly subject: Subject;
-  readonly buckets: readonly ('needs' | 'wants' | 'not-mine')[];
+  readonly buckets: readonly ('needs' | 'wants' | 'wishlist' | 'not-mine')[];
   readonly busy: boolean;
   readonly onChoose: Choose;
 }) {

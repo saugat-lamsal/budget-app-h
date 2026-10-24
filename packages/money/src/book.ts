@@ -1,7 +1,7 @@
 import { ALL_ACCOUNTS, type AccountId } from './accounts.js';
 import { ACTIVITY_KINDS, foldLines, type ActivityKind, type ActivityRow, type ActivityWhat, type BucketActivity, type LedgerLine, type PeriodSummary } from './activity.js';
 import { bucketLevel, type Alert, type AlertInput } from './alerts.js';
-import { isSpendingBucket, type SplitBucket } from './buckets.js';
+import { isSortBucket, isSpendingBucket, type SortBucket, type SplitBucket } from './buckets.js';
 import type { CardPayment, EverydayCard } from './reminders.js';
 import { addCents, assertCents, assertPositiveCents, subtractCents, type Cents } from './cents.js';
 import { assertIsoDate, daysBetween, monthOf, type IsoDate } from './dates.js';
@@ -26,7 +26,7 @@ import {
   type SortingRule,
 } from './rules.js';
 import { changeSettings as applySettingsChange, matchesTextRule, validateSettings, type LeftoverChoice, type Settings } from './settings.js';
-import { checkOpening, checkSwitches, optionsInThisSetup, refuseOffBalances, refuseOffChoice, refuseOffMove, refuseOffRule, refuseOffSettings, refuseOffTransaction, type Switches } from './switches.js';
+import { checkOpening, checkSwitches, optionsInThisSetup, refuseOffBalances, refuseOffChoice, refuseOffMove, refuseOffRule, refuseOffSettings, refuseOffTransaction, refuseOffWishlist, type Switches } from './switches.js';
 import {
   checkTransaction,
   sameTransaction,
@@ -57,6 +57,9 @@ export interface StartingPots {
   readonly wants: Cents;
   readonly momReserve: Cents;
   readonly heldForOthers: Cents;
+  // Her rulebook, section 2: the Wishlist bucket, only in a setup that has it
+  // (its switch on). Missing is $0.00 there; upstream's books never have it.
+  readonly wishlist?: Cents;
 }
 
 export interface Pots extends StartingPots {
@@ -73,7 +76,7 @@ type PotName = keyof Pots;
 type TotalName = PotName | 'oldCardDebt' | 'inTransit';
 type Effect = Partial<Record<TotalName, Cents>>;
 
-const POT_NAMES: readonly PotName[] = ['savings', 'needs', 'wants', 'momReserve', 'heldForOthers', 'unsortedIn', 'unsortedOut'];
+const POT_NAMES: readonly PotName[] = ['savings', 'needs', 'wants', 'momReserve', 'heldForOthers', 'unsortedIn', 'unsortedOut', 'wishlist'];
 const TOTAL_NAMES: readonly TotalName[] = [...POT_NAMES, 'oldCardDebt', 'inTransit'];
 
 export interface OpenBookInput {
@@ -109,7 +112,7 @@ export type LeftoverAnswer = 'roll-over' | 'move-to-savings';
 // Part of a split (4.4). A payment to a person can also have a part that is
 // not mine (7.6).
 export interface SplitPart {
-  readonly bucket: SplitBucket | 'not-mine';
+  readonly bucket: SortBucket | 'not-mine';
   readonly amount: Cents;
 }
 
@@ -129,7 +132,8 @@ export type SortChoice =
 
 export type SpendingSort =
   | { readonly to: 'unsorted' }
-  | { readonly to: SplitBucket }
+  // Her rulebook, 4.2: or Wishlist, where the setup has it.
+  | { readonly to: SortBucket }
   | { readonly split: readonly SplitPart[] }
   // A payment to a person that was not your spending (7.2).
   | { readonly to: 'not-mine' }
@@ -341,31 +345,58 @@ export type CardEntry =
   | (CardEntryBase & { readonly kind: 'charge'; readonly spendingKind: SpendingKind; readonly sortedTo: SpendingSort })
   // A refund counted on the purchase it belongs to (refundOf), or money in
   // on the card sorted on its own (4.5, 6.1).
-  | (CardEntryBase & { readonly kind: 'refund'; readonly refundOf: string | null; readonly sortedTo: 'unsorted' | DepositRuleChoice['to'] })
+  | (CardEntryBase & { readonly kind: 'refund'; readonly refundOf: string | null; readonly sortedTo: MoneyInEntry['sortedTo'] })
   | (CardEntryBase & { readonly kind: 'payment' });
+
+// Her rulebook, 50.4: one purchase's part in Wishlist (Book.wishlistFlows).
+export interface WishlistPurchase {
+  readonly id: string;
+  // The day of the purchase (4.1).
+  readonly date: IsoDate;
+  // Where it left from: checking (the debit card) or a card.
+  readonly account: AccountId;
+  // What it takes from Wishlist now, less refunds: above zero.
+  readonly amount: Cents;
+  // The bank's id and the book's day for it as posted; null while pending.
+  readonly posted: { readonly id: string; readonly date: IsoDate } | null;
+}
+
+export interface WishlistFlows {
+  readonly purchases: readonly WishlistPurchase[];
+  readonly paidBack: Cents;
+  readonly movedToChecking: Cents;
+}
 
 // Rule 0.5: safe to spend only when the totals match the bank.
 export type CheckedSafeToSpend =
   | { readonly ok: true; readonly safeToSpend: SafeToSpend }
   | { readonly ok: false; readonly difference: Cents; readonly nextPayday: IsoDate; readonly daysToPayday: number };
 
-// The buckets you can move money between by hand (13.3).
+// The buckets you can move money between by hand (13.3). Her rulebook:
+// Wishlist too, only in a setup that has it (section 2).
 export type Pot = 'savings' | 'needs' | 'wants' | 'momReserve' | 'heldForOthers';
+// Any bucket of any setup: upstream's, and Wishlist.
+export type AnyPot = Pot | 'wishlist';
+
+// What each bucket holds, Wishlist only where the setup has it.
+export type PotAmounts = Readonly<Record<Pot, Cents>> & { readonly wishlist?: Cents };
 
 // The buckets money can be moved between by hand (13.3), and the ones whose
-// activity is kept (QUESTIONS.md B97), in the order to show them.
+// activity is kept (QUESTIONS.md B97), in the order to show them: upstream's,
+// with Wishlist after wants where the setup has it (Book.movablePots).
 export const MOVABLE_POTS: readonly Pot[] = Object.freeze(['savings', 'needs', 'wants', 'momReserve', 'heldForOthers'] as const);
+const WITH_WISHLIST: readonly AnyPot[] = Object.freeze(['savings', 'needs', 'wants', 'wishlist', 'momReserve', 'heldForOthers'] as const);
 
 export interface MoneyMove {
-  readonly from: Pot;
-  readonly to: Pot;
+  readonly from: AnyPot;
+  readonly to: AnyPot;
   readonly amount: Cents;
-  // Needed to move money out of savings or the mom reserve (13.4).
+  // Needed to move money out of savings or the mom reserve (13.4), or Wishlist.
   readonly confirmed?: boolean;
 }
 
-// Why a hand move asks you to confirm first (13.4).
-export type ConfirmReason = 'out-of-savings' | 'out-of-mom-reserve' | 'below-zero';
+// Why a hand move asks you to confirm first (13.4; her rulebook: out of Wishlist too).
+export type ConfirmReason = 'out-of-savings' | 'out-of-mom-reserve' | 'out-of-wishlist' | 'below-zero';
 
 export type MoveResult =
   | { readonly moved: true }
@@ -390,7 +421,7 @@ export type ChangeLogEntry =
   // A22: a rule moved one place up or down among the rules of its kind, past
   // another; position is its place among them now, from 1.
   | { readonly date: IsoDate; readonly kind: 'rule-moved'; readonly rule: SortingRule; readonly past: SortingRule; readonly direction: 'up' | 'down'; readonly position: number }
-  | { readonly date: IsoDate; readonly kind: 'money-moved'; readonly from: Pot; readonly to: Pot; readonly amount: Cents }
+  | { readonly date: IsoDate; readonly kind: 'money-moved'; readonly from: AnyPot; readonly to: AnyPot; readonly amount: Cents }
   // 4.10: the bank took back a transaction the app had counted.
   | { readonly date: IsoDate; readonly kind: 'bank-took-back'; readonly id: string; readonly description: string; readonly amount: Cents };
 
@@ -464,8 +495,9 @@ interface MoneyInEntry extends FromTheBank {
   // A deposit waiting as a plain deposit becomes an early paycheck when a
   // new paycheck rule matches it (A9).
   reason: MoneyInReason;
-  // A deposit you call your paycheck becomes a paycheck entry instead.
-  sortedTo: 'unsorted' | DepositRuleChoice['to'];
+  // A deposit you call your paycheck becomes a paycheck entry instead. Her
+  // rulebook, 6.1: payback can go into Wishlist too.
+  sortedTo: 'unsorted' | DepositRuleChoice['to'] | 'wishlist';
   // 13.8: he sorted it himself (in review or from a bucket's list), not a rule.
   byHand?: boolean;
   // How it was split, when sorted as other income.
@@ -540,8 +572,8 @@ interface MoveEntry {
   readonly kind: 'move';
   readonly id: string;
   readonly date: IsoDate;
-  readonly from: Pot;
-  readonly to: Pot;
+  readonly from: AnyPot;
+  readonly to: AnyPot;
   effect: Effect;
 }
 
@@ -620,7 +652,8 @@ function ledgerKind(entry: Entry): ActivityKind | null {
   }
 }
 
-const POT_NAMES_SET: ReadonlySet<string> = new Set(MOVABLE_POTS);
+// Wishlist's lines are kept where the setup has it; elsewhere it never changes.
+const POT_NAMES_SET: ReadonlySet<string> = new Set(WITH_WISHLIST);
 
 // A pay period as the ledger knows it: when it began, what every bucket held
 // then, and what the paycheck that began it was worked out with (3.3, 13.1)
@@ -629,7 +662,7 @@ const POT_NAMES_SET: ReadonlySet<string> = new Set(MOVABLE_POTS);
 interface PeriodRecord {
   readonly number: number;
   readonly startDate: IsoDate;
-  readonly opening: Readonly<Record<Pot, Cents>>;
+  readonly opening: PotAmounts;
   // 40.13: what the old card owed then (12.4).
   readonly openingDebt: Cents;
   readonly split: SplitSettings;
@@ -667,9 +700,10 @@ function splitSettingsOf(settings: Settings): SplitSettings {
   return Object.freeze({ split, momReservePerPaycheck, momReserveCap });
 }
 
-function potsOf(totals: Record<TotalName, Cents>): Pots {
-  const { savings, needs, wants, momReserve, heldForOthers, unsortedIn, unsortedOut } = totals;
-  return Object.freeze({ savings, needs, wants, momReserve, heldForOthers, unsortedIn, unsortedOut });
+// Wishlist only where the setup has it (her rulebook, section 2).
+function potsOf(totals: Record<TotalName, Cents>, switches: Switches): Pots {
+  const { savings, needs, wants, momReserve, heldForOthers, unsortedIn, unsortedOut, wishlist } = totals;
+  return Object.freeze({ savings, needs, wants, momReserve, heldForOthers, unsortedIn, unsortedOut, ...(switches.wishlist === 'on' ? { wishlist } : {}) });
 }
 
 export function openBook(input: OpenBookInput): Book {
@@ -677,7 +711,7 @@ export function openBook(input: OpenBookInput): Book {
 }
 
 export class Book {
-  readonly #opening: StartingPots & { readonly oldCardDebt: Cents };
+  readonly #opening: Required<StartingPots> & { readonly oldCardDebt: Cents };
   readonly #totals: Record<TotalName, Cents>;
   readonly #entries = new Map<string, Entry>();
   // Posted transaction id -> the entry of the pending purchase it replaced.
@@ -728,15 +762,15 @@ export class Book {
     assertIsoDate(input.date, 'start date');
     assertIsoDate(input.lastPaycheckDate, 'last paycheck date');
     assertCents(input.oldCardDebt, 'old card debt');
-    const { savings, needs, wants, momReserve, heldForOthers } = input.pots;
-    this.#opening = Object.freeze({ savings, needs, wants, momReserve, heldForOthers, oldCardDebt: input.oldCardDebt });
+    const { savings, needs, wants, momReserve, heldForOthers, wishlist = 0 } = input.pots;
+    this.#opening = Object.freeze({ savings, needs, wants, momReserve, heldForOthers, wishlist, oldCardDebt: input.oldCardDebt });
     for (const [name, value] of Object.entries(this.#opening)) assertCents(value, name);
     this.#totals = { ...this.#opening, unsortedIn: 0, unsortedOut: 0, inTransit: 0 };
-    addCents(savings, needs, wants, momReserve, heldForOthers);
+    addCents(savings, needs, wants, momReserve, heldForOthers, wishlist);
     this.#settings = validateSettings(input.settings);
     this.#switches = checkSwitches(input.switches);
     const setupActivity = [...(input.countedAtSetup ?? []), ...(input.inTransitAtSetup ?? [])];
-    checkOpening(this.#switches, { momReserve, oldCardDebt: input.oldCardDebt, settings: this.#settings, oldCardActivity: setupActivity.some((t) => ('account' in t && t.account === 'old-card') || ('to' in t && t.to === 'old-card')), setupActivity });
+    checkOpening(this.#switches, { momReserve, wishlist, oldCardDebt: input.oldCardDebt, settings: this.#settings, oldCardActivity: setupActivity.some((t) => ('account' in t && t.account === 'old-card') || ('to' in t && t.to === 'old-card')), setupActivity });
     this.#periodSplit = splitSettingsOf(this.#settings);
     this.#rules = checkRules(input.rules ?? []);
     for (const rule of this.#rules) refuseOffRule(this.#switches, rule);
@@ -798,7 +832,7 @@ export class Book {
   // ----- Reading -----
 
   pots(): Pots {
-    return potsOf(this.#totals);
+    return potsOf(this.#totals, this.#switches);
   }
 
   // The old card balance, tracked separately as debt (12.4).
@@ -809,7 +843,7 @@ export class Book {
   // Adds every bucket up again from the starting amounts and every entry.
   // Must always equal pots(); a difference means the book is broken.
   recountPots(): Pots {
-    return potsOf(this.#recount());
+    return potsOf(this.#recount(), this.#switches);
   }
 
   recountOldCardDebt(): Cents {
@@ -831,6 +865,13 @@ export class Book {
   // Off in this setup: fixed on setup day.
   switches(): Switches {
     return this.#switches;
+  }
+
+  // The buckets money can be moved between by hand, and whose activity is
+  // kept, in the order to show them: Wishlist after wants where the setup
+  // has it (her rulebook, section 2).
+  movablePots(): readonly AnyPot[] {
+    return this.#switches.wishlist === 'on' ? WITH_WISHLIST : MOVABLE_POTS;
   }
 
   rules(): readonly SortingRule[] {
@@ -916,7 +957,8 @@ export class Book {
   }
 
   // Rules 11.1 to 11.3: wants left, minus unsorted spending. Savings, the
-  // mom reserve, held for others, and unsorted money in never count. Shown
+  // mom reserve, held for others, and unsorted money in never count, nor
+  // Wishlist (her rulebook, 11.3). Shown
   // with the days to the next payday from the pay schedule.
   safeToSpend(today: IsoDate): SafeToSpend {
     assertIsoDate(today, 'today');
@@ -937,10 +979,11 @@ export class Book {
   }
 
   // Rule 12.2: savings + needs + wants + mom reserve + held for others
-  // + unsorted money in - unsorted spending. Everything in the buckets.
+  // + unsorted money in - unsorted spending. Everything in the buckets. Her
+  // rulebook, 12.2: + Wishlist ($0.00 in a setup without it).
   appSide(): Cents {
     const t = this.#totals;
-    return subtractCents(addCents(t.savings, t.needs, t.wants, t.momReserve, t.heldForOthers, t.unsortedIn), t.unsortedOut);
+    return subtractCents(addCents(t.savings, t.needs, t.wants, t.momReserve, t.heldForOthers, t.wishlist, t.unsortedIn), t.unsortedOut);
   }
 
   // Rule 12.5: transfers with only one half seen so far, oldest first.
@@ -965,11 +1008,12 @@ export class Book {
   }
 
   // Rule 3.8: what should be sitting in the savings account (savings plus
-  // the mom reserve), and how much still needs to be moved there. Negative
-  // means the account holds more than the buckets say.
+  // the mom reserve; her rulebook, 3.8: plus Wishlist), and how much still
+  // needs to be moved there. Negative means the account holds more than the
+  // buckets say.
   savingsTransfer(savingsAccountBalance: Cents): SavingsTransfer {
     assertCents(savingsAccountBalance, 'savings account balance');
-    const shouldBeInSavings = addCents(this.#totals.savings, this.#totals.momReserve);
+    const shouldBeInSavings = addCents(this.#totals.savings, this.#totals.momReserve, this.#totals.wishlist);
     // Money already on its way to savings counts as moved (12.5).
     const onItsWay = this.inTransit()
       .items.filter((item) => item.to === 'savings' && item.seen === 'left')
@@ -1094,6 +1138,37 @@ export class Book {
     return entries;
   }
 
+  // Her rulebook, 50.4 (PR 9): what the book holds that moving Wishlist money
+  // is worked out from (wishlist.ts): each purchase's part in Wishlist now,
+  // in the order they came, less refunds (one that left savings is not here:
+  // its money already left the savings account); money in sorted as payback
+  // into Wishlist; and every move from savings to checking since tracking
+  // started, counted from the day it left savings (12.5). Only reads.
+  wishlistFlows(): WishlistFlows {
+    refuseOffWishlist(this.#switches);
+    const purchases: WishlistPurchase[] = [];
+    let paidBack = 0;
+    let movedToChecking = 0;
+    for (const entry of this.#entries.values()) {
+      if (entry.kind === 'spend') {
+        const amount = -(entry.effect.wishlist ?? 0);
+        const txn = entry.txn;
+        const account: AccountId = txn.kind === 'transfer' || txn.kind === 'transfer-sent' ? txn.from : txn.account;
+        if (amount <= 0 || account === 'savings') continue;
+        const shown = entry.postedTxn ?? txn;
+        purchases.push(Object.freeze({ id: entry.id, date: txn.date, account, amount, posted: entry.pending ? null : Object.freeze({ id: shown.id, date: shown.date }) }));
+      } else if (entry.kind === 'money-in' && entry.sortedTo === 'wishlist') {
+        paidBack = addCents(paidBack, entry.effect.wishlist ?? 0);
+      } else if ((entry.kind === 'transfer' || entry.kind === 'leg') && !this.#gone(entry) && !this.#setupLegs.has(entry.id)) {
+        const t = entry.txn;
+        // A move seen arriving first counts until its leaving half shows.
+        const counts = t.kind !== 'transfer-arrived' || !this.#pairs.has(entry.id);
+        if (t.from === 'savings' && t.to === 'checking' && counts) movedToChecking = addCents(movedToChecking, t.amount);
+      }
+    }
+    return Object.freeze({ purchases: Object.freeze(purchases), paidBack, movedToChecking });
+  }
+
   othersMoney(): OthersMoney {
     const heldForOthers = this.#totals.heldForOthers;
     const meaning = heldForOthers === 0 ? 'settled' : heldForOthers > 0 ? 'holding-for-others' : 'owed-to-you';
@@ -1109,8 +1184,9 @@ export class Book {
   // total for the bucket is zero is left out (it was sorted somewhere else,
   // marked a transfer, taken back, or dropped), except a purchase refunded in
   // full, which stays so the refund can be seen (B98). Newest first (B99).
-  activity(pot: Pot, period?: number): BucketActivity {
-    if (!MOVABLE_POTS.includes(pot)) throw new MoneyError('bad-pot', `not a bucket: ${String(pot)}`);
+  activity(pot: AnyPot, period?: number): BucketActivity {
+    if (pot === 'wishlist') refuseOffWishlist(this.#switches);
+    if (!this.movablePots().includes(pot)) throw new MoneyError('bad-pot', `not a bucket: ${String(pot)}`);
     const number = this.#payPeriod(period);
     const record = this.#periods[number];
     const lines = this.#ledger[number];
@@ -1129,10 +1205,10 @@ export class Book {
     return Object.freeze({
       pot,
       period: Object.freeze({ number, startDate: record.startDate, endDate: next === undefined ? null : next.startDate }),
-      opening: record.opening[pot],
+      opening: record.opening[pot] ?? 0,
       in: wentIn,
       out: wentOut,
-      closing: next === undefined ? this.#totals[pot] : next.opening[pot],
+      closing: next === undefined ? this.#totals[pot] : (next.opening[pot] ?? 0),
       rows,
     });
   }
@@ -1155,10 +1231,10 @@ export class Book {
     const lines = this.#ledger[number];
     if (record === undefined || lines === undefined) throw new MoneyError('broken-book', `pay period ${number} has no ledger`);
     const next = this.#periods[number + 1];
-    const byKind = {} as Record<Pot, Record<ActivityKind, Cents>>;
-    for (const pot of MOVABLE_POTS) byKind[pot] = Object.fromEntries(ACTIVITY_KINDS.map((kind) => [kind, 0])) as Record<ActivityKind, Cents>;
+    const byKind = {} as Record<AnyPot, Record<ActivityKind, Cents>>;
+    for (const pot of this.movablePots()) byKind[pot] = Object.fromEntries(ACTIVITY_KINDS.map((kind) => [kind, 0])) as Record<ActivityKind, Cents>;
     for (const line of lines) byKind[line.pot][line.kind] = addCents(byKind[line.pot][line.kind], line.delta);
-    for (const pot of MOVABLE_POTS) Object.freeze(byKind[pot]);
+    for (const pot of this.movablePots()) Object.freeze(byKind[pot]);
     return Object.freeze({
       number,
       startDate: record.startDate,
@@ -1256,7 +1332,7 @@ export class Book {
   }
 
   // One item's row in a bucket's list, or null when it has nothing to show there.
-  #activityRow(id: string, amount: Cents, pot: Pot): ActivityRow | null {
+  #activityRow(id: string, amount: Cents, pot: AnyPot): ActivityRow | null {
     const entry = this.#entries.get(id) ?? this.#entries.get(id.split(':')[0] ?? id);
     if (amount === 0 && !(entry?.kind === 'spend' && this.#refundedInFullIn(entry, pot))) return null;
     const base = { id, amount };
@@ -1361,7 +1437,7 @@ export class Book {
         // 3.7, B54: a deposit older than the last paycheck cannot start a pay period.
         const older = txn.kind === 'deposit' && daysBetween(this.#lastPaycheckDate, txn.date) < 0;
         const likely = this.#likelyFor(txn);
-        const options = reviewOptions({ type: 'money-in', reason: entry.reason, account: txn.account, olderThanLastPaycheck: older, likely: likely.map((p) => p.id), ...(txn.kind === 'deposit' && this.#olderWaitingFor(txn.date) ? { olderPaycheckWaiting: true } : {}) });
+        const options = reviewOptions({ type: 'money-in', reason: entry.reason, account: txn.account, olderThanLastPaycheck: older, likely: likely.map((p) => p.id), ...(txn.kind === 'deposit' && this.#olderWaitingFor(txn.date) ? { olderPaycheckWaiting: true } : {}), ...this.#wishlistFact() });
         if (options.type !== 'sort') throw new MoneyError('broken-book', 'money in has no choices');
         return Object.freeze({
           resortable: true,
@@ -1581,11 +1657,17 @@ export class Book {
       canBeForMom: entry.spendingKind === 'person-payment' && txn.kind === 'payment-to-person' && entry.refunded === 0,
       markedFromSavings: this.#markedFromSavings(entry),
       net: netOf(entry),
+      ...this.#wishlistFact(),
     };
   }
 
+  // Her rulebook, 4.2 and 6.1: review offers Wishlist where the setup has it.
+  #wishlistFact(): { readonly wishlist?: true } {
+    return this.#switches.wishlist === 'on' ? { wishlist: true } : {};
+  }
+
   // A purchase refunded in full, and still sorted into this bucket (B98).
-  #refundedInFullIn(entry: SpendEntry, pot: Pot): boolean {
+  #refundedInFullIn(entry: SpendEntry, pot: AnyPot): boolean {
     if (entry.refunded === 0 || netOf(entry) !== 0 || entry.dropped === true || entry.takenBack === true) return false;
     const sorted = entry.sortedTo;
     if ('split' in sorted) return sorted.split.some((part) => part.bucket === pot);
@@ -2162,7 +2244,8 @@ export class Book {
       this.#closePeriod('wants', txn);
       const split = splitPaycheck(txn.amount, this.#totals.momReserve, this.#periodSplit);
       const entry: PaycheckEntry = { kind: 'paycheck', id: txn.id, txn, split, effect: {} };
-      this.#add(entry, { momReserve: split.momReserve, savings: split.savings, needs: split.needs, wants: split.wants });
+      // Her rulebook, 3.3 and 3.4: Wishlist gets its part, and is never asked about.
+      this.#add(entry, { momReserve: split.momReserve, savings: split.savings, needs: split.needs, wants: split.wants, ...(split.wishlist === undefined ? {} : { wishlist: split.wishlist }) });
       this.#paychecks.push({ id: txn.id, date: txn.date, amount: txn.amount, split });
       this.#periodStart.needs = this.#totals.needs;
       this.#periodStart.wants = this.#totals.wants;
@@ -2487,9 +2570,10 @@ export class Book {
     } else if ('split' in choice) {
       if (!Array.isArray(choice.split)) throw new MoneyError('bad-choice', 'a split needs a list of parts');
       const parts = choice.split.map((part) => {
-        // 4.4: spending splits across needs and wants; 7.6: a payment to a person can also have a part that is not mine.
-        if (!isSpendingBucket(part.bucket) && !(person && part.bucket === 'not-mine')) {
-          throw new MoneyError('bad-choice', `${person ? 'a payment to a person splits across needs, wants and not mine' : 'spending can go to needs or wants'}, not ${String(part.bucket)}`);
+        // 4.4: spending splits across needs and wants (her rulebook: and Wishlist); 7.6: a payment to a
+        // person can also have a part that is not mine, and never one in Wishlist.
+        if (!(isSortBucket(part.bucket) && !(person && part.bucket === 'wishlist')) && !(person && part.bucket === 'not-mine')) {
+          throw new MoneyError('bad-choice', `${person ? 'a payment to a person splits across needs, wants and not mine' : 'spending can go to needs, wants or Wishlist'}, not ${String(part.bucket)}`);
         }
         assertPositiveCents(part.amount, 'each part of a split');
         return Object.freeze({ bucket: part.bucket, amount: part.amount });
@@ -2498,10 +2582,10 @@ export class Book {
       const net = netOf(entry);
       if (total !== net) throw new MoneyError('split-does-not-add-up', `the parts add up to ${total}, the purchase is ${net}`);
       entry.sortedTo = Object.freeze({ split: Object.freeze(parts) });
-    } else if (isSpendingBucket(choice.to)) {
+    } else if (isSortBucket(choice.to) && !(choice.to === 'wishlist' && entry.spendingKind === 'mom-difference')) {
       entry.sortedTo = Object.freeze({ to: choice.to });
     } else {
-      throw new MoneyError('bad-choice', `spending can go to needs or wants, not ${String(choice.to)}`);
+      throw new MoneyError('bad-choice', `spending can go to needs, wants or Wishlist, not ${String(choice.to)}`);
     }
     entry.splitChanged = false;
     try {
@@ -2530,7 +2614,7 @@ export class Book {
       // Split by this pay period's percentages (13.1), with no mom reserve:
       // the reserve comes only from paychecks.
       incomeSplit = splitPaycheck(amount, this.#totals.momReserve, { ...this.#periodSplit, momReservePerPaycheck: 0 });
-      effect = { momReserve: incomeSplit.momReserve, savings: incomeSplit.savings, needs: incomeSplit.needs, wants: incomeSplit.wants };
+      effect = { momReserve: incomeSplit.momReserve, savings: incomeSplit.savings, needs: incomeSplit.needs, wants: incomeSplit.wants, ...(incomeSplit.wishlist === undefined ? {} : { wishlist: incomeSplit.wishlist }) };
     } else if (choice.to === 'not-mine') {
       effect = { heldForOthers: amount };
     } else {
@@ -2868,7 +2952,7 @@ export class Book {
   moveMoney(move: MoneyMove, date: IsoDate): MoveResult {
     assertIsoDate(date);
     const { from, to, amount } = move;
-    if (!MOVABLE_POTS.includes(from) || !MOVABLE_POTS.includes(to) || from === to) {
+    if (!WITH_WISHLIST.includes(from) || !WITH_WISHLIST.includes(to) || from === to) {
       throw new MoneyError('bad-move', `cannot move money from ${String(from)} to ${String(to)}`);
     }
     assertPositiveCents(amount, 'amount to move');
@@ -2876,6 +2960,7 @@ export class Book {
     const reasons: ConfirmReason[] = [];
     if (from === 'savings') reasons.push('out-of-savings');
     if (from === 'momReserve') reasons.push('out-of-mom-reserve');
+    if (from === 'wishlist') reasons.push('out-of-wishlist');
     if (subtractCents(this.#totals[from], amount) < 0) reasons.push('below-zero');
     if (reasons.length > 0 && move.confirmed !== true) return { moved: false, needsConfirmation: true, reasons };
     // A move that is refused (a total too large to stay exact, 0.1) does not
@@ -3004,11 +3089,11 @@ export class Book {
   // first, so a total too large to stay exact changes nothing.
   #setEffect(entry: Entry, next: Effect): void {
     const updated = { ...this.#totals };
-    const lines: { pot: Pot; delta: Cents }[] = [];
+    const lines: { pot: AnyPot; delta: Cents }[] = [];
     for (const name of TOTAL_NAMES) {
       const change = subtractCents(next[name] ?? 0, entry.effect[name] ?? 0);
       updated[name] = addCents(updated[name], change);
-      if (change !== 0 && POT_NAMES_SET.has(name)) lines.push({ pot: name as Pot, delta: change });
+      if (change !== 0 && POT_NAMES_SET.has(name)) lines.push({ pot: name as AnyPot, delta: change });
     }
     const kind = ledgerKind(entry);
     if (lines.length > 0 && kind === null) throw new MoneyError('broken-book', `${entry.kind} ${entry.id} changed a bucket, but it should never`);
@@ -3018,10 +3103,10 @@ export class Book {
     if (kind !== null && ledger !== undefined) for (const line of lines) ledger.push({ entry: entry.id, pot: line.pot, delta: line.delta, kind });
   }
 
-  // What every bucket holds right now.
-  #potTotals(): Record<Pot, Cents> {
+  // What every bucket holds right now, Wishlist only where the setup has it.
+  #potTotals(): PotAmounts {
     const t = this.#totals;
-    return { savings: t.savings, needs: t.needs, wants: t.wants, momReserve: t.momReserve, heldForOthers: t.heldForOthers };
+    return { savings: t.savings, needs: t.needs, wants: t.wants, momReserve: t.momReserve, heldForOthers: t.heldForOthers, ...(this.#switches.wishlist === 'on' ? { wishlist: t.wishlist } : {}) };
   }
 
   #reviewDetail(entry: Entry): ReviewDetail {
@@ -3032,7 +3117,7 @@ export class Book {
         // 3.7, B54: a deposit older than the last paycheck cannot start a pay period.
         const older = txn.kind === 'deposit' && daysBetween(this.#lastPaycheckDate, txn.date) < 0;
         const likely = this.#likelyFor(txn);
-        const facts: ReviewFacts = { type: 'money-in', reason: entry.reason, account: txn.account, olderThanLastPaycheck: older, likely: likely.map((p) => p.id), ...(txn.kind === 'deposit' && this.#olderWaitingFor(txn.date) ? { olderPaycheckWaiting: true } : {}) };
+        const facts: ReviewFacts = { type: 'money-in', reason: entry.reason, account: txn.account, olderThanLastPaycheck: older, likely: likely.map((p) => p.id), ...(txn.kind === 'deposit' && this.#olderWaitingFor(txn.date) ? { olderPaycheckWaiting: true } : {}), ...this.#wishlistFact() };
         return {
           item,
           account: txn.account,

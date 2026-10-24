@@ -1,4 +1,4 @@
-import { MOVABLE_POTS, type Pot } from '@budget-app/money';
+import { MOVABLE_POTS, type AnyPot } from '@budget-app/money';
 import { POT_NAMES } from '../ui/names.js';
 
 // The tabs, each at its own address, so a refresh or a notification link
@@ -27,7 +27,7 @@ export function tabOf(pathname: string): Tab | null {
 
 // Each bucket's name in an address: /buckets/needs. Must match
 // packages/server/src/views/activity.ts (a test checks).
-export const POT_SLUGS: Readonly<Record<string, Pot>> = Object.freeze({
+export const POT_SLUGS: Readonly<Record<string, AnyPot>> = Object.freeze({
   savings: 'savings',
   needs: 'needs',
   wants: 'wants',
@@ -35,10 +35,16 @@ export const POT_SLUGS: Readonly<Record<string, Pot>> = Object.freeze({
   'held-for-others': 'heldForOthers',
 });
 
+// Her rulebook, section 2 (PR 9): Wishlist's list, /buckets/wishlist, kept
+// apart from upstream's buckets. Must match packages/server/src/views/activity.ts
+// HER_POT_SLUGS, and the server's HER_BUCKET_PATHS (a test checks).
+export const HER_POT_SLUGS: Readonly<Record<string, 'wishlist'>> = Object.freeze({ wishlist: 'wishlist' });
+const ALL_SLUGS: Readonly<Record<string, AnyPot>> = { ...POT_SLUGS, ...HER_POT_SLUGS };
+
 export type Route =
   | { readonly screen: 'tab'; readonly tab: Tab }
   // What went in and out of one bucket this pay period.
-  | { readonly screen: 'activity'; readonly pot: Pot }
+  | { readonly screen: 'activity'; readonly pot: AnyPot }
   // What the last paycheck did, and the pay period that just ended.
   | { readonly screen: 'payday' }
   // Phase 5: the alerts the app worked out and sent, newest first (real server only).
@@ -92,8 +98,10 @@ export function setupPath(step: SetupStepName): string {
 // app (packages/server/src/http/server.ts, SCREEN_PATHS; a test checks).
 export const SCREEN_ROUTES: readonly Route[] = Object.freeze([{ screen: 'payday' }, { screen: 'alerts' }, { screen: 'bank' }, { screen: 'status' }, ...MOVABLE_POTS.map((pot): Route => ({ screen: 'activity', pot }))]);
 
-export function activityPath(pot: Pot): string {
-  const found = Object.entries(POT_SLUGS).find(([, p]) => p === pot);
+export const HER_BUCKET_ROUTES: readonly Route[] = Object.freeze(Object.values(HER_POT_SLUGS).map((pot): Route => ({ screen: 'activity', pot })));
+
+export function activityPath(pot: AnyPot): string {
+  const found = Object.entries(ALL_SLUGS).find(([, p]) => p === pot);
   if (found === undefined) throw new Error(`no address for ${pot}`);
   return `/buckets/${found[0]}`;
 }
@@ -133,8 +141,8 @@ export function routeOf(pathname: string): Route | null {
   const step = /^\/setup\/([^/]+)$/.exec(path)?.[1];
   if (step !== undefined && (SETUP_STEPS as readonly string[]).includes(step)) return { screen: 'setup', step: step as SetupStepName };
   const slug = /^\/buckets\/([^/]+)$/.exec(path)?.[1];
-  if (slug !== undefined && Object.hasOwn(POT_SLUGS, slug)) {
-    const pot = POT_SLUGS[slug];
+  if (slug !== undefined && Object.hasOwn(ALL_SLUGS, slug)) {
+    const pot = ALL_SLUGS[slug];
     if (pot !== undefined) return { screen: 'activity', pot };
   }
   return null;

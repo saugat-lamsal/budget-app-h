@@ -1,5 +1,5 @@
 import type { AccountId } from './accounts.js';
-import type { Pot, SpendingKind } from './book.js';
+import type { AnyPot, Pot, PotAmounts, SpendingKind } from './book.js';
 import { addCents, type Cents } from './cents.js';
 import type { IsoDate } from './dates.js';
 import type { ResortDetail } from './resort.js';
@@ -45,7 +45,7 @@ export interface ActivityRow {
   // positive, money out negative.
   readonly amount: Cents;
   // The other bucket, for a hand move or a leftover.
-  readonly other: Pot | null;
+  readonly other: AnyPot | null;
   readonly pending: boolean;
   // For spending, how much of it was refunded (4.5).
   readonly refunded: Cents;
@@ -56,7 +56,7 @@ export interface ActivityRow {
 }
 
 export interface BucketActivity {
-  readonly pot: Pot;
+  readonly pot: AnyPot;
   readonly period: { readonly number: number; readonly startDate: IsoDate; readonly endDate: IsoDate | null };
   // What the bucket held when the pay period began.
   readonly opening: Cents;
@@ -71,19 +71,20 @@ export interface BucketActivity {
 
 // A pay period added up by kind of entry: opening + everything in byKind
 // = closing, for every bucket. endDate is null for the current pay period.
+// Wishlist is there only in a setup that has it (her rulebook, section 2).
 export interface PeriodSummary {
   readonly number: number;
   readonly startDate: IsoDate;
   readonly endDate: IsoDate | null;
-  readonly opening: Readonly<Record<Pot, Cents>>;
-  readonly closing: Readonly<Record<Pot, Cents>>;
-  readonly byKind: Readonly<Record<Pot, Readonly<Record<ActivityKind, Cents>>>>;
+  readonly opening: PotAmounts;
+  readonly closing: PotAmounts;
+  readonly byKind: Readonly<Record<Pot, Readonly<Record<ActivityKind, Cents>>>> & { readonly wishlist?: Readonly<Record<ActivityKind, Cents>> };
 }
 
 // One line of the ledger: an entry changed what a bucket holds by delta.
 export interface LedgerLine {
   readonly entry: string;
-  readonly pot: Pot;
+  readonly pot: AnyPot;
   readonly delta: Cents;
   readonly kind: ActivityKind;
 }
@@ -98,7 +99,7 @@ export interface Folded {
   readonly last: number;
 }
 
-export function foldLines(lines: readonly LedgerLine[], pot: Pot): Folded[] {
+export function foldLines(lines: readonly LedgerLine[], pot: AnyPot): Folded[] {
   const folded = new Map<string, { entry: string; net: Cents; last: number }>();
   lines.forEach((line, position) => {
     if (line.pot !== pot) return;

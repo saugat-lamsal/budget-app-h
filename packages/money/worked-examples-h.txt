@@ -11,8 +11,9 @@ the app disagrees with it, the test fails.
 
 Her setup has no mom reserve and no old card (rulebook, "Off in this
 setup"). Unless an example says otherwise, the settings are her starting
-ones: split 50% savings / 30% needs / 20% wants, and "Ask before splitting
-a paycheck" on, so a paycheck waits for her yes before it is split (3.1).
+ones: split 50% savings / 30% needs / 20% wants / 0% Wishlist, and "Ask
+before splitting a paycheck" on, so a paycheck waits for her yes before it
+is split (3.1).
 
 Rounding: each share is rounded DOWN to the cent. Any cents left over from
 rounding go to savings (rule 3.3).
@@ -347,3 +348,102 @@ Add them up: 0.00 + 45.77 + 18.00 + 30.00 + 23.40 = 117.17, the statement
 balance exactly, so nothing is "Not matched".
 
 Check: carried in 0.00 | needs 45.77 | wants 18.00 | still unsorted 30.00 | before setup day 23.40 | not matched 0.00
+
+
+========================================================================
+EXAMPLE 13. A paycheck split four ways, with Wishlist (3.3)
+========================================================================
+
+Her split is 40% savings / 30% needs / 20% wants / 10% Wishlist. A paycheck
+of 2,345.67 comes, and she says yes in review.
+
+Needs:    30% of 2,345.67 = 703.701  -> rounded down to 703.70
+Wants:    20% of 2,345.67 = 469.134  -> rounded down to 469.13
+Wishlist: 10% of 2,345.67 = 234.567  -> rounded down to 234.56
+Savings:  40% of 2,345.67 = 938.268  -> 938.26, plus the cents left over
+          from rounding: 2,345.67 - 703.70 - 469.13 - 234.56 - 938.26 = 0.02
+          Savings gets 938.26 + 0.02 = 938.28
+
+Add them up: 938.28 + 703.70 + 469.13 + 234.56 = 2,345.67, the paycheck
+exactly.
+
+Check: savings 938.28 | needs 703.70 | wants 469.13 | wishlist 234.56 | rounding to savings 0.02
+
+
+========================================================================
+EXAMPLE 14. A Wishlist purchase on the Amex card, and the money to move (3.8, 50.4)
+========================================================================
+
+She starts with savings 2,000.00, Wishlist 300.00 and wants 150.00. The
+savings account holds 2,300.00: exactly savings plus Wishlist.
+
+Oct 4: headphones on the Amex card, 129.99, sorted to Wishlist.
+
+Wishlist: 300.00 - 129.99                       = 170.01
+Should be in the savings account: 2,000.00 + 170.01 = 2,170.01
+The account holds 2,300.00, so the extra is 2,300.00 - 2,170.01 = 129.99
+Sorted to Wishlist and not moved yet:             129.99
+Move the smaller of the two:                      129.99
+from savings to checking, before the Amex card is due. Safe to spend is
+wants alone, still 150.00: Wishlist is never part of it (11.3).
+
+She moves 129.99 from savings to checking. The account holds 2,170.01,
+exactly what should be there, and nothing is left to move.
+
+Check: wishlist 170.01 | should be in savings 2,170.01 | to move 129.99 | safe to spend 150.00 | to move after she moves it 0.00
+
+
+========================================================================
+EXAMPLE 15. Part of a Wishlist purchase refunded (4.5, 3.8, 50.4)
+========================================================================
+
+Example 14, after she moved the 129.99. Oct 10: the store refunds 40.00
+of the headphones to the Amex card, matched to the purchase.
+
+Wishlist: 170.01 + 40.00                         = 210.01
+Should be in the savings account: 2,000.00 + 210.01 = 2,210.01
+The account holds 2,170.01: 40.00 short, so 40.00 is still to move INTO
+savings (3.8), and there is no extra.
+To move from savings to checking: the smaller of 0.00 (the extra) and
+129.99 - 40.00 refunded - 129.99 moved, which is below zero, so 0.00:
+0.00. One move of 40.00 into savings covers it.
+
+Check: wishlist 210.01 | still to move into savings 40.00 | to move to checking 0.00
+
+
+========================================================================
+EXAMPLE 16. A purchase split across needs, wants and Wishlist (4.4)
+========================================================================
+
+She starts with needs 500.00, wants 200.00 and Wishlist 300.00. A big box
+store, 250.00 on the Capital One card: 80.00 of it needs, 45.50 wants, and
+the rest Wishlist.
+
+The rest: 250.00 - 80.00 - 45.50 = 124.50
+Needs:    500.00 - 80.00  = 420.00
+Wants:    200.00 - 45.50  = 154.50
+Wishlist: 300.00 - 124.50 = 175.50
+Safe to spend is wants: 154.50.
+
+Check: needs 420.00 | wants 154.50 | wishlist 175.50 | safe to spend 154.50
+
+
+========================================================================
+EXAMPLE 17. Money out of Wishlist by hand, and the app side (13.4, 12.2)
+========================================================================
+
+She starts with savings 2,000.00, needs 500.00, wants 200.00, Wishlist
+300.00 and nothing held for others. A deposit of 25.00 and a purchase of
+60.00 wait in review.
+
+The app side: 2,000.00 + 500.00 + 200.00 + 300.00 + 0.00 + 25.00 - 60.00
+= 2,965.00.
+
+She moves 50.00 from Wishlist to wants. Money out of Wishlist asks her
+first (13.4); she says yes.
+Wishlist: 300.00 - 50.00 = 250.00
+Wants:    200.00 + 50.00 = 250.00
+The app side does not change: 2,965.00. Safe to spend: 250.00 - 60.00
+waiting = 190.00.
+
+Check: app side 2,965.00 | wishlist after the move 250.00 | wants after the move 250.00 | app side after the move 2,965.00 | safe to spend 190.00

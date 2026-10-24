@@ -14,7 +14,9 @@ import type { BankTransaction } from './transactions.js';
 //
 // Her second card (her rulebook, section 1) is the other way round: upstream's
 // setup has none, and her setup switches it on. While it is off, as for the
-// others, nothing on it is read or offered.
+// others, nothing on it is read or offered. So is her Wishlist bucket (her
+// rulebook, section 2's split): while it is off there is no Wishlist share,
+// nothing is sorted or moved to it, and no screen shows it.
 
 export type Switch = 'on' | 'off';
 
@@ -22,12 +24,14 @@ export interface Switches {
   readonly momReserve: Switch;
   readonly oldCard: Switch;
   readonly secondCard: Switch;
+  readonly wishlist: Switch;
 }
 
 // Upstream's setup. A book saved before the switches existed opens with these
 // (B242: a new setting means "as upstream" for history saved before it), and
-// one saved before the second card's switch opens with one card.
-export const UPSTREAM_SWITCHES: Switches = Object.freeze({ momReserve: 'on', oldCard: 'on', secondCard: 'off' });
+// one saved before the second card's switch opens with one card, and one
+// saved before Wishlist's with no Wishlist.
+export const UPSTREAM_SWITCHES: Switches = Object.freeze({ momReserve: 'on', oldCard: 'on', secondCard: 'off', wishlist: 'off' });
 
 // The settings that are about the mom reserve and the old card, and what each
 // holds while its switch is off: nothing.
@@ -47,16 +51,17 @@ export function rolesFor(switches: Switches): readonly AccountId[] {
 }
 
 // Returns a frozen copy; none given is upstream's. Switches saved before the
-// second card's existed have it off (B242).
+// second card's or Wishlist's existed have it off (B242).
 export function checkSwitches(switches: Switches | undefined): Switches {
   if (switches === undefined) return UPSTREAM_SWITCHES;
   const isSwitch = (value: unknown): value is Switch => value === 'on' || value === 'off';
   if (typeof switches !== 'object' || switches === null) throw new MoneyError('bad-switch', `the switches are each on or off: ${JSON.stringify(switches)}`);
   const secondCard: unknown = switches.secondCard === undefined ? 'off' : switches.secondCard;
-  if (!isSwitch(switches.momReserve) || !isSwitch(switches.oldCard) || !isSwitch(secondCard)) {
-    throw new MoneyError('bad-switch', `the mom reserve, the old card and the second card are each on or off: ${JSON.stringify(switches)}`);
+  const wishlist: unknown = switches.wishlist === undefined ? 'off' : switches.wishlist;
+  if (!isSwitch(switches.momReserve) || !isSwitch(switches.oldCard) || !isSwitch(secondCard) || !isSwitch(wishlist)) {
+    throw new MoneyError('bad-switch', `the mom reserve, the old card, the second card and Wishlist are each on or off: ${JSON.stringify(switches)}`);
   }
-  return Object.freeze({ momReserve: switches.momReserve, oldCard: switches.oldCard, secondCard });
+  return Object.freeze({ momReserve: switches.momReserve, oldCard: switches.oldCard, secondCard, wishlist });
 }
 
 function refuse(why: string): never {
@@ -66,6 +71,7 @@ function refuse(why: string): never {
 const NO_MOM = 'This setup has no mom reserve.';
 const NO_OLD_CARD = 'This setup has no old card.';
 const NO_SECOND_CARD = 'This setup has no second card.';
+const NO_WISHLIST = 'This setup has no Wishlist.';
 
 // Anything on the second card: its own activity, or a transfer to it.
 const onSecondCard = (t: object): boolean => ('account' in t && t.account === 'second-card') || ('to' in t && t.to === 'second-card');
@@ -75,8 +81,10 @@ const onSecondCard = (t: object): boolean => ('account' in t && t.account === 's
 // empty.
 export function checkOpening(
   switches: Switches,
-  opening: { readonly momReserve: Cents; readonly oldCardDebt: Cents; readonly settings: Settings; readonly oldCardActivity: boolean; readonly setupActivity?: readonly object[] },
+  opening: { readonly momReserve: Cents; readonly oldCardDebt: Cents; readonly settings: Settings; readonly oldCardActivity: boolean; readonly setupActivity?: readonly object[]; readonly wishlist?: Cents },
 ): void {
+  checkWishlistSplit(switches, opening.settings.split);
+  if (switches.wishlist === 'off' && (opening.wishlist ?? 0) !== 0) refuse(`${NO_WISHLIST} Nothing can be assigned to it.`);
   if (switches.secondCard === 'off' && (opening.setupActivity ?? []).some(onSecondCard)) refuse(`${NO_SECOND_CARD} It has nothing pending and nothing on its way.`);
   if (switches.secondCard === 'off' && (opening.settings.secondCardClosingDay ?? null) !== null) refuse(`${NO_SECOND_CARD} The setting secondCardClosingDay must be empty.`);
   if (switches.momReserve === 'off' && opening.momReserve !== 0) refuse(`${NO_MOM} Nothing can be assigned to it.`);
@@ -90,8 +98,17 @@ function settingWhy(key: string): string {
   return key in MOM_SETTINGS ? NO_MOM : NO_OLD_CARD;
 }
 
+// Her rulebook, section 2: with Wishlist on, the split always names it (whole
+// percents that add up to 100 with it, validateSettings); with it off, the
+// split is upstream's three, with no Wishlist share at all, not even 0%.
+export function checkWishlistSplit(switches: Switches, split: Settings['split']): void {
+  if (switches.wishlist === 'off' && split.wishlist !== undefined) refuse(`${NO_WISHLIST} The split has no Wishlist share.`);
+  if (switches.wishlist === 'on' && split.wishlist === undefined) throw new MoneyError('bad-setting', 'the split names Wishlist in this setup: savings, needs, wants and Wishlist');
+}
+
 // A change to a setting about something that is off is refused, whatever the value.
 export function refuseOffSettings(switches: Switches, patch: Partial<Settings>): void {
+  if (patch.split !== undefined) checkWishlistSplit(switches, patch.split);
   if (switches.secondCard === 'off' && 'secondCardClosingDay' in patch) refuse(`${NO_SECOND_CARD} There is no secondCardClosingDay to change.`);
   const off = settingsWhenOff(switches);
   for (const key of Object.keys(patch)) if (key in off) refuse(`${settingWhy(key)} There is no ${key} to change.`);
@@ -110,7 +127,12 @@ export function refuseOffChoice(switches: Switches, choice: unknown): void {
   if (switches.momReserve === 'off' && 'to' in choice && (choice.to === 'mom' || choice.to === 'momReserve')) refuse(`${NO_MOM} Nothing can be for mom.`);
   if (switches.oldCard === 'off' && 'transfer' in choice && choice.transfer === 'old-card') refuse(`${NO_OLD_CARD} Nothing can be a payment to it.`);
   if (switches.secondCard === 'off' && 'transfer' in choice && choice.transfer === 'second-card') refuse(`${NO_SECOND_CARD} Nothing can be a payment to it.`);
+  if (switches.wishlist === 'off' && (('to' in choice && choice.to === 'wishlist') || ('split' in choice && Array.isArray(choice.split) && choice.split.some(isWishlistPart)))) {
+    refuse(`${NO_WISHLIST} Nothing can be sorted to it.`);
+  }
 }
+
+const isWishlistPart = (part: unknown): boolean => typeof part === 'object' && part !== null && 'bucket' in part && part.bucket === 'wishlist';
 
 // 12.1: with the second card off, the bank has nothing on it, not even a cent.
 export function refuseOffBalances(switches: Switches, bank: BankBalances): void {
@@ -123,6 +145,12 @@ export function refuseOffRule(switches: Switches, rule: SortingRule): void {
 
 export function refuseOffMove(switches: Switches, move: { readonly from: string; readonly to: string }): void {
   if (switches.momReserve === 'off' && (move.from === 'momReserve' || move.to === 'momReserve')) refuse(`${NO_MOM} No money can go in or out of it.`);
+  if (switches.wishlist === 'off' && (move.from === 'wishlist' || move.to === 'wishlist')) refuse(`${NO_WISHLIST} No money can go in or out of it.`);
+}
+
+// What is read about Wishlist (its bucket's list, 50.4), when it is off.
+export function refuseOffWishlist(switches: Switches): void {
+  if (switches.wishlist === 'off') refuse(NO_WISHLIST);
 }
 
 // The choices review gives in this setup: less the ones about what is off,

@@ -111,6 +111,17 @@ function BucketsReady({ view, reload, onChanged }: { readonly view: Tracking; re
       {/* "Off in this setup": with no mom reserve, nothing about one. */}
       <Card title={momReserve === undefined ? 'Savings' : 'Savings and reserves'} testId="reserves">
         <ListRow icon="bank" title="Savings" trailing={<Money cents={view.savings} roll testId="savings" />} href={activityPath('savings')} testId="row-savings" />
+        {/* Her rulebook, section 2 and 3.8: Wishlist, kept in the savings account. */}
+        {view.wishlist !== undefined && (
+          <ListRow
+            icon="heart"
+            title="Wishlist"
+            detail="Kept in your savings account for the things on your list. Not part of safe to spend."
+            trailing={<Money cents={view.wishlist} roll testId="wishlist" />}
+            href={activityPath('wishlist')}
+            testId="row-wishlist"
+          />
+        )}
         {momReserve !== undefined && (
           <ListRow
             icon="heart"
@@ -135,7 +146,7 @@ function BucketsReady({ view, reload, onChanged }: { readonly view: Tracking; re
         <ListRow
           icon="move"
           title="Move money between buckets"
-          detail={momReserve === undefined ? 'Needs, wants, savings, or money held for others' : 'Needs, wants, savings, the mom reserve, or money held for others'}
+          detail={momReserve !== undefined ? 'Needs, wants, savings, the mom reserve, or money held for others' : view.wishlist !== undefined ? 'Needs, wants, Wishlist, savings, or money held for others' : 'Needs, wants, savings, or money held for others'}
           onClick={() => setMoving(true)}
           testId="move-open"
         />
@@ -218,7 +229,7 @@ function BucketsReady({ view, reload, onChanged }: { readonly view: Tracking; re
       <MoveMoney
         open={moving}
         onClose={() => setMoving(false)}
-        balances={{ savings: view.savings, needs: view.needs.left, wants: view.wants.left, ...(momReserve === undefined ? {} : { momReserve: momReserve.amount }), heldForOthers: heldForOthers.heldForOthers }}
+        balances={{ savings: view.savings, needs: view.needs.left, wants: view.wants.left, ...(view.wishlist === undefined ? {} : { wishlist: view.wishlist }), ...(momReserve === undefined ? {} : { momReserve: momReserve.amount }), heldForOthers: heldForOthers.heldForOthers }}
         start={{ from: 'wants', to: 'needs' }}
         onMoved={(text) => {
           setMoved({ tone: 'ok', text });

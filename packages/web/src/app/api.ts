@@ -1,4 +1,4 @@
-import type { Pot } from '@budget-app/money';
+import type { AnyPot } from '@budget-app/money';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { rememberCardNames } from '../ui/card-names.js';
 import type {
@@ -16,7 +16,7 @@ import type {
   TrendsShown as TrendsView,
   ChoiceRequest,
   ChoiceResponse,
-  HomeWithCards as HomeView,
+  HomeWithWishlist as HomeView,
   MoveRequest,
   MoveResponse,
   PaydayShown as PaydayView,
@@ -59,18 +59,20 @@ const READS = {
   '/api/activity/wants': () => fetch('/api/activity/wants', READ),
   '/api/activity/mom-reserve': () => fetch('/api/activity/mom-reserve', READ),
   '/api/activity/held-for-others': () => fetch('/api/activity/held-for-others', READ),
+  '/api/activity/wishlist': () => fetch('/api/activity/wishlist', READ),
   // Her rulebook, 52.4: each card's statement.
   '/api/statement/everyday-card': () => fetch('/api/statement/everyday-card', READ),
   '/api/statement/second-card': () => fetch('/api/statement/second-card', READ),
 } as const;
 const STATEMENT_URL: Readonly<Record<StatementCard, ViewUrl>> = { 'everyday-card': '/api/statement/everyday-card', 'second-card': '/api/statement/second-card' };
 // Each bucket's activity is read from its own address.
-const ACTIVITY_URL: Readonly<Record<Pot, ViewUrl>> = {
+const ACTIVITY_URL: Readonly<Record<AnyPot, ViewUrl>> = {
   savings: '/api/activity/savings',
   needs: '/api/activity/needs',
   wants: '/api/activity/wants',
   momReserve: '/api/activity/mom-reserve',
   heldForOthers: '/api/activity/held-for-others',
+  wishlist: '/api/activity/wishlist',
 };
 type ViewUrl = keyof typeof READS;
 
@@ -288,5 +290,5 @@ export const useSetup = (): [Load<SetupView>, Reload] => useView<SetupView>('/ap
 export const useAlerts = (): [Load<AlertsView>, Reload] => useView<AlertsView>('/api/alerts');
 export const useStatus = (): [Load<StatusView>, Reload] => useView<StatusView>('/api/status');
 export const useBank = (): [Load<BankConnectionView>, Reload] => useView<BankConnectionView>('/api/bank');
-export const useActivity = (pot: Pot): [Load<ActivityView>, Reload] => useView<ActivityView>(ACTIVITY_URL[pot]);
+export const useActivity = (pot: AnyPot): [Load<ActivityView>, Reload] => useView<ActivityView>(ACTIVITY_URL[pot]);
 export const useStatement = (card: StatementCard): [Load<StatementScreenView>, Reload] => useView<StatementScreenView>(STATEMENT_URL[card]);

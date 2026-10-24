@@ -1,4 +1,4 @@
-import type { CarriedIn, IsoDate, StatementBucket, StatementPeriod } from '@budget-app/money';
+import type { CarriedIn, IsoDate, StatementBucket, StatementPeriod, WishlistMove } from '@budget-app/money';
 import type { HomeCard, HomeCardState } from '@budget-app/server/views';
 import { nameOf } from '../ui/card-names.js';
 import { shortDate } from '../ui/dates.js';
@@ -51,6 +51,20 @@ export function setAsideText(owes: number): string {
   return `Owes ${moneyText(owes)} now, all of it set aside.`;
 }
 
+// Her rulebook, 50.4: the Wishlist money to move from savings to checking,
+// and when: by the card's due date, as 9.6 says due and overdue.
+export function wishlistMoveText(move: WishlistMove): { readonly title: string; readonly detail: string } {
+  const title = `Move ${moneyText(move.amount)} from savings to checking`;
+  const why = 'For what you bought from Wishlist, whose money is kept in savings.';
+  const when = move.when;
+  if (when === null || when.kind === 'now') return { title, detail: `${why} Now: it has already left checking.` };
+  const name = `the ${cardName(when.card)}`;
+  if (when.kind === 'before-next-due') return { title, detail: `${why} Before ${name}'s next due date.` };
+  if (when.day === 'before') return { title, detail: `${why} Before ${name} is due, ${shortDate(when.dueDate)}.` };
+  if (when.day === 'on') return { title, detail: `${why} Today: ${name} is due today, ${shortDate(when.dueDate)}.` };
+  return { title, detail: `${why} Now: ${name} was due ${shortDate(when.dueDate)}.` };
+}
+
 // 52.2: how much of the set-aside money is in savings rather than checking.
 export function inSavingsText(inSavings: number): string {
   return `${moneyText(inSavings)} of the money set aside for your cards is in your savings account, not checking.`;
@@ -76,6 +90,8 @@ export function bucketTitle(bucket: StatementBucket): string {
       return 'Needs';
     case 'wants':
       return 'Wants';
+    case 'wishlist':
+      return 'Wishlist';
     case 'unsorted':
       return 'Still unsorted';
     case 'before-setup':

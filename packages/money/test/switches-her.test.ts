@@ -49,9 +49,9 @@ function sortOptions(detail: ReviewDetail | undefined): Extract<ReviewOptions, {
 
 describe('Off in this setup: her setup day starts with both switched off', () => {
   it('Off in this setup: her switches are both off, and upstream keeps both on', () => {
-    // PR 5: her second card is on (her rulebook, section 1).
-    expect(HER_SWITCHES).toEqual({ momReserve: 'off', oldCard: 'off', secondCard: 'on' });
-    expect(UPSTREAM_SWITCHES).toEqual({ momReserve: 'on', oldCard: 'on', secondCard: 'off' });
+    // PR 5: her second card is on (her rulebook, section 1). PR 9: so is Wishlist (section 2).
+    expect(HER_SWITCHES).toEqual({ momReserve: 'off', oldCard: 'off', secondCard: 'on', wishlist: 'on' });
+    expect(UPSTREAM_SWITCHES).toEqual({ momReserve: 'on', oldCard: 'on', secondCard: 'off', wishlist: 'off' });
     expect(Object.isFrozen(HER_SWITCHES)).toBe(true);
   });
 
@@ -68,6 +68,8 @@ describe('Off in this setup: her setup day starts with both switched off', () =>
       askBeforeSplittingPaycheck: true,
       // PR 5: her second card's closing day, not set yet (9.8).
       secondCardClosingDay: null,
+      // PR 9: Wishlist's share, 0% until she picks it on setup day (section 2).
+      split: { ...DEFAULT_SETTINGS.split, wishlist: 0 },
     });
     // Upstream's defaults stay upstream's.
     expect(DEFAULT_SETTINGS.momReservePerPaycheck).toBe(150_000);
@@ -201,8 +203,8 @@ describe('Off in this setup: 3.2, 8.1 to 8.4 no mom reserve', () => {
       refusedOff(book, () => book.changeSettings(patch, '2026-10-02'));
     }
     // A change to the split alone is fine.
-    book.changeSettings({ split: { savings: 40, needs: 40, wants: 20 } }, '2026-10-02');
-    expect(book.settings().split).toEqual({ savings: 40, needs: 40, wants: 20 });
+    book.changeSettings({ split: { savings: 40, needs: 40, wants: 20, wishlist: 0 } }, '2026-10-02');
+    expect(book.settings().split).toEqual({ savings: 40, needs: 40, wants: 20, wishlist: 0 });
   });
 
   it('13.3 and 13.4 off: no money can be moved in or out of the mom reserve by hand', () => {
@@ -372,9 +374,10 @@ function sameOffers(off: ReviewDetail[], on: ReviewDetail[]): void {
 function liveTwins(steps: Step[]): void {
   // Her settings but with mom on at $0.00: upstream's, with no reserve, and
   // (PR 4) asking before splitting a paycheck, as hers does.
-  const twinSettings = changeSettings(DEFAULT_SETTINGS, { paycheckRule: { contains: PAYROLL }, momReservePerPaycheck: 0, momReserveCap: 0, askBeforeSplittingPaycheck: true });
-  // (PR 5) And with her second card on, as hers has: only mom differs.
-  const on = openBook({ date: START_DATE, lastPaycheckDate: LAST_PAYCHECK, oldCardDebt: 0, pots: POTS, settings: twinSettings, switches: { ...UPSTREAM_SWITCHES, secondCard: 'on' } });
+  // (PR 9) With Wishlist in the split at 0%, as hers starts.
+  const twinSettings = changeSettings(DEFAULT_SETTINGS, { paycheckRule: { contains: PAYROLL }, momReservePerPaycheck: 0, momReserveCap: 0, askBeforeSplittingPaycheck: true, split: { ...DEFAULT_SETTINGS.split, wishlist: 0 } });
+  // (PR 5) And with her second card on, as hers has, and (PR 9) Wishlist: only mom differs.
+  const on = openBook({ date: START_DATE, lastPaycheckDate: LAST_PAYCHECK, oldCardDebt: 0, pots: POTS, settings: twinSettings, switches: { ...UPSTREAM_SWITCHES, secondCard: 'on', wishlist: 'on' } });
   const off = herBook();
   const both = (run: (book: Book) => void): void => {
     run(on);
@@ -477,7 +480,7 @@ function liveTwins(steps: Step[]): void {
         both((b) => b.moveMoney({ from: step.from, to: step.to, amount: step.amount, confirmed: true }, date));
         break;
       case 'change-split': {
-        const split = { savings: Math.min(step.savings, 100), needs: Math.min(step.needs, 100 - Math.min(step.savings, 100)), wants: 0 };
+        const split = { savings: Math.min(step.savings, 100), needs: Math.min(step.needs, 100 - Math.min(step.savings, 100)), wants: 0, wishlist: 0 };
         split.wants = 100 - split.savings - split.needs;
         both((b) => b.changeSettings({ split }, date));
         break;

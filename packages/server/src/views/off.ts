@@ -10,7 +10,9 @@ import {
   type PaycheckSplit,
   type PaydayReport,
   type PeriodSummary,
+  type AnyPot,
   type Pot,
+  type PotAmounts,
   type ResortDetail,
   type Settings,
   type SplitSettings,
@@ -58,22 +60,25 @@ type ReserveSteps = 'reserveTaken' | 'overflowToSavings';
 export type PaycheckSplitShown = Maybe<Omit<PaycheckSplit, 'detail'>, 'momReserve'> & { readonly detail: Maybe<PaycheckSplit['detail'], ReserveSteps> };
 export type PaycheckShown = Maybe<Omit<PaycheckReport, 'split'>, Reserve> & { readonly split: PaycheckSplitShown };
 // The pay period before, added up, with no mom reserve bucket and no payments to mom.
-type PotsShown = Readonly<Maybe<Record<Pot, Cents>, 'momReserve'>>;
+// Wishlist only where the setup has it (her rulebook, section 2).
+type PotsShown = Readonly<Maybe<PotAmounts, 'momReserve'>>;
+type KindsShown = Readonly<Maybe<Record<ActivityKind, Cents>, 'mom'>>;
 export type PeriodSummaryShown = Omit<PeriodSummary, 'opening' | 'closing' | 'byKind'> & {
   readonly opening: PotsShown;
   readonly closing: PotsShown;
-  readonly byKind: Readonly<Maybe<Record<Pot, Readonly<Maybe<Record<ActivityKind, Cents>, 'mom'>>>, 'momReserve'>>;
+  readonly byKind: Readonly<Maybe<Record<Pot, KindsShown>, 'momReserve'>> & { readonly wishlist?: KindsShown };
 };
 export type PaydayReportShown = Omit<PaydayReport, 'paycheck' | 'ended'> & { readonly paycheck: PaycheckShown | null; readonly ended: PeriodSummaryShown | null };
 // savingsAlone: what should be in the savings account is the savings bucket alone (3.8, no reserve).
-export type PaydayShown = NotTracking<PaydayView> | (Omit<Tracking<PaydayView>, 'report'> & { readonly report: PaydayReportShown; readonly savingsAlone?: true });
+// withWishlist: her rulebook, 3.8: it is savings plus Wishlist.
+export type PaydayShown = NotTracking<PaydayView> | (Omit<Tracking<PaydayView>, 'report'> & { readonly report: PaydayReportShown; readonly savingsAlone?: true; readonly withWishlist?: true });
 
 function summaryWithoutMom(summary: PeriodSummary): PeriodSummaryShown {
   const { momReserve: _opening, ...opening } = summary.opening;
   const { momReserve: _closing, ...closing } = summary.closing;
   const { momReserve: _byKind, ...pots } = summary.byKind;
   const noMom = ({ mom: _mom, ...kinds }: Readonly<Record<ActivityKind, Cents>>): Omit<Record<ActivityKind, Cents>, 'mom'> => kinds;
-  const byKind = { savings: noMom(pots.savings), needs: noMom(pots.needs), wants: noMom(pots.wants), heldForOthers: noMom(pots.heldForOthers) };
+  const byKind = { savings: noMom(pots.savings), needs: noMom(pots.needs), wants: noMom(pots.wants), heldForOthers: noMom(pots.heldForOthers), ...(pots.wishlist === undefined ? {} : { wishlist: noMom(pots.wishlist) }) };
   return { ...summary, opening, closing, byKind };
 }
 
@@ -88,9 +93,10 @@ export function shownPayday(view: PaydayView, switches: Switches): PaydayShown {
   if (view.state !== 'tracking' || switches.momReserve === 'on') return view;
   const report = view.report;
   const ended = report.ended === null ? null : summaryWithoutMom(report.ended);
-  if (report.paycheck === null) return { ...view, report: { ...report, ended }, savingsAlone: true };
+  const wishlist = switches.wishlist === 'on' ? { withWishlist: true as const } : {};
+  if (report.paycheck === null) return { ...view, report: { ...report, ended }, savingsAlone: true, ...wishlist };
   const { reservePerPaycheck: _perPaycheck, reserveCap: _cap, reserveBefore: _before, split, ...paycheck } = report.paycheck;
-  return { ...view, report: { ...report, paycheck: { ...paycheck, split: splitWithoutReserve(split) }, ended }, savingsAlone: true };
+  return { ...view, report: { ...report, paycheck: { ...paycheck, split: splitWithoutReserve(split) }, ended }, savingsAlone: true, ...wishlist };
 }
 
 // ----- Review: what "This is my paycheck" would give has no reserve (3.2 off) -----
@@ -184,7 +190,9 @@ export function shownSetup(view: SetupView, switches: Switches): SetupShown {
   if (allOn(switches)) return view;
   if (view.state !== 'not-set-up' || !view.ready) return view;
   const { oldCard, assignment, ...rest } = view;
-  const { momReserve, ...pots } = assignment;
+  const { momReserve, ...given } = assignment;
+  // Her rulebook, 14.2: Wishlist is one of the buckets to hand out to, from $0.00.
+  const pots = switches.wishlist === 'on' ? { ...given, wishlist: given.wishlist ?? 0 } : given;
   return {
     ...rest,
     ...(switches.oldCard === 'off' ? { accounts: rolesFor(switches) } : { oldCard }),
@@ -206,7 +214,7 @@ export type ActivityShown =
 type Resortable = Extract<ResortDetail, { readonly resortable: true }>;
 export type ActivityRowShown = Omit<ActivityRow, 'resort'> & { readonly resort: Exclude<ResortDetail, Resortable> | WithPreview<Resortable> };
 
-export function shownActivity(view: ActivityView, pot: Pot, switches: Switches): ActivityShown {
+export function shownActivity(view: ActivityView, pot: AnyPot, switches: Switches): ActivityShown {
   if (switches.momReserve === 'on') return view;
   if (pot === 'momReserve') return { state: 'off', madeUpData: view.madeUpData };
   if (view.state !== 'tracking') return view;

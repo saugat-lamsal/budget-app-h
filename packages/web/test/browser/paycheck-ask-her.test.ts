@@ -122,7 +122,7 @@ describe.each(ENGINES)('3.1 51.1 a paycheck waiting for her yes, in %s', (_name,
       await sheet.getByTestId('sheet-picks').waitFor();
       const choices = await sheet.locator('[data-testid^="choice-"]').evaluateAll((els) => els.map((e) => e.getAttribute('data-testid')));
       // And, as for any money in, a transfer from her other account (5.6).
-      expect(choices).toEqual(['choice-other-income', 'choice-savings', 'choice-needs', 'choice-wants', 'choice-not-mine', 'choice-transfer-savings']);
+      expect(choices).toEqual(['choice-other-income', 'choice-savings', 'choice-needs', 'choice-wants', 'choice-wishlist', 'choice-not-mine', 'choice-transfer-savings']);
       await sheet.getByTestId('a-paycheck-after-all').click();
       await sheet.getByTestId('paycheck-ask').waitFor();
       expect(await sheet.getByTestId('paycheck-yes').isVisible()).toBe(true);

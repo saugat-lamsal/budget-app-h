@@ -129,3 +129,27 @@ yet, and the second bank cannot be read again.
         the bank is still catching up, and nothing is told.
 
 Check: starting money 7,300.00 | bank side with the second bank not read 7,260.00 | difference with the second bank not read 0.00 | safe to spend with the second bank not read 160.00 | bank side once both are read 7,235.00 | safe to spend once both are read 135.00 | difference while it waits -10.00
+
+
+========================================================================
+EXAMPLE 4. A Wishlist purchase on the Capital One card, on Buckets and Home (50.4)
+========================================================================
+
+The made-up bank: the savings account holds 5,000.00. On setup day she
+puts 4,000.00 in savings, 300.00 in Wishlist, 200.00 in wants and the rest
+in needs.
+
+What should be in the savings account (3.8): 4,000.00 + 300.00 = 4,300.00.
+It holds 5,000.00, so 700.00 is extra.
+
+Oct 3: a gadget of 50.00 on the Capital One card. She sorts it to Wishlist
+in review.
+        Wishlist on Buckets: 300.00 - 50.00 = 250.00
+        Should be in savings: 4,000.00 + 250.00 = 4,250.00; extra 750.00
+        Sorted to Wishlist and not moved yet: 50.00
+        Home: "Move 50.00 from savings to checking", the smaller of the two.
+
+Oct 6: she moves 50.00 from savings to checking. Savings holds 4,950.00,
+and nothing is left to move: Home's line goes away. No bucket changes.
+
+Check: wishlist on buckets 250.00 | to move on home 50.00 | savings account after the move 4,950.00 | to move after the move 0.00 | wishlist after the move 250.00

@@ -7,7 +7,7 @@ import { BACKUP_BEAT_PATH, BACKUP_HEALTH_PATH, fromThisMachine } from '../backup
 import { WEBHOOK_BODY_LIMIT, WEBHOOK_PATH } from './webhook-path.js';
 import type { BankAnswer, BankConnectedRequest, BankConnectionView, BankLinkAnswer, BankLinkRequest, BankRolesRequest } from '../views/bank.js';
 import { parseRequest } from '../choices.js';
-import { POT_SLUGS, potOfSlug, type ActivityView } from '../views/activity.js';
+import { HER_POT_SLUGS, POT_SLUGS, potOfSlug, type ActivityView } from '../views/activity.js';
 import type { AlertsView } from '../views/alerts.js';
 import type { StatusView } from '../views/status.js';
 import type { TrendsView } from '../views/trends.js';
@@ -44,6 +44,10 @@ export const SCREEN_PATHS: readonly string[] = ['/payday', '/alerts', '/bank', '
 // (a test checks).
 export const STATEMENT_CARDS = ['everyday-card', 'second-card'] as const;
 export const HER_SCREEN_PATHS: readonly string[] = STATEMENT_CARDS.map((card) => `/statement/${card}`);
+
+// Her rulebook, section 2 (PR 9): Wishlist's list. Kept apart as the
+// statements are; must match packages/web/src/app/routes.ts HER_BUCKET_ROUTES.
+export const HER_BUCKET_PATHS: readonly string[] = Object.keys(HER_POT_SLUGS).map((slug) => `/buckets/${slug}`);
 
 // 1.1 to 1.3: the Bank connection screen, the one page Plaid Link opens on
 // (its page rules let Plaid's login in: bankPageHeaders), and its numbers and
@@ -103,7 +107,7 @@ export const AUTH_ROUTES: readonly Route[] = [
 // (scripts, styles, icons) are open: the login page needs them, and they hold
 // nothing of his.
 export const ROUTES: readonly Route[] = [
-  ...[...APP_PATHS, ...SCREEN_PATHS, ...SETUP_PATHS, ...HER_SCREEN_PATHS].map((path): Route => ({ method: 'GET', path, login: true })),
+  ...[...APP_PATHS, ...SCREEN_PATHS, ...SETUP_PATHS, ...HER_SCREEN_PATHS, ...HER_BUCKET_PATHS].map((path): Route => ({ method: 'GET', path, login: true })),
   { method: 'GET', path: LOGIN_PATH, login: false },
   { method: 'GET', path: HEALTH_PATH, login: false },
   // A43: the backups' health, for a second monitor, and Litestream's beat (from this machine only).
@@ -111,7 +115,7 @@ export const ROUTES: readonly Route[] = [
   { method: 'GET', path: BACKUP_BEAT_PATH, login: false },
   // Section 2 (A47): Plaid's webhooks. Plaid has no login: each call is checked by Plaid's own signature instead.
   { method: 'POST', path: WEBHOOK_PATH, login: false },
-  ...['home', 'buckets', 'review', 'trends', 'settings', 'setup', 'payday', 'alerts', 'status', ...Object.keys(POT_SLUGS).map((slug) => `activity/${slug}`), ...STATEMENT_CARDS.map((card) => `statement/${card}`)].map((name): Route => ({ method: 'GET', path: `/api/${name}`, login: true })),
+  ...['home', 'buckets', 'review', 'trends', 'settings', 'setup', 'payday', 'alerts', 'status', ...Object.keys(POT_SLUGS).map((slug) => `activity/${slug}`), ...STATEMENT_CARDS.map((card) => `statement/${card}`), ...Object.keys(HER_POT_SLUGS).map((slug) => `activity/${slug}`)].map((name): Route => ({ method: 'GET', path: `/api/${name}`, login: true })),
   { method: 'POST', path: '/api/choice', login: true },
   { method: 'POST', path: '/api/seen', login: true },
   { method: 'POST', path: SYNC_EVERY_PATH, login: true },
@@ -160,6 +164,8 @@ export interface AppServerOptions {
   readonly move?: MoveHandler;
   // What went in and out of one bucket (QUESTIONS.md B97), and the Payday screen's numbers.
   readonly activity?: (request: IncomingMessage, pot: Pot) => ActivityView | Promise<ActivityView>;
+  // Her rulebook, section 2 (PR 9): Wishlist's list, only in a setup that has it.
+  readonly wishlistActivity?: (request: IncomingMessage) => ActivityView | Promise<ActivityView>;
   readonly payday?: (request: IncomingMessage) => PaydayView | Promise<PaydayView>;
   // The Settings screen's numbers (section 2, 13.1, 13.5).
   readonly settings?: (request: IncomingMessage) => SettingsView | Promise<SettingsView>;
@@ -618,12 +624,15 @@ export function createAppServer(options: AppServerOptions): Server {
     }
     // What went in and out of one bucket: /api/activity/needs.
     const activityPot = /^\/api\/activity\/([^/]+)$/.exec(path)?.[1];
-    if (activityPot !== undefined && options.activity !== undefined) {
+    // Her rulebook, section 2: Wishlist's list, /api/activity/wishlist, from its own option.
+    const herPot = activityPot !== undefined && Object.hasOwn(HER_POT_SLUGS, activityPot) ? options.wishlistActivity : undefined;
+    if (activityPot !== undefined && (options.activity !== undefined || herPot !== undefined)) {
       const pot = potOfSlug(activityPot);
-      if (pot !== null) {
+      const activity = herPot ?? (pot === null || options.activity === undefined ? undefined : (r: IncomingMessage) => (options.activity as NonNullable<typeof options.activity>)(r, pot));
+      if (activity !== undefined) {
         let view: ActivityView;
         try {
-          view = await options.activity(request, pot);
+          view = await activity(request);
         } catch (error) {
           options.onError?.(error);
           send(response, 500, 'application/json; charset=utf-8', JSON.stringify({ error: 'activity-unavailable' }), 'no-store');
@@ -681,7 +690,7 @@ export function createAppServer(options: AppServerOptions): Server {
       return;
     }
 
-    if (APP_PATHS.includes(path) || SCREEN_PATHS.includes(path) || SETUP_PATHS.includes(path) || HER_SCREEN_PATHS.includes(path) || (options.gate !== undefined && path === LOGIN_PATH)) {
+    if (APP_PATHS.includes(path) || SCREEN_PATHS.includes(path) || SETUP_PATHS.includes(path) || HER_SCREEN_PATHS.includes(path) || HER_BUCKET_PATHS.includes(path) || (options.gate !== undefined && path === LOGIN_PATH)) {
       await sendFile(response, join(webRoot, 'index.html'), 'no-cache');
       return;
     }
@@ -772,7 +781,7 @@ async function atTheGate(gate: Gate, request: IncomingMessage, response: ServerR
     send(response, 401, 'application/json; charset=utf-8', JSON.stringify({ error: 'login-needed' }), 'no-store');
     return true;
   }
-  if (path === '/' || APP_PATHS.includes(path) || SCREEN_PATHS.includes(path) || SETUP_PATHS.includes(path) || HER_SCREEN_PATHS.includes(path)) {
+  if (path === '/' || APP_PATHS.includes(path) || SCREEN_PATHS.includes(path) || SETUP_PATHS.includes(path) || HER_SCREEN_PATHS.includes(path) || HER_BUCKET_PATHS.includes(path)) {
     for (const [name, value] of Object.entries(SECURITY_HEADERS)) response.setHeader(name, value);
     response.setHeader('Location', LOGIN_PATH);
     response.setHeader('Cache-Control', 'no-store');
