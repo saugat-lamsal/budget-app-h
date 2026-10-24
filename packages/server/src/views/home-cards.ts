@@ -1,5 +1,5 @@
 import { cardDue, daysBetween, paidAgainst, setAside, type BankBalances, type Book, type CardStatement, type Cents, type EverydayCard, type IsoDate } from '@budget-app/money';
-import type { CardRemindersOff } from './home.js';
+import type { CardRemindersOff, HomeView } from './home.js';
 
 // Her rulebook, 52.1 to 52.3 (PR 7+8): each card on Home. Its statement
 // balance and due date, what the payments since the statement have paid
@@ -11,6 +11,16 @@ import type { CardRemindersOff } from './home.js';
 export interface HomeCardsInput {
   // What each card owed on setup day (52.2, owedAtSetup).
   readonly atSetup: Readonly<Partial<Record<EverydayCard, Cents>>>;
+}
+
+type Tracking = Extract<HomeView, { state: 'tracking' }>;
+
+// Home as her setup sends it: upstream's Home, with the cards added to it
+// (views/home.ts stays upstream's; the keeper adds them, withCards).
+export type HomeWithCards = Exclude<HomeView, Tracking> | (Tracking & { readonly cards?: HomeCards });
+
+export function withCards(view: HomeView, cards: HomeCards | null): HomeWithCards {
+  return view.state !== 'tracking' || cards === null ? view : { ...view, cards };
 }
 
 export type HomeCardState =

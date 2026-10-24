@@ -1,12 +1,14 @@
 import type { SelfCheck } from '@budget-app/money';
-import type { Attention, BankDetail, HomeView } from '@budget-app/server/views';
+// Her setup (52.1): Home with each card, as her server sends it; upstream's has none.
+import type { Attention, BankDetail, HomeWithCards as HomeView } from '@budget-app/server/views';
 import { Fragment, useState } from 'react';
 import { markTakeBackSeen, type Load, type Reload } from '../app/api.js';
-import { activityPath, pathOf, setupPath } from '../app/routes.js';
+import { activityPath, pathOf, setupPath, statementPath } from '../app/routes.js';
 import { Banner, BottomSheet, BucketTile, Button, Card, CountTile, LinkButton, ListRow, MadeUpPill, Money, PeriodRing, ScrollHero, Skeleton, StateMessage, StatusLabel, Tiles } from '../ui/blocks.js';
 import { asOfText, checkedAtText, longDate, shortDate } from '../ui/dates.js';
 import { Icon } from '../ui/Icon.js';
 import { cardNames, withCardNames } from '../ui/card-names.js';
+import { WHY_NOT_SPENDING, cardName, cardStateText, inSavingsText, noStatementText, setAsideText } from './cards-text.js';
 import { cardsOffText, dueText, onItsWayInText, paydayText, stillToSetText, waitingText } from './home-text.js';
 import { WhyList } from './why.js';
 
@@ -67,7 +69,7 @@ type Tracking = Extract<HomeView, { state: 'tracking' }>;
 type TakeBack = Extract<Attention, { kind: 'bank-took-back' }>;
 
 function HomeReady({ view, onChanged }: { readonly view: Tracking; readonly onChanged: () => void }) {
-  const [sheet, setSheet] = useState<'check' | 'savings' | TakeBack | null>(null);
+  const [sheet, setSheet] = useState<'check' | 'savings' | 'cards' | TakeBack | null>(null);
   const close = (): void => setSheet(null);
   const { safeToSpend, payday } = view;
   const savings = view.attention.find((a) => a.kind === 'move-to-savings');
@@ -175,6 +177,7 @@ function HomeReady({ view, onChanged }: { readonly view: Tracking; readonly onCh
         <BucketTile name="Needs" {...view.buckets.needs} href={activityPath('needs')} testId="bucket-needs" />
         <CountTile name="To sort" count={view.waitingInReview} go="Review" href={pathOf('review')} testId="to-sort" />
       </Tiles>
+      {view.cards !== undefined && <CardRows cards={view.cards} onWhy={() => setSheet('cards')} />}
       <Card testId="home-links">
         <ListRow title="All buckets" href={pathOf('buckets')} testId="all-buckets" />
         <ListRow title="Payday" detail="What your last paycheck did" href="/payday" testId="home-payday" />
@@ -215,6 +218,15 @@ function HomeReady({ view, onChanged }: { readonly view: Tracking; readonly onCh
           <p className="sheet__note">Move it from checking to savings in your bank's app. This app never moves money.</p>
         </BottomSheet>
       )}
+      {view.cards !== undefined && (
+        <BottomSheet open={sheet === 'cards'} title={WHY_NOT_SPENDING.title} onClose={close} testId="cards-sheet">
+          {WHY_NOT_SPENDING.paragraphs.map((p) => (
+            <p key={p} className="sheet__note">
+              {p}
+            </p>
+          ))}
+        </BottomSheet>
+      )}
       {view.attention.map((item) =>
         item.kind === 'bank-took-back' ? (
           <TakeBackSheet
@@ -230,6 +242,45 @@ function HomeReady({ view, onChanged }: { readonly view: Tracking; readonly onCh
         ) : null,
       )}
     </>
+  );
+}
+
+// Her rulebook, 52.1 and 52.2: each card, what it owes and that all of it is
+// set aside, where its payment stands in words, and a tap to its statement.
+function CardRows({ cards, onWhy }: { readonly cards: NonNullable<Tracking['cards']>; readonly onWhy: () => void }) {
+  return (
+    <Card title="Your cards" testId="cards">
+      {cards.cards.map((c) => (
+        <ListRow
+          key={c.card}
+          icon="card"
+          tone={c.statement.shown && c.statement.state.kind === 'overdue' ? 'danger' : c.statement.shown ? 'info' : 'warning'}
+          title={
+            c.statement.shown ? (
+              <>
+                {cardName(c.card)} · {c.statement.state.kind === 'overdue' ? <StatusLabel status="overdue" /> : cardStateText(c.statement.state, c.statement.dueDate)}
+              </>
+            ) : (
+              cardName(c.card)
+            )
+          }
+          detail={
+            c.statement.shown ? (
+              <>
+                Statement <Money cents={c.statement.statementBalance} />, due {shortDate(c.statement.dueDate)}; <Money cents={c.statement.paid} /> paid toward it. {setAsideText(c.owes)}
+              </>
+            ) : (
+              `${noStatementText(c.statement.why)} ${setAsideText(c.owes)}`
+            )
+          }
+          trailing={<Money cents={c.owes} testId={`card-${c.card}-owes`} />}
+          href={statementPath(c.card)}
+          testId={`card-${c.card}`}
+        />
+      ))}
+      {cards.inSavings !== null && cards.inSavings > 0 && <ListRow icon="move" title={inSavingsText(cards.inSavings)} testId="cards-in-savings" />}
+      <ListRow icon="info" title={WHY_NOT_SPENDING.title} onClick={onWhy} testId="cards-why" />
+    </Card>
   );
 }
 

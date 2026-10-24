@@ -318,3 +318,20 @@ or "Due" on Wishlist items and cards, never color alone.
   Home's login rows and greyed safe to spend by name, status per bank.
   Tests: two-banks-her.test.ts, sync-random-her.test.ts, her simulated life
   through two Items (harness twoBanks, bothBanks). PLAID_PLAN.md.
+- PR 6 merged (Oct 24, 2026). His answers: HB6 to HB11 agreed; Liabilities
+  stays in products, as upstream; she connects from a computer, no OAuth
+  redirect. His new testing bar for PRs 7 to 12 (point 7).
+- PR 7+8, both cards on Home and each card's statement (branch
+  her-cards-statements). Section 52 in place. Money, read only: a hook on
+  the book (Book.cardEntries), set-aside.ts (52.2: what each card owes as
+  the books count it, from what setup day counted, owedAtSetup) and
+  statement.ts (52.4: lines that add up to the statement balance, with
+  "Not matched" never hidden). Server: Home's card rows (views/home-cards.ts,
+  her setup only), the Statement screen's view (views/statement.ts) at
+  /api/statement/<card> and /statement/<card> (HER_SCREEN_PATHS, kept apart
+  from upstream's SCREEN_PATHS), her step 3 (her_statements, 52.5, kept by
+  each sync in her setup). Web: "Your cards" on Home with the sheet "Why
+  paying your card isn't spending", the Statement screen (by bucket, by
+  paycheck). Readings HB12 to HB18. Random test: her lives, every day each
+  card's owed against the simulated bank, every statement adds up with
+  nothing not matched (cards-random-her.test.ts).

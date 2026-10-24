@@ -3659,5 +3659,19 @@
     "find": "            look: b.lastSync !== null && SYNC_WORDS[b.lastSync.result].look,",
     "replace": "            look: false,",
     "why": "[her-connections] 0.7 a bank whose sync failed needs no look"
+  },
+  {
+    "section": "words",
+    "file": "packages/web/src/screens/cards-text.ts",
+    "find": "  if (owes < 0) return `A credit of ${moneyText(-owes)}: nothing to set aside.`;",
+    "replace": "  if (owes < 0) return `Owes ${moneyText(owes)} now, all of it set aside.`;",
+    "why": "[her-cards] 52.2 a credit reads as owing"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Statement.tsx",
+    "find": "        {view.notMatched !== 0 && (",
+    "replace": "        {view.notMatched > 0 && (",
+    "why": "[her-cards] 52.4 Not matched below zero is hidden"
   }
 ]

@@ -3,9 +3,9 @@
 // in worked-examples.test.ts, so the file checked by hand and the test can
 // never drift apart.
 import { describe, expect, it } from 'vitest';
-import { HER_SETTINGS, HER_SWITCHES, bankSide, cardNotices, changeSettings, daysBetween, openBook, parseDollars, startTracking, withPendingCharges, type Book, type CardStatement, type Cents, type IsoDate } from '../src/index.js';
+import { HER_SETTINGS, HER_SWITCHES, bankSide, cardNotices, cardOwes, cardStatementView, changeSettings, owedAtSetup, setAside, daysBetween, openBook, parseDollars, startTracking, withPendingCharges, type Book, type CardStatement, type Cents, type IsoDate } from '../src/index.js';
 import text from '../worked-examples-h.txt?raw';
-import { LAST_PAYCHECK, PAYROLL, START_DATE, ZERO_POTS, arrived, deposit, paycheck, purchase, sent, transfer } from './helpers.js';
+import { LAST_PAYCHECK, PAYROLL, START_DATE, ZERO_POTS, arrived, deposit, paycheck, posted, purchase, refund, sent, transfer } from './helpers.js';
 
 interface Example {
   number: number;
@@ -167,7 +167,62 @@ const examples: Record<number, () => Record<string, Cents>> = {
       'reminders after the last cent': reminders('2026-10-24'),
     };
   },
+  11: () => {
+    const book = herCardsMonth();
+    const owes = (card: 'everyday-card' | 'second-card'): Cents => cardOwes(book, card, owedAtSetup(EXAMPLE_11_SETUP, card));
+    const capitalOne = owes('everyday-card');
+    const onItsWay = owes('second-card');
+    book.receive(arrived('lands', '2026-10-11', parseDollars('500.00'), 'checking', 'second-card', 'sends'));
+    const aside = setAside(book, { 'everyday-card': owedAtSetup(EXAMPLE_11_SETUP, 'everyday-card'), 'second-card': owedAtSetup(EXAMPLE_11_SETUP, 'second-card') }, parseDollars('6,300.00'));
+    return {
+      'capital one card owes': capitalOne,
+      'amex card owes while the payment is on its way': onItsWay,
+      'amex card owes once it lands': owes('second-card'),
+      'all set aside': aside.total,
+      'in savings': aside.inSavings ?? -1,
+    };
+  },
+  12: () => {
+    const book = herCardsMonth();
+    book.receive(purchase('movie', '2026-10-12', parseDollars('18.00'), 'MADE UP CINEMA', { account: 'everyday-card' }));
+    book.sort('movie', { to: 'wants' }, '2026-10-12');
+    book.receive(purchase('new-place', '2026-10-20', parseDollars('30.00'), 'MADE UP NEW PLACE', { account: 'everyday-card' }));
+    book.receive(refund('back', '2026-10-22', parseDollars('5.00'), 'groceries'));
+    book.receive(purchase('next', '2026-11-01', parseDollars('9.99'), 'MADE UP SHOP', { account: 'everyday-card' }));
+    const before: CardStatement = { card: 'everyday-card', closingDate: '2026-09-30', dueDate: '2026-10-25', statementBalance: parseDollars('435.58'), minimumPayment: parseDollars('35.00') };
+    const view = cardStatementView({ statement: { ...before, closingDate: '2026-10-31', dueDate: '2026-11-25', statementBalance: parseDollars('117.17') }, before, book });
+    const group = (bucket: string): Cents => view.byBucket.find((g) => g.bucket === bucket)?.total ?? 0;
+    return {
+      'carried in': view.carriedIn.amount,
+      needs: group('needs'),
+      wants: group('wants'),
+      'still unsorted': group('unsorted'),
+      'before setup day': group('before-setup'),
+      'not matched': view.notMatched,
+    };
+  },
 };
+
+// Examples 11 and 12: setup day with both cards owing, and charges still
+// pending on each; then her first days on them.
+const EXAMPLE_11_PENDING = [
+  purchase('held-c1', '2026-09-30', parseDollars('23.40'), 'MADE UP DINER', { account: 'everyday-card', pending: true }),
+  purchase('held-amex', '2026-09-30', parseDollars('61.07'), 'MADE UP PHARMACY', { account: 'second-card', pending: true }),
+];
+const EXAMPLE_11_SETUP = { bankBalances: { checking: parseDollars('2,140.55'), savings: parseDollars('6,300.00'), everydayCard: parseDollars('412.18'), secondCard: parseDollars('1,075.92') }, pendingCharges: EXAMPLE_11_PENDING };
+
+function herCardsMonth(): Book {
+  const book = openBook({ date: START_DATE, lastPaycheckDate: LAST_PAYCHECK, oldCardDebt: 0, pots: { ...ZERO_POTS, savings: parseDollars('6,000.00') }, settings: HER, switches: HER_SWITCHES, countedAtSetup: EXAMPLE_11_PENDING });
+  book.receive(purchase('groceries', '2026-10-02', parseDollars('48.27'), 'MADE UP GROCER', { account: 'everyday-card' }));
+  book.sort('groceries', { to: 'needs' }, '2026-10-02');
+  book.receive(posted('held-c1-posted', 'held-c1', '2026-10-03', parseDollars('25.90'), 'MADE UP DINER'));
+  book.sort('held-c1', { to: 'needs' }, '2026-10-03');
+  book.receive(transfer('pays-c1', '2026-10-08', parseDollars('435.58'), 'checking', 'everyday-card'));
+  book.receive(purchase('amex-buy', '2026-10-04', parseDollars('120.00'), 'MADE UP SHOP', { account: 'second-card' }));
+  book.receive(refund('amex-back', '2026-10-06', parseDollars('20.00'), 'amex-buy', 'second-card'));
+  book.receive(sent('sends', '2026-10-09', parseDollars('500.00'), 'checking', 'second-card'));
+  return book;
+}
 
 // Example 7's bank: posted balances, and the charges still pending.
 const EXAMPLE_7_POSTED = { checking: parseDollars('2,140.55'), savings: parseDollars('6,300.00'), everydayCard: parseDollars('412.18'), secondCard: parseDollars('1,075.92') };

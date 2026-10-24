@@ -10,7 +10,6 @@ import { parseRequest } from '../choices.js';
 import { POT_SLUGS, potOfSlug, type ActivityView } from '../views/activity.js';
 import type { AlertsView } from '../views/alerts.js';
 import type { StatusView } from '../views/status.js';
-import { STATEMENT_CARDS, type StatementScreenView } from '../views/statement.js';
 import type { TrendsView } from '../views/trends.js';
 import type { BucketsView } from '../views/buckets.js';
 import type { BankRuleRequest, BankRuleResponse } from '../views/bank-rules.js';
@@ -40,8 +39,10 @@ export const APP_PATHS: readonly string[] = ['/', '/home', '/buckets', '/review'
 export const SCREEN_PATHS: readonly string[] = ['/payday', '/alerts', '/bank', '/status', ...Object.keys(POT_SLUGS).map((slug) => `/buckets/${slug}`)];
 
 // Her rulebook, 52.4 (PR 7+8): each card's statement, opened from Home. Kept
-// apart from upstream's screens. Must match packages/web/src/app/routes.ts
-// HER_SCREEN_ROUTES (a test checks).
+// apart from upstream's screens, and from what the demo loads (views/
+// statement.ts). Must match packages/web/src/app/routes.ts HER_SCREEN_ROUTES
+// (a test checks).
+export const STATEMENT_CARDS = ['everyday-card', 'second-card'] as const;
 export const HER_SCREEN_PATHS: readonly string[] = STATEMENT_CARDS.map((card) => `/statement/${card}`);
 
 // 1.1 to 1.3: the Bank connection screen, the one page Plaid Link opens on
@@ -185,7 +186,7 @@ export interface AppServerOptions {
   // /api/status is not there.
   readonly status?: (request: IncomingMessage) => StatusView | Promise<StatusView>;
   // Her rulebook, 52.4: one card's statement, /api/statement/everyday-card. It only reads.
-  readonly statement?: (request: IncomingMessage, card: (typeof STATEMENT_CARDS)[number]) => StatementScreenView | Promise<StatementScreenView>;
+  readonly statement?: (request: IncomingMessage, card: (typeof STATEMENT_CARDS)[number]) => StatementShown | Promise<StatementShown>;
   // Phase 5, the phone: the Notifications card, for the device asking. Without
   // it (the demo, which sends no alerts), the addresses are not there.
   readonly push?: PushHandlers;
@@ -201,6 +202,11 @@ export interface AppServerOptions {
   // Section 2 (A47): Plaid's webhooks, with the exact bytes of each body.
   // Without it (the demo), the address is not there.
   readonly webhook?: WebhookHandler;
+}
+
+// Her rulebook, 52.4: the statement screen's view (views/statement.ts, StatementScreenView).
+export interface StatementShown {
+  readonly state: string;
 }
 
 export interface WebhookHandler {
@@ -630,7 +636,7 @@ export function createAppServer(options: AppServerOptions): Server {
     // Her rulebook, 52.4: one card's statement: /api/statement/second-card.
     const statementCard = STATEMENT_CARDS.find((card) => path === `/api/statement/${card}`);
     if (statementCard !== undefined && options.statement !== undefined) {
-      let view: StatementScreenView;
+      let view: StatementShown;
       try {
         view = await options.statement(request, statementCard);
       } catch (error) {

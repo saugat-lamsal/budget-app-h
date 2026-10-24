@@ -48,6 +48,7 @@ import { trendsView } from '../trends.js';
 import { beforeSetupOf } from '../trends-db.js';
 import type { TrendsView } from '../views/trends.js';
 import type { ChoiceRequest, ChoiceResponse, MoveRequest, MoveResponse, RuleRequest, RuleResponse, SettingsRequest, SettingsResponse, SetupRequest, SetupResponse } from '../views/choice.js';
+import { withCards, homeCards, type HomeWithCards } from '../views/home-cards.js';
 import { homeView, type BankDetail, type CardRemindersOff, type CheckedAt, type HomeView, type PendingMoneyIn, type WhyLine } from '../views/home.js';
 import { paydayView, type PaydayView } from '../views/payday.js';
 import { reviewView, type ReviewView } from '../views/review.js';
@@ -432,7 +433,7 @@ export class Keeper {
     return { statements, cardsOff };
   }
 
-  home(): HomeView {
+  home(): HomeWithCards {
     const view = homeView({
       today: this.today(),
       book: this.book(),
@@ -451,20 +452,22 @@ export class Keeper {
       // 11.4 (A57): first seen as a time in his home time zone.
       pendingIn: this.#bankNow().pendingIn.map((p) => ({ ...p, firstSeen: p.firstSeen === null || p.firstSeen === undefined ? null : timeIn(this.timeZone(), new Date(p.firstSeen)) })),
       postingExamples: this.#bankNow().postingExamples,
-      // Her rulebook, 52.1 and 52.2: each card, with what is set aside for it.
-      ...this.#cardsOnHome(),
     });
     // 0.5, B82: the last safe to spend the bank backed up, and when.
     if (view.state === 'tracking' && view.safeToSpend.shown) saveLastChecked(this.#db, { amount: view.safeToSpend.amount, at: timeIn(this.timeZone(), this.#now()) });
-    return view;
+    // Her rulebook, 52.1 and 52.2: each card, with what is set aside for it.
+    return this.#withCards(view);
   }
 
-  // Her rulebook, 52.2: what each card owed on setup day, as setup day
-  // counted it. Only in her setup, once tracking has started.
-  #cardsOnHome(): { readonly cards?: { readonly atSetup: Partial<Record<EverydayCard, number>> } } {
-    const setup = this.book() === null || this.#switches().secondCard !== 'on' ? null : readSetupInput(this.#db);
-    if (setup === null) return {};
-    return { cards: { atSetup: { 'everyday-card': owedAtSetup(setup, 'everyday-card'), 'second-card': owedAtSetup(setup, 'second-card') } } };
+  // Her rulebook, 52.1 and 52.2: Home with each card, from what each owed on
+  // setup day as setup day counted it. Only in her setup, once tracking has
+  // started; upstream's Home is upstream's.
+  #withCards(view: HomeView): HomeWithCards {
+    const book = this.book();
+    const setup = book === null || this.#switches().secondCard !== 'on' ? null : readSetupInput(this.#db);
+    if (book === null || setup === null) return view;
+    const atSetup = { 'everyday-card': owedAtSetup(setup, 'everyday-card'), 'second-card': owedAtSetup(setup, 'second-card') };
+    return withCards(view, homeCards({ atSetup }, this.today(), book, this.#bank(), this.#statements(), this.#cardsOff()));
   }
 
   // Her rulebook, 52.4 and 52.5: a card's last statement, from the

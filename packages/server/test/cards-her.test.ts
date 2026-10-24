@@ -15,12 +15,12 @@ import { openDatabase } from '../src/db/database.js';
 import { HER_SCHEMA_VERSION, HER_STEPS, hasHerSteps, migrateHer } from '../src/db/her-steps.js';
 import { saveStatement } from '../src/db/store.js';
 import { cardsNamed } from '../src/http/card-names.js';
-import { HER_SCREEN_PATHS, ROUTES, SCREEN_PATHS, createAppServer } from '../src/http/server.js';
+import { HER_SCREEN_PATHS, ROUTES, SCREEN_PATHS, STATEMENT_CARDS, createAppServer } from '../src/http/server.js';
 import type { PlaidCreditCard } from '../src/plaid/types.js';
 import { HER_START } from '../src/setup-start.js';
 import { homeView, type HomeInput } from '../src/views/home.js';
-import type { HomeCards } from '../src/views/home-cards.js';
-import { STATEMENT_CARDS, statementScreenView } from '../src/views/statement.js';
+import { homeCards, withCards, type HomeCards } from '../src/views/home-cards.js';
+import { statementScreenView } from '../src/views/statement.js';
 import { ACCOUNT_IDS } from './fake-plaid.js';
 import { HER_BANK_RULES, setUpHer } from './her-harness.js';
 import { choose, lifeInAFile, noonInNewYork, type Life } from './keeper-harness.js';
@@ -44,11 +44,17 @@ function herBook(input: Partial<OpenBookInput> = {}): Book {
 const statement = (card: 'everyday-card' | 'second-card', dueDate: IsoDate, balance = 20_000): CardStatement => ({ card, closingDate: '2026-10-05', dueDate, statementBalance: balance, minimumPayment: 3_500 });
 
 function homeInput(book: Book, more: Partial<HomeInput> = {}): HomeInput {
-  return { today: TODAY, book, bank: BANK, needsLogin: false, statements: [], madeUpData: false, seenTakeBacks: new Set(), lastChecked: null, cards: { atSetup: AT_SETUP }, ...more };
+  return { today: TODAY, book, bank: BANK, needsLogin: false, statements: [], madeUpData: false, seenTakeBacks: new Set(), lastChecked: null, ...more };
+}
+
+// Home as her server sends it: upstream's Home, with the cards added (as the keeper does).
+function herHome(input: HomeInput) {
+  if (input.book === null) throw new Error('no book');
+  return withCards(homeView(input), homeCards({ atSetup: AT_SETUP }, input.today, input.book, input.bank, input.statements, input.cardsOff ?? []));
 }
 
 function cardsOf(input: HomeInput): HomeCards {
-  const view = homeView(input);
+  const view = herHome(input);
   if (view.state !== 'tracking' || view.cards === undefined) throw new Error('no cards on Home');
   return view.cards;
 }
@@ -89,6 +95,9 @@ describe('52.1 Home shows each card', () => {
     const b = herBook();
     const cards = cardsOf(homeInput(b, { statements: [statement('everyday-card', '2026-10-30')], cardsOff: [{ card: 'second-card', why: 'no-statement-date' }] }));
     expect(cards.cards[1]?.statement).toEqual({ shown: false, why: 'no-statement-date' });
+    // Reminders off wins over a statement it may still have (break-it: a card whose reminders are off showed a statement).
+    const both = cardsOf(homeInput(b, { statements: [statement('second-card', '2026-10-30', 10_000)], cardsOff: [{ card: 'second-card', why: 'unreadable' }] }));
+    expect(both.cards[1]?.statement).toEqual({ shown: false, why: 'unreadable' });
     expect(cardsOf(homeInput(b, { statements: [] })).cards.map((c) => c.statement)).toEqual([
       { shown: false, why: 'none-yet' },
       { shown: false, why: 'none-yet' },
@@ -96,11 +105,9 @@ describe('52.1 Home shows each card', () => {
   });
 
   it('52.1 upstream\'s Home has no cards: the view is upstream\'s', () => {
-    const view = homeView(homeInput(herBook(), { cards: undefined as never }));
-    const { cards: _, ...rest } = homeInput(herBook());
-    const plain = homeView(rest);
+    const view = homeView(homeInput(herBook()));
     expect(view.state === 'tracking' && 'cards' in view).toBe(false);
-    expect(plain.state === 'tracking' && 'cards' in plain).toBe(false);
+    expect(withCards(view, null)).toBe(view);
   });
 });
 
@@ -118,7 +125,7 @@ describe('52.2 set aside on Home', () => {
 describe('52.3 reminders per card', () => {
   it('52.3 each card\'s due line and overdue line are its own, 7 and 2 days before its own due date', () => {
     const b = herBook();
-    const view = homeView(homeInput(b, { statements: [statement('everyday-card', '2026-10-22'), statement('second-card', '2026-10-15', 10_000)] }));
+    const view = herHome(homeInput(b, { statements: [statement('everyday-card', '2026-10-22'), statement('second-card', '2026-10-15', 10_000)] }));
     if (view.state !== 'tracking') throw new Error('not tracking');
     expect(view.attention.filter((a) => a.kind === 'card-due' || a.kind === 'card-overdue').map((a) => [a.kind, 'card' in a ? a.card : null])).toEqual([
       ['card-overdue', 'second-card'],

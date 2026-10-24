@@ -42,7 +42,7 @@ FROM PR 5 (Oct 23)
    say), a setting to call each card something else is a small change,
    with his OK.
 
-7. PR 7+8 (in progress). Home lists each card's due line and its
+7. DONE in PR 7+8 (Oct 24). Home lists each card's due line and its
    reminders-off line (9.6, 9.8) already; what each card owes in all and
    what is set aside (52.1, 52.2), and each card's statement (52.4), come
    with those PRs.
@@ -70,3 +70,14 @@ FROM PR 6 (Oct 24)
 11. LATER, with upstream. The rehearsal shortcut (npm run serve -- --connect)
     still connects one test bank with all four accounts; her two banks are
     rehearsed through Plaid's own window on the Bank page (roadmap Phase 2).
+
+FROM PR 7+8 (Oct 24)
+
+12. WATCH, connection day. Which day each of her banks dates a posted
+    transaction (Plaid's date), which decides the statement it is on (HB14).
+    If a statement shows "Not matched" against her real one, the lines say
+    which days to look at; a test first, then the fix.
+
+13. LATER, design. Home's attention list and the card rows both say when a
+    card is due (9.6 and 52.1). If it reads as said twice on her phone, the
+    attention row could go in her setup, with his OK.

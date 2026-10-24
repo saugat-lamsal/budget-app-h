@@ -67,6 +67,11 @@ docs/her-questions.txt.
   - CHECK-008, not run against Plaid's real sandbox: her team's sandbox
     keys are not in this session; it is the roadmap's Phase 2 rehearsal.
   - CHECK-009, the human tasks above are still to do on her team.
+- Round 2 (PR 7+8, Oct 24): FAIL, 12 of 15 passed, the same three as round
+  1. PR 7+8 changes no Plaid call: each sync now also keeps every card
+  statement Liabilities sends (her step 3, her_statements, 52.5), in the
+  same transaction as the cursor. Liabilities fields are read as nullable
+  (LIAB-002): a statement with neither date is not kept.
   Re-run build_check_acceptance after any later change to Plaid code, and
   after the rehearsal.
 

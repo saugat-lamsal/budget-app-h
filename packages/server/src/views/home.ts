@@ -1,6 +1,5 @@
 import { assertCents, bucketLevel, cardDue, matchesTextRule, type BankBalances, type Book, type BucketLevel, type CardStatement, type Cents, type IsoDate, type SelfCheck, type TextRule } from '@budget-app/money';
 import { usuallyPostsWithin, type PostingExample } from '../bank/posting-times.js';
-import { homeCards, type HomeCards, type HomeCardsInput } from './home-cards.js';
 import { onItsWayToSavings } from './payday.js';
 
 // What the Home screen shows, worked out on the server from the book. The
@@ -49,9 +48,6 @@ export interface HomeInput {
   // 11.4 (A57): earlier deposits the app saw go from pending to posted, for
   // "usually posts within". None when left out.
   readonly postingExamples?: readonly PostingExample[];
-  // Her rulebook, 52.1 and 52.2 (PR 7+8): each card on Home, with what is
-  // set aside for it. Left out in upstream's setup.
-  readonly cards?: HomeCardsInput;
 }
 
 // 11.4: a deposit still pending at the bank, which the books count only
@@ -173,8 +169,6 @@ export type HomeView =
       // 11.4: money still pending in, oldest first, checking before savings
       // on the same day. Counted nowhere until it posts.
       readonly onItsWayIn: readonly OnItsWayIn[];
-      // Her rulebook, 52.1 and 52.2: each card. Not there in upstream's setup.
-      readonly cards?: HomeCards;
     };
 
 export type SafeToSpendView =
@@ -314,7 +308,6 @@ export function homeView(input: HomeInput): HomeView {
     checkedAt: checkedCheckedAt(input.checkedAt ?? null),
     timeZone: settings.homeTimeZone,
     onItsWayIn: onItsWayIn(input.pendingIn ?? [], settings.paycheckRule, input.postingExamples ?? []),
-    ...(input.cards === undefined ? {} : { cards: homeCards(input.cards, today, book, bank, input.statements, input.cardsOff ?? []) }),
   };
 }
 

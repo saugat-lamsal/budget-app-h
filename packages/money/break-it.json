@@ -4604,5 +4604,117 @@
     "find": "askBeforeSplittingPaycheck: true, secondCardClosingDay: null });",
     "replace": "askBeforeSplittingPaycheck: true, secondCardClosingDay: 1 });",
     "why": "[her-second-card] her setup starts with the second card's closing day set"
+  },
+  {
+    "section": "52",
+    "file": "packages/money/src/book.ts",
+    "find": "const base = { id: entry.id, posted, date: entry.txn.date, description: shown.description, owes: entry.amount, atSetup: entry.countedAtSetup };",
+    "replace": "const base = { id: entry.id, posted, date: entry.txn.date, description: shown.description, owes: entry.amount, atSetup: 0 };",
+    "why": "[her-cards] 52.2 a charge pending on setup day counts twice"
+  },
+  {
+    "section": "52",
+    "file": "packages/money/src/book.ts",
+    "find": "entries.push({ ...base, kind: 'charge', spendingKind: entry.spendingKind, sortedTo: entry.sortedTo, takenBack: takenBack(entry, shown.amount) });",
+    "replace": "entries.push({ ...base, kind: 'charge', spendingKind: entry.spendingKind, sortedTo: entry.sortedTo, takenBack: takenBack(entry, entry.amount) });",
+    "why": "[her-cards] 52.4 a taken-back charge put nothing on its statement"
+  },
+  {
+    "section": "52",
+    "file": "packages/money/src/book.ts",
+    "find": "owes: gone ? 0 : -entry.txn.amount, atSetup: 0 };",
+    "replace": "owes: -entry.txn.amount, atSetup: 0 };",
+    "why": "[her-cards] 52.2 a refund the bank took back still lowers what the card owes"
+  },
+  {
+    "section": "52",
+    "file": "packages/money/src/book.ts",
+    "find": "atSetup: this.#setupLegs.has(entry.id) ? -entry.txn.amount : 0 };",
+    "replace": "atSetup: 0 };",
+    "why": "[her-cards] 52.2 a payment that had landed on setup day counts again"
+  },
+  {
+    "section": "52",
+    "file": "packages/money/src/book.ts",
+    "find": "(entry.txn.kind === 'transfer' || entry.txn.kind === 'transfer-arrived') && entry.txn.to === card) {",
+    "replace": "(entry.txn.kind === 'transfer' || entry.txn.kind === 'transfer-arrived' || entry.txn.kind === 'transfer-sent') && entry.txn.to === card) {",
+    "why": "[her-cards] 52.2 a payment still on its way lowers what the card owes"
+  },
+  {
+    "section": "52",
+    "file": "packages/money/src/set-aside.ts",
+    "find": "for (const entry of book.cardEntries(card)) owes = addCents(owes, subtractCents(entry.owes, entry.atSetup));",
+    "replace": "for (const entry of book.cardEntries(card)) owes = addCents(owes, entry.owes);",
+    "why": "[her-cards] 52.2 what setup day counted counts again"
+  },
+  {
+    "section": "52",
+    "file": "packages/money/src/set-aside.ts",
+    "find": "return { card, owes, setAside: Math.max(owes, 0) };",
+    "replace": "return { card, owes, setAside: owes };",
+    "why": "[her-cards] 52.2 a card with a credit has less than nothing set aside"
+  },
+  {
+    "section": "52",
+    "file": "packages/money/src/set-aside.ts",
+    "find": "return { cards: each, total, inSavings: Math.min(extra, total) };",
+    "replace": "return { cards: each, total, inSavings: extra };",
+    "why": "[her-cards] 52.2 more is in savings than is set aside"
+  },
+  {
+    "section": "52",
+    "file": "packages/money/src/statement.ts",
+    "find": "const inDays = (day: IsoDate): boolean => daysBetween(from, day) >= 0 && daysBetween(day, statement.closingDate) >= 0;",
+    "replace": "const inDays = (day: IsoDate): boolean => daysBetween(from, day) >= 0 && daysBetween(day, statement.closingDate) > 0;",
+    "why": "[her-cards] 52.4 a purchase posted on the closing day is left off"
+  },
+  {
+    "section": "52",
+    "file": "packages/money/src/statement.ts",
+    "find": "const from = addDays(before === null ? monthBefore(statement.closingDate) : before.closingDate, 1);",
+    "replace": "const from = before === null ? monthBefore(statement.closingDate) : before.closingDate;",
+    "why": "[her-cards] 52.4 the statement starts on the closing day before"
+  },
+  {
+    "section": "52",
+    "file": "packages/money/src/statement.ts",
+    "find": "const amount = entry.takenBack === null ? entry.owes : entry.takenBack.owed;",
+    "replace": "const amount = entry.owes;",
+    "why": "[her-cards] 52.4 a charge taken back is on no statement"
+  },
+  {
+    "section": "52",
+    "file": "packages/money/src/statement.ts",
+    "find": "return nonZero([{ where: 'before-setup', amount: entry.atSetup }, ...spread(entry.sortedTo, rest)]);",
+    "replace": "return nonZero([...spread(entry.sortedTo, amount)]);",
+    "why": "[her-cards] 52.4 a charge pending on setup day is all under its bucket"
+  },
+  {
+    "section": "52",
+    "file": "packages/money/src/statement.ts",
+    "find": "if (refund && -amount === sum) return parts.map((p) => ({ where: p.where, amount: -p.amount }));",
+    "replace": "if (refund && -amount === sum) return [{ where: first.where, amount }];",
+    "why": "[her-cards] 52.4 a refund of all of a split purchase all goes to its first bucket"
+  },
+  {
+    "section": "52",
+    "file": "packages/money/src/statement.ts",
+    "find": "return nonZero([{ where: to === 'unsorted' || to === 'needs' || to === 'wants' ? to : 'credit', amount }]);",
+    "replace": "return nonZero([{ where: to === 'needs' || to === 'wants' ? to : 'unsorted', amount }]);",
+    "why": "[her-cards] 52.4 a refund that is not hers is a purchase line"
+  },
+  {
+    "section": "52",
+    "file": "packages/money/src/statement.ts",
+    "find": "const periodOf = (day: IsoDate): StatementPeriod | undefined => periods.findLast((p) => daysBetween(p.startDate, day) >= 0) ?? periods[0];",
+    "replace": "const periodOf = (day: IsoDate): StatementPeriod | undefined => periods.find((p) => daysBetween(p.startDate, day) >= 0) ?? periods[0];",
+    "why": "[her-cards] 52.4 every purchase is in the first pay period"
+  },
+  {
+    "section": "52",
+    "file": "packages/money/src/statement.ts",
+    "find": "notMatched: subtractCents(subtractCents(statement.statementBalance, carriedIn.amount), charged),",
+    "replace": "notMatched: 0,",
+    "why": "[her-cards] 52.4 Not matched is hidden"
   }
 ]

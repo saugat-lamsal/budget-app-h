@@ -280,3 +280,70 @@ Oct 24: still one cent short of 812.40, so the reminder comes again.
 none is 0.00.)
 
 Check: paid by the first reminder 35.00 | reminders on the first reminder day 1.00 | paid by the second reminder 812.39 | reminders on the second reminder day 1.00 | still to pay on the second reminder day 0.01 | reminders after the last cent 0.00
+
+
+========================================================================
+EXAMPLE 11. What is set aside for each card (52.2)
+========================================================================
+
+Setup day, Oct 1. The Capital One card owes 412.18, with 23.40 still
+pending: 435.58. The Amex card owes 1,075.92, with 61.07 still pending:
+1,136.99. The savings bucket gets 6,000.00; the savings account holds
+6,300.00.
+
+Every purchase came out of a bucket the day it was made (4.1), so what is
+set aside for a card is all of what it owes as the app counts it.
+
+Capital One card:
+  Setup day                                        435.58
+  Oct 2  groceries                                + 48.27
+  Oct 3  the pending 23.40 posts as 25.90 (a tip)  + 2.50
+  Oct 8  she pays it from checking               - 435.58
+  Owes now, all set aside                           50.77
+
+Amex card:
+  Setup day                                      1,136.99
+  Oct 4  a purchase                              + 120.00
+  Oct 6  part of it refunded                      - 20.00
+  Oct 9  she sends 500.00; it is on its way: nothing yet
+  Owes while the payment is on its way           1,236.99
+  Oct 11 the payment lands                       - 500.00
+  Owes once it lands                               736.99
+
+All set aside on Oct 11: 50.77 + 736.99 = 787.76.
+The savings account holds 6,300.00 - 6,000.00 = 300.00 more than the
+savings bucket. That 300.00 is part of the set-aside money, in savings
+rather than checking (it is less than 787.76, so all of it counts).
+
+Check: capital one card owes 50.77 | amex card owes while the payment is on its way 1,236.99 | amex card owes once it lands 736.99 | all set aside 787.76 | in savings 300.00
+
+
+========================================================================
+EXAMPLE 12. The Capital One card's statement, line by line (52.4)
+========================================================================
+
+The same setup day as Example 11. The statement before closed Sep 30 with
+435.58 on it. This one runs Oct 1 to Oct 31.
+
+Oct 2   groceries, sorted to needs                  48.27
+Oct 3   the charge pending on setup day posts       25.90
+        setup day counted 23.40 of it: before setup day
+        the 2.50 more is sorted to needs
+Oct 8   she pays 435.58 (a payment: carried-in line)
+Oct 12  a movie, sorted to wants                    18.00
+Oct 20  a new place, still waiting in review       30.00
+Oct 22  5.00 of the groceries refunded              -5.00
+Nov 1   9.99 more: after the closing day, on the next one
+
+The bank's statement balance: 0.00 + 48.27 + 25.90 + 18.00 + 30.00 - 5.00
+= 117.17.
+
+Carried in: 435.58 - 435.58 paid                     0.00
+Needs: 48.27 + 2.50 - 5.00                          45.77
+Wants                                               18.00
+Still unsorted                                      30.00
+Before setup day                                    23.40
+Add them up: 0.00 + 45.77 + 18.00 + 30.00 + 23.40 = 117.17, the statement
+balance exactly, so nothing is "Not matched".
+
+Check: carried in 0.00 | needs 45.77 | wants 18.00 | still unsorted 30.00 | before setup day 23.40 | not matched 0.00

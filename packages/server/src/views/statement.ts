@@ -11,10 +11,6 @@ import type { CardRemindersOff } from './home.js';
 // statements, the book and the bank history; the screen only formats it. It
 // only reads.
 
-// Each card's address: /statement/everyday-card. Must match
-// packages/web/src/app/routes.ts (a test checks).
-export const STATEMENT_CARDS: readonly EverydayCard[] = ['everyday-card', 'second-card'];
-
 export type StatementScreenView =
   | { readonly state: 'ready'; readonly today: IsoDate; readonly madeUpData: boolean; readonly statement: StatementView }
   // No statement of this card can be read yet: none has come, or its
