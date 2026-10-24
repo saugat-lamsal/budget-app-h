@@ -23,8 +23,10 @@ Finish line: the plan is approved, and PR 1 is merged.
 
 ## Phase 1. Her setup in the code (large)
 
-Each pull request stops for his review before it is merged. The ones that
-change the money math get the full testing bar (CLAUDE.md, point 7).
+Each money-math pull request stops for his review before it is merged.
+From PR 7 on, each PR gets the bar CLAUDE.md's point 7 gives it (his OK,
+Oct 24, 2026): PRs 7 and 8 are one PR, and 10 and 11 are one PR; those two
+are view and read-only and merge by themselves when CI is green.
 
 - PR 2: hosting config for her own Fly app (no account made).
 - PR 3: the mom reserve and the old card, switched off and hidden. Her
@@ -32,12 +34,12 @@ change the money math get the full testing bar (CLAUDE.md, point 7).
 - PR 4: "Ask before splitting a paycheck". Full bar.
 - PR 5: the second card. Full bar.
 - PR 6: two bank connections. The long runs through the bank connection.
-- PR 7: both cards on Home, set aside, reminders per card.
-- PR 8: the statement view, per card.
+- PR 7+8: both cards on Home, set aside, reminders per card, and the
+  statement view, per card. View and read-only.
 - PR 9: the Wishlist bucket, and moving Wishlist money for a purchase
-  (50.4). Full bar. Second opinion recommended.
-- PR 10: Wishlist items. Full bar.
-- PR 11: Trends for her setup.
+  (50.4). Money math: her lives 200 x 2 years, break-it about 25, his
+  review. Second opinion recommended.
+- PR 10+11: Wishlist items, and Trends for her setup. View and read-only.
 - PR 12: the end check: break-it on every break new in PRs 3 to 11, 1,000
   of her simulated lives of 5 years, 20 years through the bank connection
   and the database with restarts, an agent through a full pay period on

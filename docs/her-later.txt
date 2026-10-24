@@ -42,20 +42,22 @@ FROM PR 5 (Oct 23)
    say), a setting to call each card something else is a small change,
    with his OK.
 
-7. LATER, PR 7 and PR 8. Home lists each card's due line and its
+7. PR 7+8 (in progress). Home lists each card's due line and its
    reminders-off line (9.6, 9.8) already; what each card owes in all and
    what is set aside (52.1, 52.2), and each card's statement (52.4), come
    with those PRs.
 
 FROM PR 6 (Oct 24)
 
-8. QUESTION for him (PLAID_PLAN.md). Plaid's guidance puts Liabilities in
+8. DONE Oct 24: kept in products, as upstream (his call). Was: QUESTION
+   for him (PLAID_PLAN.md). Plaid's guidance puts Liabilities in
    Link's additional_consented_products rather than products (LIAB-007).
    The app asks for both as products, as upstream does. For her two banks
    it changes nothing (both support Liabilities, and the app reads it on
    every sync); changing it means changing upstream's code too.
 
-9. LATER, if she ever wants to connect from the phone. Connecting is done
+9. LATER (his call Oct 24: she connects from a computer). If she ever
+   wants to connect from the phone. Connecting is done
    on a computer (Plaid's login opens in a window of its own). From the
    home-screen app on her iPhone, OAuth banks (Capital One and American
    Express are both OAuth) need a redirect address registered on her Plaid
