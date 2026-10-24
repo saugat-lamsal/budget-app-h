@@ -11,7 +11,8 @@ for upstream's setup (one bank, the old card, the mom reserve), with the
 texts already moved here from section H in their places (PR 3: "Off in this
 setup" after section 1, section 2, 12.2, 40.2 and 40.4; PR 4: section 2,
 3.1, 10.15, 13.2 and section 51; PR 5: section 1, 1.2, 4.1, 4.8, 5.1, 9.1,
-9.3, 9.8, 12.1, 12.6 and 14.2). The rest of her
+9.3, 9.8, 12.1, 12.6 and 14.2; PR 6: 0.5, 0.7, 1.1, 1.3, section 2's sync
+line, 10.5, 10.7, 10.13 and 12.3). The rest of her
 setup is in section "H. Approved for her setup, not built yet" at the end:
 the texts he approved on Oct 23, 2026 (docs/her-plan.txt). A text there is not in
 force until the pull request named above it moves it into its place here,
@@ -27,10 +28,11 @@ sections from 60.
      the app. Nothing is hard-coded.
 0.3  Changing a setting never rewrites a past pay period.
 0.4  The app is read-only. It never moves money.
-0.5  If the app's totals do not match the bank, it says so instead of showing
-     a number it cannot back up. If the bank cannot be read, Home shows the
-     last safe to spend that the bank backed up, greyed, with the day and
-     time it was checked.
+0.5  If the app's totals do not match the banks, it says so instead of
+     showing a number it cannot back up. If either bank cannot be read,
+     Home shows the last safe to spend that both banks backed up, greyed,
+     with the day and time it was checked, and says which bank could not
+     be read.
 0.6  What the bank sent and every answer you give are kept in order, each
      with the totals after it. If they no longer replay to those totals (a
      fix to the money math that changes what an old event does), the app
@@ -48,6 +50,7 @@ sections from 60.
      holds, and that every one replayed to its totals when the books opened
      (0.6); since when the totals have not matched the bank, if they do not
      (10.4); and how many alerts wait to be sent. It shows no amounts.
+     With two connections, each bank's last read and last sync, by name.
 0.8  When the app cannot be reached. If the phone cannot reach the app's
      server when it opens a screen (no answer within 15 seconds, or the
      host saying the server is not running), it shows one fixed page built
@@ -65,12 +68,13 @@ sections from 60.
 
 Both cards are used day to day and work the same way.
 
-1.1  Connecting the bank. "Connect the bank" is offered only while there
-     is no connection. It asks first: it uses 1 of the 10 connections Plaid
-     allows, and one that is removed never comes back. The bank's own login
-     opens (through Plaid). The app keeps the connection the moment it gets
-     it, sealed, on the server only. There is only ever one connection: the
-     app never makes a second, and never removes one.
+1.1  Connecting the banks. This setup has two connections: Capital One,
+     then American Express. "Connect a bank" is offered while fewer than
+     two are connected. It asks first: each connection uses 1 of the 10
+     Plaid allows, and one that is removed never comes back. Each bank's
+     own login opens (through Plaid). The app keeps each connection the
+     moment it gets it, sealed, on the server only. The app never makes
+     a third, never connects the same bank twice, and never removes one.
 1.2  Which account is which. After connecting, before setup day, you say
      which of the banks' accounts is checking, savings, the Capital One
      card, and the Amex card, each once, from either connection. Nothing
@@ -78,11 +82,11 @@ Both cards are used day to day and work the same way.
      missing, log in to its bank again to add it (1.3). Once tracking
      starts they cannot change. An account that is none of the four is
      never read.
-1.3  Logging in to the bank again. When the bank needs it (10.5), when its
-     permission is running out (10.13), or to add an account that is
-     missing, Settings offers "Log in to the bank again". It keeps the same
-     connection: it never uses another of the 10, and nothing already read
-     changes.
+1.3  Logging in to a bank again. For each connection: when that bank
+     needs it (10.5), when its permission is running out (10.13), or to
+     add an account that is missing, Settings offers "Log in to Capital
+     One again" (or American Express). It keeps the same connection: it
+     never uses another of the 10, and nothing already read changes.
 
 
 ## Off in this setup
@@ -118,6 +122,9 @@ offered anywhere.
   statements, or a change to the connection. The timer stays, for a webhook
   that never comes. When the app starts, it syncs at once if one is due. A sync that fails changes nothing and is
   tried again at the next time. A change to this is logged (13.5).
+  Each sync reads both banks. Plaid's webhook for one bank syncs that
+  bank. A sync where one bank fails keeps what the other read, and the
+  failed one is tried again at the next time.
 - Bank permission ending: told 7 days before the bank's permission to read
   your accounts runs out (10.13).
 - History at connection: when the bank is connected, the app asks it for
@@ -383,12 +390,14 @@ offered anywhere.
       time while it lasts. Until then Home and Buckets say the bank is
       still catching up, with the difference.
 10.5  Bank connection needs you to log in again. Told the same way as 10.4.
+      For each connection, and each alert names the bank.
 10.6  The bank took back a transaction the app had counted (4.10). Once,
       when it happens. On Home it stays in Needs attention until you mark it
       seen.
 10.7  The bank has not been read for 24 hours (a setting): the sync keeps
       failing, or the app was not running. Told once, when the last good
       read of the bank is that old, and again only after a good read.
+      For each connection, and each alert names the bank.
 10.8  Quiet hours (section 2): no alert is sent from 10:00 PM to 7:00 AM.
       What comes due then waits until they end, and says when it was due:
       "Was due Sat, Oct 3, 8:00 PM." Every alert that goes out late says
@@ -421,7 +430,7 @@ offered anywhere.
       told once, 7 days before it (section 2), at the daily review time.
       Logging in to the bank again before then moves the date, and nothing
       is lost. If it runs out anyway, the bank needs you to log in again
-      (10.5).
+      (10.5). For each connection, and each alert names the bank.
 10.14 Payday: when a paycheck is counted, you are told how much to move
       to savings (3.8) and, with the payoff countdown on, the old card's
       share this payday (9.5). At once; quiet hours apply (10.8); a tap
@@ -475,7 +484,9 @@ offered anywhere.
       (3.7, 4.5, 6.1).
 12.3  The two must be equal. If not, the app shows a warning with the
       difference: the bank side plus money in transit (12.5), minus the app
-      side.
+      side. The check uses each bank's latest good read. When one bank was
+      read and the other could not be, the check waits, as when the bank
+      is still catching up (10.4).
 12.4  The old card balance is tracked separately as debt and is not part of
       this check.
 12.5  Money in transit: a transfer that has left one of your accounts but not
@@ -1168,37 +1179,12 @@ change with the answer.
 ### PR 5. The second card
 
   In place: section 1, 1.2, 4.1, 4.8, 5.1, 9.1, 9.3, 9.8, 12.1, 12.6 and
-  14.2. (Until PR 6, 1.1 is as it was: one connection, and all four
-  accounts are picked from it.)
+  14.2.
 
 ### PR 6. Two bank connections
 
-  1.1   Connecting the banks. This setup has two connections: Capital One,
-        then American Express. "Connect a bank" is offered while fewer than
-        two are connected. It asks first: each connection uses 1 of the 10
-        Plaid allows, and one that is removed never comes back. Each bank's
-        own login opens (through Plaid). The app keeps each connection the
-        moment it gets it, sealed, on the server only. The app never makes
-        a third, never connects the same bank twice, and never removes one.
-  1.3   Logging in to a bank again. For each connection: when that bank
-        needs it (10.5), when its permission is running out (10.13), or to
-        add an account that is missing, Settings offers "Log in to Capital
-        One again" (or American Express). It keeps the same connection: it
-        never uses another of the 10, and nothing already read changes.
-  0.5   If the app's totals do not match the banks, it says so instead of
-        showing a number it cannot back up. If either bank cannot be read,
-        Home shows the last safe to spend that both banks backed up,
-        greyed, with the day and time it was checked, and says which bank
-        could not be read.
-  0.7   As now, with each connection's last read and last sync.
-  12.3, a sentence added: The check uses each bank's latest good read. When
-  one bank was read and the other could not be, the check waits, as when
-  the bank is still catching up (10.4).
-  10.5, 10.7 and 10.13: for each connection, and each alert names the bank.
-
-  Section 2, the sync line: each sync reads both banks. Plaid's webhook for
-  one bank syncs that bank. A sync where one bank fails keeps what the
-  other read, and the failed one is tried again at the next time.
+  In place: 0.5, 0.7, 1.1, 1.3, section 2's sync line, 10.5, 10.7, 10.13
+  and 12.3.
 
 ### PR 7. Both cards on Home, set aside, reminders per card
 

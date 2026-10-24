@@ -207,7 +207,7 @@ export interface BankHandlers {
   readonly link: (request: IncomingMessage, link: BankLinkRequest) => Promise<BankLinkAnswer>;
   readonly connected: (request: IncomingMessage, connected: BankConnectedRequest) => Promise<BankAnswer>;
   readonly roles: (request: IncomingMessage, roles: BankRolesRequest) => BankAnswer;
-  readonly read: (request: IncomingMessage, read: { readonly loggedInAgain?: true }) => Promise<BankAnswer>;
+  readonly read: (request: IncomingMessage, read: { readonly loggedInAgain?: true; readonly bank?: 1 | 2 }) => Promise<BankAnswer>;
 }
 
 export interface PushHandlers {
@@ -805,16 +805,31 @@ function exactly(value: unknown, keys: readonly string[]): value is Record<strin
   return typeof value === 'object' && value !== null && !Array.isArray(value) && Object.keys(value).sort().join() === [...keys].sort().join();
 }
 
+// Her rulebook, 1.3 (PR 6): which of her banks.
+const isBank = (value: unknown): value is 1 | 2 => value === 1 || value === 2;
+
+// Her rulebook, 1.1 (HB8): the bank Link says she logged in to, as Link hands it on.
+function institutionOf(value: unknown): { readonly id: string; readonly name: string } | null {
+  if (!exactly(value, ['id', 'name'])) return null;
+  const { id, name } = value;
+  return typeof id === 'string' && /^ins_[0-9]{1,12}$/.test(id) && typeof name === 'string' && name.trim().length > 0 && name.length <= 100 ? { id, name: name.trim() } : null;
+}
+
 // What the Bank screen sends, parsed strictly; null when it is not that.
 async function bankAnswer(bank: BankHandlers, action: Exclude<keyof typeof BANK_PATHS, 'view'>, request: IncomingMessage, sent: unknown): Promise<BankLinkAnswer | BankAnswer | null> {
   switch (action) {
     case 'link':
       if (exactly(sent, ['mode', 'yes']) && sent['mode'] === 'connect' && typeof sent['yes'] === 'boolean') return bank.link(request, { mode: 'connect', yes: sent['yes'] });
       if (exactly(sent, ['mode']) && sent['mode'] === 'login-again') return bank.link(request, { mode: 'login-again' });
+      if (exactly(sent, ['mode', 'bank']) && sent['mode'] === 'login-again' && isBank(sent['bank'])) return bank.link(request, { mode: 'login-again', bank: sent['bank'] });
       return null;
     case 'connected': {
-      const token = exactly(sent, ['publicToken']) ? sent['publicToken'] : null;
-      return typeof token === 'string' && /^public-[a-z]+-[A-Za-z0-9-]{1,200}$/.test(token) ? bank.connected(request, { publicToken: token }) : null;
+      const named = exactly(sent, ['publicToken', 'institution']);
+      const token = named || exactly(sent, ['publicToken']) ? (sent as Record<string, unknown>)['publicToken'] : null;
+      if (typeof token !== 'string' || !/^public-[a-z]+-[A-Za-z0-9-]{1,200}$/.test(token)) return null;
+      if (!named) return bank.connected(request, { publicToken: token });
+      const institution = institutionOf((sent as Record<string, unknown>)['institution']);
+      return institution === null ? null : bank.connected(request, { publicToken: token, institution });
     }
     case 'roles': {
       if (!exactly(sent, ['roles', 'yes']) || typeof sent['yes'] !== 'boolean') return null;
@@ -826,6 +841,7 @@ async function bankAnswer(bank: BankHandlers, action: Exclude<keyof typeof BANK_
     case 'read':
       if (isEmptyObject(sent)) return bank.read(request, {});
       if (exactly(sent, ['loggedInAgain']) && sent['loggedInAgain'] === true) return bank.read(request, { loggedInAgain: true });
+      if (exactly(sent, ['loggedInAgain', 'bank']) && sent['loggedInAgain'] === true && isBank(sent['bank'])) return bank.read(request, { loggedInAgain: true, bank: sent['bank'] });
       return null;
   }
 }

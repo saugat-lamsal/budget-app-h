@@ -110,3 +110,32 @@ HB7 (PR 5). Until PR 6 brings her second connection, the app still makes
     changed. Her steps run only in her setup (her server's start, or the
     first time a second card is picked), so upstream's database is exactly
     upstream's.
+
+HB8 (PR 6). Which bank is which. "Capital One, then American Express"
+    (1.1) is the order the app asks in; it does not check which bank a
+    connection is, since the rehearsal on Plaid's test bank connects two
+    made-up banks. Each bank is named on her screens and in her alerts by
+    the name Plaid gives it when she connects it ("Log in to Capital One
+    again"), kept with the connection. "Never connects the same bank
+    twice": a connection to a bank already connected is refused before
+    Link's answer is swapped for a key, as Plaid's guidance asks, so the
+    app keeps nothing of it. One connection is made at a time.
+
+HB9 (PR 6). A bank that cannot be read. As now, a bank cannot be read
+    while it wants a new login (10.5); then Home shows the last safe to
+    spend both banks backed up, greyed, and names the bank (0.5). 12.3's
+    "could not be read" is wider: that bank's last sync failed, for any
+    reason. From then until a sync of that bank works, the check waits: a
+    difference is shown as "still catching up", nothing is told (10.4),
+    and a difference starts counting its 12 hours only once both banks'
+    last syncs worked. 10.7 still tells, for that bank, after 24 hours.
+
+HB10 (PR 6). Alerts per bank. 10.5, 10.7 and 10.13 are each told for each
+    connection, with its bank's name, and each bank's are kinds of their own
+    (10.9). Upstream's setup, with one connection, keeps its own words.
+
+HB11 (PR 6). Webhooks. A webhook names its connection by Plaid's item_id,
+    and syncs that bank only; one about neither connection is refused. The
+    timer's sync reads both banks, one after the other. Pointing the
+    webhooks at the hosted server (serve/webhook-address.mjs) points both
+    connections; a new connection gets the address when it is made.

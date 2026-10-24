@@ -1,5 +1,6 @@
 import type { Book, Cents, IsoDate } from '@budget-app/money';
 import { bankAtRead, bankView } from '../bank/balances.js';
+import { connectionAt, noteBankRead, saveConnectionStateAt, savePermissionEndsAt, type BankNumber } from '../bank/connections.js';
 import type { BankAtRead } from '../bank/why.js';
 import type { TokenBox } from '../crypto/token-box.js';
 import type { Db } from '../db/database.js';
@@ -9,14 +10,11 @@ import {
   nextSyncNumber,
   readAccounts,
   readBankRules,
-  readConnection,
   readItems,
   readStatements,
   rolesOf,
   saveAccount,
-  saveConnectionState,
   saveItem,
-  savePermissionEnds,
   saveStatement,
   saveSync,
 } from '../db/store.js';
@@ -58,6 +56,9 @@ export interface SyncInput {
   readonly afterSave?: (result: SyncResult) => void;
   // For tests only: how what the bank sent becomes what the book is given.
   readonly plan?: (input: PlanInput) => Plan;
+  // Her rulebook, section 2 (PR 6): which of her banks this sync reads; bank
+  // 1, upstream's one connection, when left out.
+  readonly bank?: BankNumber;
 }
 
 export interface SyncResult {
@@ -89,16 +90,17 @@ const TRIES = 3;
 
 export async function syncBank(input: SyncInput): Promise<SyncResult> {
   const { db, log } = input;
+  const bank = input.bank ?? 1;
   for (let attempt = 1; ; attempt += 1) {
-    const connection = readConnection(db);
-    if (connection === null) throw new Error('there is no bank connection yet');
+    const connection = connectionAt(db, bank);
+    if (connection === null) throw new Error(bank === 1 ? 'there is no bank connection yet' : 'her second bank is not connected yet');
     const key = new BankKey(input.box.open(connection.sealedKey, connection.itemId));
     let fetched: Fetched;
     try {
       fetched = await fetchUpdate(input.plaid, key, connection.cursor, input.pageSize ?? 250);
     } catch (error) {
       if (error instanceof PlaidError && error.errorCode === 'ITEM_LOGIN_REQUIRED') {
-        if (!connection.needsLogin) saveConnectionState(db, { cursor: connection.cursor, historyComplete: connection.historyComplete, needsLogin: true });
+        if (!connection.needsLogin) saveConnectionStateAt(db, bank, { cursor: connection.cursor, historyComplete: connection.historyComplete, needsLogin: true });
         log.warn('the bank wants a new login');
         return { changed: !connection.needsLogin, needsLogin: true, added: 0, modified: 0, removed: 0, sent: 0, attention: [], historyComplete: connection.historyComplete };
       }
@@ -184,7 +186,8 @@ function checkPage(page: TransactionsSyncResponse): TransactionsSyncResponse {
 // Inside one database transaction: work out the plan and write all of it.
 function save(input: SyncInput, startCursor: string | null, fetched: Fetched): SyncResult | 'cursor-moved' {
   const { db } = input;
-  const connection = readConnection(db);
+  const bank = input.bank ?? 1;
+  const connection = connectionAt(db, bank);
   if (connection === null) throw new Error('the bank connection is gone');
   if (connection.cursor !== startCursor) return 'cursor-moved';
 
@@ -251,13 +254,16 @@ function save(input: SyncInput, startCursor: string | null, fetched: Fetched): S
     attention: plan.attention,
     historyComplete,
   };
+  // Her setup (10.7, 12.3): a good read of this bank.
+  const at = input.readAt?.();
+  if (at !== undefined) noteBankRead(db, bank, at);
   if (!changed) {
-    if (input.readAt !== undefined) saveBankRead(db, { at: input.readAt(), changed, sync: null, ...whatTheReadFound(db, book, sync - 1) });
+    if (at !== undefined) saveBankRead(db, { at, changed, sync: null, ...whatTheReadFound(db, book, sync - 1) });
     return result;
   }
 
   for (const account of changedAccounts) saveAccount(db, account, JSON.stringify(account), sync);
-  if (fetched.permissionEnds !== undefined && fetched.permissionEnds !== connection.permissionEnds) savePermissionEnds(db, fetched.permissionEnds);
+  if (fetched.permissionEnds !== undefined && fetched.permissionEnds !== connection.permissionEnds) savePermissionEndsAt(db, bank, fetched.permissionEnds);
   for (const { accountId, card } of changedCards) saveStatement(db, accountId, JSON.stringify(card), sync);
   for (const item of plan.items) saveItem(db, item);
   // Each with the day of the sync, and the book's totals after it.
@@ -265,7 +271,7 @@ function save(input: SyncInput, startCursor: string | null, fetched: Fetched): S
   for (const attention of plan.attention) addAttention(db, sync, attention);
   // With nothing new from Plaid, the cursor stays as it was.
   const cursor = plaidSentNothing && connection.cursor !== null ? connection.cursor : fetched.cursor;
-  saveConnectionState(db, { cursor, historyComplete, needsLogin: false });
+  saveConnectionStateAt(db, bank, { cursor, historyComplete, needsLogin: false });
   saveSync(db, {
     id: sync,
     today: input.today,
@@ -277,7 +283,7 @@ function save(input: SyncInput, startCursor: string | null, fetched: Fetched): S
     sent: plan.events.length,
     held: plan.attention.length,
   });
-  if (input.readAt !== undefined) saveBankRead(db, { at: input.readAt(), changed, sync, ...whatTheReadFound(db, book, sync) });
+  if (at !== undefined) saveBankRead(db, { at, changed, sync, ...whatTheReadFound(db, book, sync) });
   input.beforeCommit?.();
   return result;
 }

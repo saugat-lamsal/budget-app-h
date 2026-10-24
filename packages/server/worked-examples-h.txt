@@ -88,3 +88,44 @@ Oct 6: the 100.00 reaches the second card, a day late. It owes
         paying a card is not spending (5.1).
 
 Check: starting money 7,287.50 | needs 3,087.50 | in transit after it leaves 100.00 | difference after it leaves 0.00 | bank side after it lands 7,287.50 | difference after it lands 0.00 | second card counted after it lands 162.50 | needs after it lands 3,087.50
+
+
+========================================================================
+EXAMPLE 3. Her two banks: the second cannot be read for a day (12.3,
+           section 2, HB9)
+========================================================================
+
+Her first bank has checking, savings and the everyday card; her second
+bank has her second card. On setup day, Oct 1:
+        Checking (first bank)                     3,000.00
+        Savings (first bank)                      5,000.00
+        The everyday card owes (first bank)         450.00
+        The second card owes (second bank)          250.00
+
+Step 1. Starting money (14.2) = checking + savings - both cards:
+        3,000.00 + 5,000.00 - 450.00 - 250.00 = 7,300.00
+        She assigns savings 4,000.00 and wants 200.00, and the rest to
+        needs: 7,300.00 - 4,000.00 - 200.00 = 3,100.00.
+
+Oct 2: a grocery of 40.00 posts on the everyday card, and a cafe of 25.00
+on the second card. The second bank cannot be read today; the first can.
+        The check uses each bank's latest good read (12.3): the second
+        card still as read on Oct 1, 250.00.
+        Bank side = 3,000.00 + 5,000.00 - (450.00 + 40.00) - 250.00 = 7,260.00
+        App side: the 40.00 is waiting to be sorted (no rule for it),
+        7,300.00 - 40.00 = 7,260.00. Difference 0.00.
+        Safe to spend = wants - unsorted spending = 200.00 - 40.00 = 160.00.
+
+Oct 3: both banks are read. The cafe comes in from the second bank.
+        Bank side = 3,000.00 + 5,000.00 - 490.00 - (250.00 + 25.00) = 7,235.00
+        App side = 7,300.00 - 40.00 - 25.00 = 7,235.00. Difference 0.00.
+        Safe to spend = 200.00 - 65.00 = 135.00.
+
+Oct 4: checking shows 10.00 less at the first bank with no transaction
+yet, and the second bank cannot be read again.
+        Bank side = 2,990.00 + 5,000.00 - 490.00 - 275.00 = 7,225.00
+        App side 7,235.00. Difference = 7,225.00 - 7,235.00 = -10.00.
+        One bank could not be read, so the check waits (HB9): Home says
+        the bank is still catching up, and nothing is told.
+
+Check: starting money 7,300.00 | bank side with the second bank not read 7,260.00 | difference with the second bank not read 0.00 | safe to spend with the second bank not read 160.00 | bank side once both are read 7,235.00 | safe to spend once both are read 135.00 | difference while it waits -10.00

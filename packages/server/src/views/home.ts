@@ -15,6 +15,10 @@ export interface HomeInput {
   readonly bank: BankBalances | null;
   // 10.5: the bank connection needs him to log in again.
   readonly needsLogin: boolean;
+  // Her rulebook, 0.5 and 10.5 (PR 6): each of her banks that wants her to
+  // log in again, by name, first bank first; in place of needsLogin. Left
+  // out in upstream's setup.
+  readonly banksToLogIn?: readonly { readonly bank: 1 | 2; readonly name: string }[];
   // The latest statement of each card, for the card reminders (section 9).
   readonly statements: readonly CardStatement[];
   // 9.8 (A52): the cards whose statement the bank sent but the app cannot
@@ -177,7 +181,8 @@ export type SafeToSpendView =
   | { readonly shown: false; readonly why: 'totals-do-not-match'; readonly check: SelfCheck; readonly catchingUp: boolean; readonly detail: BankDetail | null }
   // The bank could not be read, so today's number cannot be checked. The
   // last one that was checked is shown greyed, with when (B82).
-  | { readonly shown: false; readonly why: 'bank-not-read'; readonly lastChecked: LastChecked | null };
+  // Her rulebook, 0.5 (PR 6): notRead names the banks that could not be read.
+  | { readonly shown: false; readonly why: 'bank-not-read'; readonly lastChecked: LastChecked | null; readonly notRead?: readonly string[] };
 
 export interface BucketBar {
   readonly left: Cents;
@@ -187,8 +192,8 @@ export interface BucketBar {
 }
 
 export type Attention =
-  // 10.5
-  | { readonly kind: 'bank-login' }
+  // 10.5. Her setup (PR 6): which bank, by name.
+  | { readonly kind: 'bank-login'; readonly bank?: 1 | 2; readonly name?: string }
   // 9.4: the due date passed with less than the minimum paid.
   | { readonly kind: 'card-overdue'; readonly card: 'everyday-card' | 'old-card' | 'second-card'; readonly dueDate: IsoDate; readonly minimumPayment: Cents }
   // 9.8 (A52): no reminders, no due line and no overdue alert for this card
@@ -240,7 +245,8 @@ export function homeView(input: HomeInput): HomeView {
 
   const plain = book.safeToSpend(today);
   let safeToSpend: SafeToSpendView;
-  if (bank === null) safeToSpend = { shown: false, why: 'bank-not-read', lastChecked: checkedLastChecked(input.lastChecked) };
+  const notRead = input.banksToLogIn?.map((b) => b.name) ?? [];
+  if (bank === null) safeToSpend = { shown: false, why: 'bank-not-read', lastChecked: checkedLastChecked(input.lastChecked), ...(notRead.length === 0 ? {} : { notRead }) };
   else {
     // 0.5: only a number the self-check backs up is shown.
     const checked = book.checkedSafeToSpend(today, bank);
@@ -249,7 +255,8 @@ export function homeView(input: HomeInput): HomeView {
 
   const cards = input.statements.flatMap((statement) => cardDue(today, statement, book.cardPayments(statement.card), settings) ?? []);
   const attention: Attention[] = [];
-  if (input.needsLogin) attention.push({ kind: 'bank-login' });
+  if (input.banksToLogIn !== undefined) for (const b of input.banksToLogIn) attention.push({ kind: 'bank-login', bank: b.bank, name: b.name });
+  else if (input.needsLogin) attention.push({ kind: 'bank-login' });
   for (const c of cards) {
     if (c.kind === 'overdue') attention.push({ kind: 'card-overdue', card: c.card, dueDate: c.dueDate, minimumPayment: c.minimumPayment });
   }

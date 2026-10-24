@@ -16,7 +16,9 @@ import type { TimerClock } from '../serve/sync-timer.js';
 //   it. One that waits on a sync already on its way (the timer's) starts its
 //   own after it, so what Plaid has now is read. Never two syncs at once: the
 //   books' own lock (Keeper.sync) sees to that, for the timer and webhooks.
-// - Only his connection's webhooks are taken (the item_id is his).
+// - Only his connection's webhooks are taken (the item_id is his). Her setup
+//   (her rulebook, section 2, HB11): either of her connections', and each
+//   syncs the banks its burst named.
 // - More than 30 calls a minute: the rest are answered 429, unlooked at.
 // - What was refused is logged with why, never with the body or the header.
 // The 60-minute timer stays (Plaid drops a webhook after 24 hours of tries).
@@ -46,6 +48,10 @@ export interface WebhookDeskInput {
   readonly itemId: () => string | null;
   // One sync (Keeper.sync), and the one on its way, if any (Keeper.syncOnItsWay).
   readonly sync: () => Promise<unknown>;
+  // Her setup: every connection's item_id, and a sync of the banks these
+  // items are (Keeper.syncItems), in place of itemId and sync.
+  readonly itemIds?: () => readonly string[];
+  readonly syncItems?: (itemIds: readonly string[]) => Promise<unknown>;
   readonly onItsWay: () => Promise<unknown> | null;
   readonly clock: TimerClock;
   readonly now: () => Date;
@@ -74,6 +80,8 @@ export class WebhookDesk {
   #running: Promise<void> | null = null;
   #again = false;
   #stopped = false;
+  // Her setup: the items the calls since the last sync started named.
+  #items = new Set<string>();
 
   constructor(input: WebhookDeskInput) {
     this.#input = input;
@@ -97,9 +105,9 @@ export class WebhookDesk {
       return answer(verified.status);
     }
     const { webhook } = verified;
-    const mine = this.#input.itemId();
-    if (mine === null || webhook.itemId !== mine) {
-      log.warn('webhook refused', { why: mine === null ? 'there is no bank connection' : 'not his connection', status: 403 });
+    const mine = this.#input.itemIds?.() ?? [this.#input.itemId()].flatMap((id) => (id === null ? [] : [id]));
+    if (webhook.itemId === null || !mine.includes(webhook.itemId)) {
+      log.warn('webhook refused', { why: mine.length === 0 ? 'there is no bank connection' : 'not his connection', status: 403 });
       return answer(403);
     }
     for (const [id, until] of this.#seen) if (until <= ms) this.#seen.delete(id);
@@ -112,7 +120,10 @@ export class WebhookDesk {
     const action = webhookAction(webhook);
     log.info('webhook', { type: webhook.type, code: webhook.code, ...(webhook.errorCode === null ? {} : { errorCode: webhook.errorCode }), action });
     if (action === 'note') log.info('webhook address confirmed by Plaid');
-    if (action === 'sync') this.#want();
+    if (action === 'sync') {
+      this.#items.add(webhook.itemId ?? '');
+      this.#want();
+    }
     return answer(200);
   }
 
@@ -148,7 +159,10 @@ export class WebhookDesk {
       try {
         const onItsWay = this.#input.onItsWay();
         if (onItsWay !== null) await onItsWay.catch(() => undefined);
-        await this.#input.sync();
+        const items = [...this.#items].sort();
+        this.#items = new Set();
+        const { syncItems } = this.#input;
+        await (syncItems === undefined ? this.#input.sync() : syncItems(items));
       } catch (error) {
         this.#input.log.warn('webhook sync failed', { error: error instanceof Error ? error.message : String(error) });
       }

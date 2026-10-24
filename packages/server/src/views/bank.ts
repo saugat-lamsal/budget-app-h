@@ -18,7 +18,8 @@ export interface BankAccountLine {
 
 export type BankConnectionView =
   // 1.1: nothing connected yet. `bank` says which: Plaid's test bank, or the real one.
-  | { readonly state: 'none'; readonly bank: 'test' | 'real' }
+  // Her setup (her rulebook, 1.1): banks is there, empty: she connects two.
+  | { readonly state: 'none'; readonly bank: 'test' | 'real'; readonly banks?: readonly [] }
   | {
       readonly state: 'connected';
       readonly bank: 'test' | 'real';
@@ -37,13 +38,34 @@ export type BankConnectionView =
       readonly permissionEnds: IsoDate | null;
       // Plaid has sent all of the history it is going to (setup day waits for it).
       readonly historyComplete: boolean;
+      // Her rulebook, 1.1 (PR 6): each of her banks, bank 1 first, and
+      // whether "Connect a bank" is still offered. Upstream's view has neither.
+      readonly banks?: readonly BankLine[];
+      readonly canConnect?: boolean;
     };
+
+// Her rulebook, 1.1 and 1.3 (PR 6): one of her bank connections, by its
+// name as Plaid gave it when she connected it (HB8).
+export interface BankLine {
+  readonly bank: 1 | 2;
+  readonly name: string | null;
+  readonly connectedOn: IsoDate;
+  // 10.5: this bank wants her to log in again.
+  readonly needsLogin: boolean;
+  // 10.13: when this bank's permission runs out, when it says.
+  readonly permissionEnds: IsoDate | null;
+  readonly historyComplete: boolean;
+}
 
 // What the screen sends. Connecting asks first: `yes` is his yes to using 1
 // of the 10 connections (1.1).
-export type BankLinkRequest = { readonly mode: 'connect'; readonly yes: boolean } | { readonly mode: 'login-again' };
+// Her setup: which bank to log in to again (1.3); bank 1 when left out.
+export type BankLinkRequest = { readonly mode: 'connect'; readonly yes: boolean } | { readonly mode: 'login-again'; readonly bank?: 1 | 2 };
 export interface BankConnectedRequest {
   readonly publicToken: string;
+  // Which bank Link says she logged in to (Link's institution): her setup
+  // keeps its name and never connects the same bank twice (HB8).
+  readonly institution?: { readonly id: string; readonly name: string } | null;
 }
 // 1.2: each of his four accounts, by the bank's account id. Asks first.
 export interface BankRolesRequest {
@@ -55,7 +77,7 @@ export interface BankRolesRequest {
 export type BankRefusal = {
   readonly ok: false;
   // needs-yes: it asks first; the rest are refusals, and nothing changed.
-  readonly code: 'needs-yes' | 'connected-already' | 'not-connected' | 'roles-fixed' | 'not-roles' | 'bank-said-no' | 'busy';
+  readonly code: 'needs-yes' | 'connected-already' | 'not-connected' | 'roles-fixed' | 'not-roles' | 'bank-said-no' | 'busy' | 'same-bank';
   readonly why: string;
 };
 

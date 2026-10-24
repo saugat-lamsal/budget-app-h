@@ -4,9 +4,10 @@
 import { readFileSync } from 'node:fs';
 import { bankSide, parseDollars, type Cents } from '@budget-app/money';
 import { describe, expect, it } from 'vitest';
-import { ACCOUNT_IDS } from './fake-plaid.js';
+import { ACCOUNT_IDS, type FakePlaid } from './fake-plaid.js';
 import { checkBankRules } from '../src/bank/reading.js';
 import { HER_START } from '../src/setup-start.js';
+import { bankStatus } from '../src/status.js';
 import { HER_BANK_RULES, herLife, setUpHer } from './her-harness.js';
 import { choose, decision, lifeInAFile, noonInNewYork, type Life } from './keeper-harness.js';
 
@@ -114,6 +115,62 @@ const examples: Record<number, () => Promise<Record<string, Cents>>> = {
     }
   },
 };
+
+// PR 6: her two banks, the second not read for a day.
+examples[3] = async () => {
+  const life = await lifeInAFile({ herSetup: true, twoBanks: true, secondCard: 25_000, rules: checkBankRules([...HER_BANK_RULES, ...SECOND_CARD_RULES]), start: HER_START });
+  const second = life.h.second;
+  if (second === undefined) throw new Error('her second bank is not there');
+  const down: FakePlaid['beforeCall'] = (endpoint) =>
+    endpoint === '/transactions/sync' ? { status: 400, body: { error_type: 'INSTITUTION_ERROR', error_code: 'INSTITUTION_DOWN', error_message: 'made-up', display_message: null, request_id: 'r' } } : undefined;
+  const status = (): { readonly bankSide: Cents; readonly difference: Cents; readonly shown: Cents | null; readonly catchingUp: boolean } => {
+    const home = life.keeper.home();
+    const check = bankStatusOf(life);
+    if (home.state !== 'tracking') throw new Error('not tracking');
+    const safe = home.safeToSpend;
+    return { bankSide: check.bankSide, difference: check.difference, shown: safe.shown ? safe.amount : null, catchingUp: !safe.shown && safe.why === 'totals-do-not-match' && safe.catchingUp };
+  };
+  try {
+    const view = life.keeper.setupView();
+    if (view.state !== 'not-set-up' || !view.ready) throw new Error('setup day is not ready');
+    const startingMoney = view.startingMoney;
+    setUpHer(life);
+    life.h.fake.addPosted({ id: 'grocery-1', account: ACCOUNT_IDS.everyday, amount: 4_000, date: '2026-10-02', description: 'MADE UP GROCERY' });
+    second.addPosted({ id: 'cafe-1', account: ACCOUNT_IDS.second, amount: 2_500, date: '2026-10-02', description: 'MADE UP CAFE' });
+    second.beforeCall = down;
+    life.now = noonInNewYork('2026-10-02');
+    await life.sync().catch(() => undefined);
+    const notRead = status();
+    second.beforeCall = undefined;
+    life.now = noonInNewYork('2026-10-03');
+    await life.sync();
+    const bothRead = status();
+    life.h.fake.drift(ACCOUNT_IDS.checking, -1_000);
+    second.beforeCall = down;
+    life.now = noonInNewYork('2026-10-04');
+    await life.sync().catch(() => undefined);
+    const waits = status();
+    if (!waits.catchingUp) throw new Error('the check does not wait for the second bank');
+    return {
+      'starting money': startingMoney,
+      'bank side with the second bank not read': notRead.bankSide,
+      'difference with the second bank not read': notRead.difference,
+      'safe to spend with the second bank not read': notRead.shown ?? -1,
+      'bank side once both are read': bothRead.bankSide,
+      'safe to spend once both are read': bothRead.shown ?? -1,
+      'difference while it waits': waits.difference,
+    };
+  } finally {
+    life.done();
+  }
+};
+
+// The self-check against each bank's latest good read, as saved (12.3).
+function bankStatusOf(life: Life): { readonly bankSide: Cents; readonly difference: Cents } {
+  const check = bankStatus(life.h.db).selfCheck;
+  if (check === null) throw new Error('no self-check');
+  return check;
+}
 
 const SECOND_CARD_RULES = checkBankRules([
   { id: 'chk-pays-second', account: 'checking', contains: 'payment to CRD 5555', means: 'transfer', other: 'second-card' },

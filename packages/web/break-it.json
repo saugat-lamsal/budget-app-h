@@ -100,15 +100,15 @@
   {
     "section": "home",
     "file": "packages/server/src/views/home.ts",
-    "find": "if (bank === null) safeToSpend = { shown: false, why: 'bank-not-read', lastChecked: checkedLastChecked(input.lastChecked) };",
+    "find": "if (bank === null) safeToSpend = { shown: false, why: 'bank-not-read', lastChecked: checkedLastChecked(input.lastChecked), ...(notRead.length === 0 ? {} : { notRead }) };",
     "replace": "if (bank === null) safeToSpend = { shown: true, amount: plain.amount };",
     "why": "0.5 show safe to spend when the bank cannot be read"
   },
   {
     "section": "home",
     "file": "packages/server/src/views/home.ts",
-    "find": "why: 'bank-not-read', lastChecked: checkedLastChecked(input.lastChecked) };",
-    "replace": "why: 'bank-not-read', lastChecked: null };",
+    "find": "why: 'bank-not-read', lastChecked: checkedLastChecked(input.lastChecked), ...(notRead",
+    "replace": "why: 'bank-not-read', lastChecked: null, ...(notRead",
     "why": "0.5 forget the last checked safe to spend (B82)"
   },
   {
@@ -2242,8 +2242,8 @@
   {
     "section": "home",
     "file": "packages/web/src/screens/Bank.tsx",
-    "find": "        <Button wide disabled={busy} onClick={() => void start(false)} testId=\"bank-connect\">",
-    "replace": "        <Button wide disabled={busy} onClick={() => void start(true)} testId=\"bank-connect\">",
+    "find": "        <Button variant={other ? 'secondary' : 'primary'} wide disabled={busy} onClick={() => void start(false)} testId=\"bank-connect\">",
+    "replace": "        <Button variant={other ? 'secondary' : 'primary'} wide disabled={busy} onClick={() => void start(true)} testId=\"bank-connect\">",
     "why": "[bank-connect] 1.1 the screen connects without asking first"
   },
   {
@@ -3582,5 +3582,82 @@
     "find": "  const second = accounts['second-card'] === undefined ? three : `${three}; second card: ${accounts['second-card']}`;",
     "replace": "  const second = three;",
     "why": "[her-second-card] 13.5 the change log leaves out the second card"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Bank.tsx",
+    "find": "her && outcome.institution !== null ? { publicToken: outcome.publicToken, institution: outcome.institution } : { publicToken: outcome.publicToken }",
+    "replace": "{ publicToken: outcome.publicToken }",
+    "why": "[her-connections] HB8 the screen does not say which bank Link logged in to"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Bank.tsx",
+    "find": "onClick={() => void loginAgain(b.bank)}",
+    "replace": "onClick={() => void loginAgain()}",
+    "why": "[her-connections] 1.3 each bank's button logs in to the first"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Bank.tsx",
+    "find": "      {view.canConnect === true && <ConnectCard",
+    "replace": "      {false && <ConnectCard",
+    "why": "[her-connections] 1.1 her other bank cannot be connected from the screen"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Bank.tsx",
+    "find": "              <ListRow icon=\"bank\" title={nameOf(b)}",
+    "replace": "              <ListRow icon=\"bank\" title=\"Bank\"",
+    "why": "[her-connections] HB8 her banks not named on the Bank page"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Bank.tsx",
+    "find": "            .filter((b) => b.needsLogin)",
+    "replace": "            .filter((b) => b.bank === 1 && b.needsLogin)",
+    "why": "[her-connections] 10.5 the Bank page does not say the second bank wants a login"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/app/plaid-link.ts",
+    "find": "? { id: i.institution_id, name: i.name } : null;",
+    "replace": "? null : null;",
+    "why": "[her-connections] HB8 Link's bank not handed on"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Home.tsx",
+    "find": "  return names.length === 1 ? (names[0] ?? 'the bank')",
+    "replace": "  return names.length === 1 ? 'the bank'",
+    "why": "[her-connections] 0.5 Home does not name the bank it cannot read"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Home.tsx",
+    "find": "title={item.name === undefined ? 'Log in to the bank again' : `Log in to ${item.name} again`}",
+    "replace": "title=\"Log in to the bank again\"",
+    "why": "[her-connections] 10.5 Home's login row does not name the bank"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Home.tsx",
+    "find": "  if (item.kind === 'bank-login' && item.bank !== undefined) return `${item.kind}-${item.bank}`;\n",
+    "replace": "",
+    "why": "[her-connections] 10.5 both banks' login rows have one key"
+  },
+  {
+    "section": "words",
+    "file": "packages/web/src/screens/status-text.ts",
+    "find": "          { id: `last-read-${b.bank}`, title: `${b.name} last read`",
+    "replace": "          { id: `last-read-${b.bank}`, title: 'Bank last read'",
+    "why": "[her-connections] 0.7 the status page does not name each bank"
+  },
+  {
+    "section": "words",
+    "file": "packages/web/src/screens/status-text.ts",
+    "find": "            look: b.lastSync !== null && SYNC_WORDS[b.lastSync.result].look,",
+    "replace": "            look: false,",
+    "why": "[her-connections] 0.7 a bank whose sync failed needs no look"
   }
 ]

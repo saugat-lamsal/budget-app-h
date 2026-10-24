@@ -24,7 +24,8 @@ import { CARD_ORDER, cardStatement, closingDayOf } from '../bank/statements.js';
 import { canonical, refuse, ChoiceDesk } from '../choices.js';
 import type { TokenBox } from '../crypto/token-box.js';
 import { statement, type Db } from '../db/database.js';
-import { logChange, readAccounts, readBankRules, readConnection, readItems, readStatements, saveBankRules, saveItem } from '../db/store.js';
+import { logChange, readAccounts, readBankRules, readItems, readStatements, saveBankRules, saveItem } from '../db/store.js';
+import { bankNameOf, connectionOfItem, connectionsOf, noteBankFailing, setupConnectionOf, type BankNumber } from '../bank/connections.js';
 import { createAppServer, type Seen, type WebhookHandler } from '../http/server.js';
 import { WEBHOOK_PATH } from '../plaid/webhook.js';
 import { memoryLog, type Log } from '../log.js';
@@ -167,6 +168,8 @@ export class Keeper {
   #startedAt: Date | null = null;
   #eventsWhenOpened = 0;
   #lastSync: { readonly at: Date; readonly result: 'new' | 'nothing-new' | 'needs-login' | 'failed' } | null = null;
+  // Her rulebook, 0.7 (PR 6): how each bank's last sync went.
+  readonly #lastSyncs = new Map<BankNumber, { readonly at: Date; readonly result: 'new' | 'nothing-new' | 'needs-login' | 'failed' }>();
 
   private constructor(input: KeeperInput) {
     this.#db = input.db;
@@ -209,15 +212,33 @@ export class Keeper {
     const matches = book.selfCheck(bank).ok;
     const since = readGapSince(this.#db);
     if (matches && since !== null) saveGapSince(this.#db, null);
-    if (!matches && since === null) saveGapSince(this.#db, this.lastRead() ?? this.#now().toISOString());
+    // Her rulebook, 12.3 (HB9): a difference starts counting only once both banks' last syncs worked.
+    if (!matches && since === null && !this.#waiting()) saveGapSince(this.#db, this.lastRead() ?? this.#now().toISOString());
+  }
+
+  // Her rulebook, 12.3 (HB9): one of her banks' last sync failed, so the
+  // check waits, as while the bank is still catching up (10.4). Never in
+  // upstream's setup, which keeps no such thing.
+  #waiting(): boolean {
+    return connectionsOf(this.#db).some((c) => c.failingSince !== null);
+  }
+
+  // 0.5: the bank cannot be read while there is no connection, or one wants a new login (10.5).
+  #cannotRead(): boolean {
+    const connections = connectionsOf(this.#db);
+    return connections.length === 0 || connections.some((c) => c.needsLogin);
+  }
+
+  // Her setup: how many bank connections it has (her rulebook, 1.1); one in upstream's.
+  #banksInSetup(): 1 | 2 {
+    return this.#switches().secondCard === 'on' ? 2 : 1;
   }
 
   // "Why it doesn't match" (docs/later.txt 18): each account as the bank
   // last gave it, when the difference began, and why (12.6). Null when the
   // bank cannot be read.
   #bankDetail(): BankDetail | null {
-    const connection = readConnection(this.#db);
-    if (connection === null || connection.needsLogin) return null;
+    if (this.#cannotRead()) return null;
     const accounts = readAccounts(this.#db);
     const items = readItems(this.#db);
     const view = bankView(accounts, items);
@@ -260,13 +281,17 @@ export class Keeper {
   }
 
   // 10.4 (A47): when the totals stopped matching the bank; null while they match.
+  // Her setup: while the check waits for a bank (12.3, HB9) the alerts do
+  // not see the bank (#alertWorld), so nothing is told until both are read.
   mismatchSince(): string | null {
     return readGapSince(this.#db);
   }
 
   // 10.4 (A47): a difference younger than the setting's hours: the bank is
-  // still catching up, and the screens say so instead of the alarm.
+  // still catching up, and the screens say so instead of the alarm. Her
+  // setup: also while the check waits for one of her banks (12.3, HB9).
   #catchingUp(): boolean {
+    if (this.#waiting()) return true;
     const since = readGapSince(this.#db);
     const book = this.book();
     if (since === null || book === null) return false;
@@ -293,7 +318,7 @@ export class Keeper {
     });
     let setup: SetupDesk | null = null;
     if (book === null) {
-      const connection = readConnection(this.#db);
+      const connection = setupConnectionOf(this.#db);
       // Upstream's history stays exactly as it was: its setup day names no switches.
       const switches = this.#start === UPSTREAM_START ? {} : { switches: this.#start.switches };
       setup = new SetupDesk({
@@ -370,8 +395,7 @@ export class Keeper {
   }
 
   #readBank(): { readonly bank: BankBalances | null; readonly pendingIn: readonly PendingMoneyIn[]; readonly postingExamples: readonly PostingExample[] } {
-    const connection = readConnection(this.#db);
-    if (connection === null || connection.needsLogin) return { bank: null, pendingIn: [], postingExamples: [] };
+    if (this.#cannotRead()) return { bank: null, pendingIn: [], postingExamples: [] };
     const accounts = readAccounts(this.#db);
     const items = readItems(this.#db);
     const view = bankView(accounts, items);
@@ -411,7 +435,9 @@ export class Keeper {
       today: this.today(),
       book: this.book(),
       bank: this.#bank(),
-      needsLogin: readConnection(this.#db)?.needsLogin ?? false,
+      needsLogin: connectionsOf(this.#db).some((c) => c.needsLogin),
+      // Her setup (0.5, 10.5): each bank that wants her to log in again, by name.
+      ...(this.#banksInSetup() === 2 ? { banksToLogIn: connectionsOf(this.#db).flatMap((c) => (c.needsLogin ? [{ bank: c.bank, name: bankNameOf(c) }] : [])) } : {}),
       statements: this.#statements(),
       cardsOff: this.#cardsOff(),
       madeUpData: false,
@@ -597,6 +623,7 @@ export class Keeper {
       bookLines: () => this.book()?.changeLog().length ?? 0,
       sync: () => this.sync(bank),
       webhook: () => this.webhookAddress(),
+      banks: () => this.#banksInSetup(),
       changed: () => {
         this.reload();
         this.#changed();
@@ -615,29 +642,19 @@ export class Keeper {
   // before the sync's save (which then works from it), or after it, against
   // the book with the sync in it, never in between. A sync that fails saves
   // nothing.
-  sync(bank: SyncBank): Promise<SyncResult> {
+  // Her setup (her rulebook, section 2, PR 6): each sync reads both banks,
+  // one after the other; `only` reads just those (a webhook about one, HB11).
+  // A bank that fails keeps what the other read, is tried again at the next
+  // time, and the sync then fails with its error.
+  sync(bank: SyncBank, only?: readonly BankNumber[]): Promise<SyncResult> {
     if (this.#syncing !== null) return this.#syncing;
     // 1.2: nothing is read from the bank until all four accounts are picked.
-    if (readConnection(this.#db) !== null && !rolesComplete(readAccounts(this.#db), this.#roles())) return Promise.reject(new Error('the accounts are not all picked yet (1.2): nothing is read from the bank until they are'));
+    if (connectionsOf(this.#db).length > 0 && !rolesComplete(readAccounts(this.#db), this.#roles())) return Promise.reject(new Error('the accounts are not all picked yet (1.2): nothing is read from the bank until they are'));
     this.#lastTry = this.#now().getTime();
-    const running = syncBank({
-      db: this.#db,
-      plaid: bank.plaid,
-      box: bank.box,
-      log: bank.log,
-      today: this.today(),
-      ...(bank.pageSize === undefined ? {} : { pageSize: bank.pageSize }),
-      readAt: () => this.#now().toISOString(),
-      ...(this.#beforeCommit === undefined ? {} : { beforeCommit: this.#beforeCommit }),
-      // Read again when it saved anything, or when the history has more than
-      // the books in memory (another copy of the server saved a sync).
-      ...(bank.plan === undefined ? {} : { plan: bank.plan }),
-      afterSave: (result) => {
-        if (result.changed || lastSeqOf(this.#db) !== this.#lastSeq) this.reload();
-        this.#noteGap();
-        this.#changed();
-      },
-    })
+    const connected = connectionsOf(this.#db).map((c) => c.bank);
+    // Upstream's setup reads its one connection, or says there is none.
+    const banks = connected.length === 0 ? [1 as const] : connected.filter((b) => only === undefined || only.includes(b));
+    const running = this.#syncBanks(bank, banks)
       .then(
         (result) => {
           // 0.7: how it went.
@@ -658,6 +675,90 @@ export class Keeper {
     return running;
   }
 
+  async #syncBanks(bank: SyncBank, banks: readonly BankNumber[]): Promise<SyncResult> {
+    let together: SyncResult = { changed: false, needsLogin: false, added: 0, modified: 0, removed: 0, sent: 0, attention: [], historyComplete: true };
+    let failed: { readonly error: unknown } | null = null;
+    // Her setup (12.3, HB9): with both banks, the difference is looked at
+    // once both are synced, so one bank failing after the other was read
+    // starts no count.
+    const both = banks.length > 1;
+    for (const one of banks) {
+      try {
+        const result = await this.#syncOne(bank, one, both);
+        together = {
+          changed: together.changed || result.changed,
+          needsLogin: together.needsLogin || result.needsLogin,
+          added: together.added + result.added,
+          modified: together.modified + result.modified,
+          removed: together.removed + result.removed,
+          sent: together.sent + result.sent,
+          attention: [...together.attention, ...result.attention],
+          historyComplete: together.historyComplete && result.historyComplete,
+        };
+      } catch (error) {
+        failed ??= { error };
+      }
+    }
+    if (both) {
+      this.#noteGap();
+      this.#changed();
+    }
+    if (failed !== null) throw failed.error;
+    return together;
+  }
+
+  // One bank's sync. What it brings is saved in one transaction (sync.ts).
+  async #syncOne(bank: SyncBank, one: BankNumber, laterGap = false): Promise<SyncResult> {
+    try {
+      const result = await syncBank({
+        db: this.#db,
+        plaid: bank.plaid,
+        box: bank.box,
+        log: bank.log,
+        today: this.today(),
+        ...(bank.pageSize === undefined ? {} : { pageSize: bank.pageSize }),
+        readAt: () => this.#now().toISOString(),
+        ...(this.#beforeCommit === undefined ? {} : { beforeCommit: this.#beforeCommit }),
+        // Read again when it saved anything, or when the history has more than
+        // the books in memory (another copy of the server saved a sync).
+        ...(bank.plan === undefined ? {} : { plan: bank.plan }),
+        ...(one === 1 ? {} : { bank: one }),
+        afterSave: (result) => {
+          if (result.changed || lastSeqOf(this.#db) !== this.#lastSeq) this.reload();
+          if (!laterGap) this.#noteGap();
+          this.#changed();
+        },
+      });
+      this.#lastSyncs.set(one, { at: this.#now(), result: result.needsLogin ? 'needs-login' : result.changed ? 'new' : 'nothing-new' });
+      return result;
+    } catch (error) {
+      this.#lastSyncs.set(one, { at: this.#now(), result: 'failed' });
+      // Her setup (12.3, HB9): since when this bank's syncs fail; the check waits.
+      if (this.#banksInSetup() === 2 && connectionsOf(this.#db).length > 0) {
+        noteBankFailing(this.#db, one, this.#now().toISOString());
+        this.#changed();
+      }
+      throw error;
+    }
+  }
+
+  // Her rulebook, section 2 (HB11): Plaid's webhook for one bank syncs that
+  // bank. An item that is neither connection's syncs nothing.
+  syncItems(bank: SyncBank, itemIds: readonly string[]): Promise<SyncResult | null> {
+    const banks = [...new Set(itemIds.flatMap((id) => connectionOfItem(this.#db, id)?.bank ?? []))].sort();
+    return banks.length === 0 ? Promise.resolve(null) : this.sync(bank, banks);
+  }
+
+  // Her setup has two bank connections (her rulebook, 1.1).
+  twoBanks(): boolean {
+    return this.#banksInSetup() === 2;
+  }
+
+  // Her setup: every connection's item_id, bank 1 first.
+  itemIds(): readonly string[] {
+    return connectionsOf(this.#db).map((c) => c.itemId);
+  }
+
   // Section 2 (A47): the sync on its way, if any, so a webhook that waits on
   // it can start its own after it.
   syncOnItsWay(): Promise<SyncResult> | null {
@@ -666,7 +767,7 @@ export class Keeper {
 
   // His connection's item_id (a webhook must be about it); null before there is one.
   itemId(): string | null {
-    return readConnection(this.#db)?.itemId ?? null;
+    return connectionsOf(this.#db)[0]?.itemId ?? null;
   }
 
   // Section 2 (A47): where Plaid sends its webhooks: the hosted server's own
@@ -681,7 +782,7 @@ export class Keeper {
   // when the server has just started. 0 or less: due now. Null while there is
   // no bank connection to read, or its accounts are not all picked (1.2).
   syncDueIn(): number | null {
-    if (readConnection(this.#db) === null || !rolesComplete(readAccounts(this.#db), this.#roles())) return null;
+    if (connectionsOf(this.#db).length === 0 || !rolesComplete(readAccounts(this.#db), this.#roles())) return null;
     if (this.#lastTry === null) return 0;
     return this.#lastTry + this.syncEveryMinutes() * 60_000 - this.#now().getTime();
   }
@@ -724,8 +825,12 @@ export class Keeper {
   #alertWorld(): AlertWorld | null {
     const book = this.book();
     if (book === null) return null;
-    const connection = readConnection(this.#db);
-    return { book, now: this.#now(), zone: this.timeZone(), bank: this.#bank(), needsLogin: connection?.needsLogin ?? false, statements: this.#statements(), lastRead: this.lastRead(), permissionEnds: connection?.permissionEnds ?? null, mismatchSince: this.mismatchSince(), cardNames: this.cardNames() };
+    const connections = connectionsOf(this.#db);
+    const connection = connections[0];
+    // Her setup (HB10): each bank's own; while the check waits for one (12.3,
+    // HB9), the bank's numbers are not known to the alerts.
+    const banks = this.#banksInSetup() === 2 ? connections.map((c) => ({ bank: c.bank, name: bankNameOf(c), needsLogin: c.needsLogin, lastRead: c.lastRead, permissionEnds: c.permissionEnds })) : null;
+    return { book, now: this.#now(), zone: this.timeZone(), bank: this.#waiting() ? null : this.#bank(), needsLogin: connection?.needsLogin ?? false, statements: this.#statements(), lastRead: this.lastRead(), permissionEnds: connection?.permissionEnds ?? null, mismatchSince: this.mismatchSince(), cardNames: this.cardNames(), banks };
   }
 
   // Works out every alert due now (alerts/plan.ts) and keeps it: each
@@ -750,7 +855,7 @@ export class Keeper {
   // evening, or the bank not read for a day, 10.7); null before setup day.
   nextDueIn(): number | null {
     const book = this.book();
-    return book === null ? null : nextDueIn({ book, zone: this.timeZone(), now: this.#now(), lastRead: this.lastRead(), mismatchSince: this.mismatchSince() }, this.#state.alerts);
+    return book === null ? null : nextDueIn({ book, zone: this.timeZone(), now: this.#now(), lastRead: this.lastRead(), mismatchSince: this.mismatchSince(), banks: this.#alertWorld()?.banks ?? null }, this.#state.alerts);
   }
 
   // 10.8: when quiet hours end, if it is in them now (section 2, his home time zone).
@@ -867,6 +972,15 @@ export class Keeper {
       history: { whenOpened: this.#eventsWhenOpened, now: countEvents(this.#db) },
       mismatchSince: since === null ? null : local(since),
       alertsWaiting: outboxCounts(this.#db).notSent,
+      // Her setup (0.7): each bank's own.
+      ...(this.#banksInSetup() === 2
+        ? {
+            banks: connectionsOf(this.#db).map((c) => {
+              const last = this.#lastSyncs.get(c.bank);
+              return { bank: c.bank, name: bankNameOf(c), lastRead: c.lastRead === null ? null : local(c.lastRead), lastSync: last === undefined ? null : { at: local(last.at), result: last.result } };
+            }),
+          }
+        : {}),
     };
   }
 

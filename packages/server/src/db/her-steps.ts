@@ -17,6 +17,34 @@ export const HER_STEPS: readonly string[] = [
     role TEXT NOT NULL UNIQUE CHECK (role IN ('second-card'))
   );
   `,
+  `
+  -- Her step 2 (her rulebook, 1.1, PR 6): her second bank connection.
+  -- Upstream's connection table holds exactly one row (its first bank), so
+  -- the second is kept here, with the same columns.
+  CREATE TABLE her_connections (
+    bank INTEGER PRIMARY KEY CHECK (bank = 2),
+    item_id TEXT NOT NULL,
+    institution_id TEXT,
+    -- The access token, encrypted. Never stored in the clear.
+    sealed_key TEXT NOT NULL,
+    cursor TEXT,
+    history_complete INTEGER NOT NULL DEFAULT 0 CHECK (history_complete IN (0, 1)),
+    needs_login INTEGER NOT NULL DEFAULT 0 CHECK (needs_login IN (0, 1)),
+    connected_on TEXT NOT NULL,
+    permission_ends TEXT
+  );
+
+  -- Each of her banks: its name as Plaid gave it when she connected it (HB8),
+  -- the last good read of it (10.7), and since when its syncs fail (12.3,
+  -- HB9); null while they work.
+  CREATE TABLE her_banks (
+    bank INTEGER PRIMARY KEY CHECK (bank IN (1, 2)),
+    institution_id TEXT,
+    name TEXT,
+    last_read TEXT,
+    failing_since TEXT
+  );
+  `,
 ];
 
 export const HER_SCHEMA_VERSION = HER_STEPS.length;

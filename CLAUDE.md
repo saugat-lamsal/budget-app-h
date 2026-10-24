@@ -291,3 +291,17 @@ or "Due" on Wishlist items and cards, never color alone.
   remembers them (ui/card-names.ts). Twins: second-card-twins-her.test.ts
   runs upstream's money tests again through a mirror (test/twin) with the
   second card in the everyday card's place. Readings HB6, HB7.
+- PR 5 merged (Oct 24, 2026).
+- PR 6, two bank connections (branch her-two-banks). Bank 1 is upstream's
+  one connection; her second is in her step 2 (her_connections), and each
+  bank's name, last good read and failing state in her_banks
+  (bank/connections.ts). Her setup has two banks while the second card is
+  on (Keeper #banksInSetup). The desk connects while fewer than two, refuses
+  the same bank before the exchange (Link's institution, HB8), and logs in
+  again per bank. Keeper.sync reads each bank in turn; one failing keeps
+  the other's read and the check waits (12.3, HB9: #waiting). Alerts per
+  bank (bank: 2, lasting kinds bank-login-2 and bank-not-read-2, HB10);
+  webhooks per item (itemIds, syncItems, HB11). Screens: Bank page per bank,
+  Home's login rows and greyed safe to spend by name, status per bank.
+  Tests: two-banks-her.test.ts, sync-random-her.test.ts, her simulated life
+  through two Items (harness twoBanks, bothBanks). PLAID_PLAN.md.

@@ -27,13 +27,17 @@ export type AlertFacts =
   // 10.4 and 10.5 (A37): when it starts (the time-th time it starts, on its
   // day), then again (again: true) once each day it lasts, at the review time.
   | { readonly kind: 'totals-mismatch'; readonly time: number; readonly difference: Cents; readonly day: IsoDate; readonly again: boolean }
-  | { readonly kind: 'bank-login'; readonly time: number; readonly day: IsoDate; readonly again: boolean }
+  // Her rulebook, 10.5, 10.7 and 10.13 (PR 6, HB10): each of her banks has
+  // its own. bank: 2 for her second bank (its own key and kind); left out for
+  // the first, upstream's one connection. name: the bank's name as Plaid gave
+  // it (HB8), in her setup only; it is not part of the key.
+  | { readonly kind: 'bank-login'; readonly time: number; readonly day: IsoDate; readonly again: boolean; readonly bank?: 2; readonly name?: string }
   // 10.7 (A38): the last good read of the bank is this many hours old (the
   // time-th time), and when that read was, as an instant and on his clock.
-  | { readonly kind: 'bank-not-read'; readonly time: number; readonly hours: number; readonly lastRead: string; readonly lastReadLocal: string }
+  | { readonly kind: 'bank-not-read'; readonly time: number; readonly hours: number; readonly lastRead: string; readonly lastReadLocal: string; readonly bank?: 2; readonly name?: string }
   // 10.13: once per date the bank gave, the setting's days before it, at the
   // review time. ends: the day it runs out, on his clock.
-  | { readonly kind: 'bank-permission'; readonly ends: IsoDate }
+  | { readonly kind: 'bank-permission'; readonly ends: IsoDate; readonly bank?: 2; readonly name?: string }
   // 10.6: once, when it happens.
   | { readonly kind: 'bank-took-back'; readonly id: string; readonly date: IsoDate; readonly description: string; readonly amount: Cents }
   // 10.14 (A49): once per paycheck, the pay period it began, when it is
@@ -49,9 +53,19 @@ export type AlertFacts =
 
 export type AlertKind = AlertFacts['kind'];
 
-// The alerts that stay true for a while (10.4, 10.5, 10.7).
-export type LastingKind = 'totals-mismatch' | 'bank-login' | 'bank-not-read';
-export const LASTING_KINDS: readonly LastingKind[] = ['totals-mismatch', 'bank-login', 'bank-not-read'];
+// The alerts that stay true for a while (10.4, 10.5, 10.7). Her second
+// bank's 10.5 and 10.7 are kinds of their own (her rulebook, PR 6).
+export type LastingKind = 'totals-mismatch' | 'bank-login' | 'bank-not-read' | 'bank-login-2' | 'bank-not-read-2';
+export const LASTING_KINDS: readonly LastingKind[] = ['totals-mismatch', 'bank-login', 'bank-not-read', 'bank-login-2', 'bank-not-read-2'];
+
+// The lasting kind a lasting alert is: her second bank's are its own.
+export function lastingKindOf(f: Extract<AlertFacts, { kind: 'totals-mismatch' | 'bank-login' | 'bank-not-read' }>): LastingKind {
+  if (f.kind === 'totals-mismatch') return f.kind;
+  return f.bank === 2 ? `${f.kind}-2` : f.kind;
+}
+
+// " bank 2" on her second bank's keys; nothing on the first's, which are upstream's.
+const ofBank = (f: { readonly bank?: 2 }): string => (f.bank === 2 ? ' bank 2' : '');
 
 // One alert as it was worked out: kept in the book's history (an "alerts"
 // event) and in the outbox, in the same step.
@@ -79,14 +93,15 @@ export function alertKey(f: AlertFacts): string {
     case 'card-overdue':
       return `card-overdue ${f.card} due ${f.dueDate} on ${f.date}`;
     case 'totals-mismatch':
-    case 'bank-login':
       return f.again ? `${f.kind} ${f.time} again ${f.day}` : `${f.kind} ${f.time}`;
+    case 'bank-login':
+      return (f.again ? `${f.kind} ${f.time} again ${f.day}` : `${f.kind} ${f.time}`) + ofBank(f);
     case 'bank-not-read':
-      return `bank-not-read ${f.time}`;
+      return `bank-not-read ${f.time}${ofBank(f)}`;
     case 'bank-took-back':
       return `bank-took-back ${f.id}`;
     case 'bank-permission':
-      return `bank-permission ends ${f.ends}`;
+      return `bank-permission ends ${f.ends}${ofBank(f)}`;
     case 'payday':
       return `payday pay period ${f.period}`;
     case 'paycheck-waiting':
@@ -178,6 +193,7 @@ export function alertWords(f: AlertFacts, options: { readonly amounts?: boolean;
           : 'Safe to spend is hidden until they match.',
       };
     case 'bank-login':
+      if (f.name !== undefined) return { title: `Log in to ${f.name} again`, body: f.again ? `${f.name} still wants you to log in again before the app can read it.` : `${f.name} wants you to log in again before the app can read it.` };
       return { title: 'Log in to your bank again', body: f.again ? 'The bank still wants you to log in again before the app can read it.' : 'The bank wants you to log in again before the app can read it.' };
     case 'bank-took-back':
       return {
@@ -187,11 +203,12 @@ export function alertWords(f: AlertFacts, options: { readonly amounts?: boolean;
     case 'bank-permission': {
       const left = options.sentOn === undefined ? null : daysBetween(options.sentOn, f.ends);
       const when = left === null ? 'soon' : left <= 0 ? 'today' : left === 1 ? 'by tomorrow' : `within ${left} days`;
+      if (f.name !== undefined) return { title: `Log in to ${f.name} again ${when}`, body: `${f.name} lets the app read your accounts until ${dayWords(f.ends)}. Logging in again keeps it reading, and nothing is lost.` };
       return { title: `Log in to your bank again ${when}`, body: `The bank lets the app read your accounts until ${dayWords(f.ends)}. Logging in again keeps it reading, and nothing is lost.` };
     }
     case 'bank-not-read':
       return {
-        title: `The bank has not been read for ${f.hours} ${f.hours === 1 ? 'hour' : 'hours'}`,
+        title: `${f.name ?? 'The bank'} has not been read for ${f.hours} ${f.hours === 1 ? 'hour' : 'hours'}`,
         body: `Last read ${dayWords(f.lastReadLocal.slice(0, 10))} at ${clockWords(f.lastReadLocal)}. Your numbers may be out of date until it is read again.`,
       };
     case 'payday':
