@@ -693,6 +693,8 @@ describe('break-it finds (PR 6): the cases no test had', () => {
     const t = await tracking();
     t.first.drift(ACCOUNT_IDS.checking, -1_000);
     await day(t, '2026-10-02');
+    // The alerts are looking from here on.
+    t.keeper.checkAlerts();
     expect(t.keeper.mismatchSince()).toBe(noonInNewYork('2026-10-02').toISOString());
     t.second.beforeCall = (endpoint) => (endpoint === '/transactions/sync' ? { status: 400, body: { error_type: 'INSTITUTION_ERROR', error_code: 'INSTITUTION_DOWN', error_message: 'made-up', display_message: null, request_id: 'r' } } : undefined);
     t.clock.now = new Date(t.clock.now.getTime() + 2 * 3_600_000);
