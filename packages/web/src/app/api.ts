@@ -16,7 +16,7 @@ import type {
   TrendsShown as TrendsView,
   ChoiceRequest,
   ChoiceResponse,
-  HomeView,
+  HomeWithCards as HomeView,
   MoveRequest,
   MoveResponse,
   PaydayShown as PaydayView,
@@ -30,7 +30,9 @@ import type {
   SetupRequest,
   SetupResponse,
   SetupShown as SetupView,
+  StatementScreenView,
 } from '@budget-app/server/views';
+import type { StatementCard } from './routes.js';
 // "Off in this setup" (her rulebook): the views as the phone gets them,
 // which leave out the mom reserve and the old card when they are off.
 
@@ -57,7 +59,11 @@ const READS = {
   '/api/activity/wants': () => fetch('/api/activity/wants', READ),
   '/api/activity/mom-reserve': () => fetch('/api/activity/mom-reserve', READ),
   '/api/activity/held-for-others': () => fetch('/api/activity/held-for-others', READ),
+  // Her rulebook, 52.4: each card's statement.
+  '/api/statement/everyday-card': () => fetch('/api/statement/everyday-card', READ),
+  '/api/statement/second-card': () => fetch('/api/statement/second-card', READ),
 } as const;
+const STATEMENT_URL: Readonly<Record<StatementCard, ViewUrl>> = { 'everyday-card': '/api/statement/everyday-card', 'second-card': '/api/statement/second-card' };
 // Each bucket's activity is read from its own address.
 const ACTIVITY_URL: Readonly<Record<Pot, ViewUrl>> = {
   savings: '/api/activity/savings',
@@ -80,7 +86,8 @@ async function fetchView<T extends { readonly state: string }>(url: ViewUrl): Pr
   if (!response.ok) throw new Error(`${url} answered ${response.status}`);
   const view = (await response.json()) as T;
   // "Off in this setup": a bucket this setup does not have is 'off'.
-  const states = url === '/api/bank' ? ['none', 'connected'] : url === ACTIVITY_URL.momReserve ? ['tracking', 'not-set-up', 'off'] : ['tracking', 'not-set-up'];
+  const statement = (Object.values(STATEMENT_URL) as string[]).includes(url);
+  const states = url === '/api/bank' ? ['none', 'connected'] : url === ACTIVITY_URL.momReserve ? ['tracking', 'not-set-up', 'off'] : statement ? ['ready', 'no-statement', 'off'] : ['tracking', 'not-set-up'];
   if (!states.includes(view.state)) throw new Error(`${url} sent something unexpected`);
   // Her setup (HB6): each card as its bank names it, sent with the screens that name cards.
   if ('cardNames' in view) rememberCardNames((view as { readonly cardNames?: CardNames }).cardNames);
@@ -282,3 +289,4 @@ export const useAlerts = (): [Load<AlertsView>, Reload] => useView<AlertsView>('
 export const useStatus = (): [Load<StatusView>, Reload] => useView<StatusView>('/api/status');
 export const useBank = (): [Load<BankConnectionView>, Reload] => useView<BankConnectionView>('/api/bank');
 export const useActivity = (pot: Pot): [Load<ActivityView>, Reload] => useView<ActivityView>(ACTIVITY_URL[pot]);
+export const useStatement = (card: StatementCard): [Load<StatementScreenView>, Reload] => useView<StatementScreenView>(STATEMENT_URL[card]);

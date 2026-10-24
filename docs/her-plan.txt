@@ -763,6 +763,11 @@ THE PR ORDER (smallest risk first)
     through a full pay period on the screens (agent-pay-period, her
     version), the every-rule table, and docs/her-report.txt.
 
+Changed Oct 24, 2026 (his OK): 7 and 8 are one PR, and 10 and 11 are one
+PR. The order is now 7+8, 9, 10+11, 12. 7+8 and 10+11 are view and
+read-only, with the lighter bar in CLAUDE.md's point 7, and merge by
+themselves when CI is green. 9 still stops for his review.
+
 Each PR stops for his review before merging, as upstream's did. 3, 4 and
 5 do not depend on each other, but they touch the same files (book.ts,
 settings, the simulator), so they go one at a time.

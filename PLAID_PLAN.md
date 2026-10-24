@@ -63,10 +63,15 @@ docs/her-questions.txt.
 - Round 1 (PR 6, Oct 24): FAIL, 12 of 15 passed. Not passed, none of them
   a fault in the code:
   - CHECK-007, no OAuth redirect URI: Link's login opens in a window of its
-    own, on a computer (Decisions made); his call (Open questions).
+    own, on a computer (Decisions made, his call Oct 24).
   - CHECK-008, not run against Plaid's real sandbox: her team's sandbox
     keys are not in this session; it is the roadmap's Phase 2 rehearsal.
   - CHECK-009, the human tasks above are still to do on her team.
+- Round 2 (PR 7+8, Oct 24): FAIL, 12 of 15 passed, the same three as round
+  1. PR 7+8 changes no Plaid call: each sync now also keeps every card
+  statement Liabilities sends (her step 3, her_statements, 52.5), in the
+  same transaction as the cursor. Liabilities fields are read as nullable
+  (LIAB-002): a statement with neither date is not kept.
   Re-run build_check_acceptance after any later change to Plaid code, and
   after the rehearsal.
 
@@ -106,16 +111,17 @@ the code as it was verified — later changes invalidate it.
 - Link opens Plaid's own login in a window of its own, with no OAuth
   redirect URI; connecting is done on a computer, as the Bank page says
   (upstream's choice). OAUTH-001 to OAUTH-005 would be needed only to
-  connect from the phone. Confirmed with him: open (see below).
+  connect from the phone. His call, Oct 24: from a computer.
 - Each bank's name on her screens and in her alerts is the one Link gives
   (HB8).
+- Liabilities stays in `products`, beside transactions, as upstream has it
+  (his call, Oct 24). Plaid's guidance (LIAB-007, SELECT-005) puts it in
+  `additional_consented_products`; both of her banks support Liabilities
+  and the app reads it on every sync, so it changes nothing for her, and
+  upstream's code stays as it is.
+- She connects from a computer: no OAuth redirect URI (his call, Oct 24).
+  CHECK-007 stays not passed on purpose.
 
 ## Open questions
 
-- Liabilities is in `products` today, beside transactions. Plaid's guidance
-  (LIAB-007, SELECT-005) puts it in `additional_consented_products` instead.
-  Both of her banks support Liabilities and the app reads it on every sync,
-  so the change would not change coverage or billing for her; it would
-  change upstream's code. His call.
-- Connecting from the phone (an OAuth redirect URI on her hosted address)
-  instead of a computer: not needed for her two banks; his call.
+(none)

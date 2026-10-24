@@ -7032,5 +7032,54 @@
     "find": "for (const b of input.banksToLogIn) attention.push({ kind: 'bank-login', bank: b.bank, name: b.name });",
     "replace": "for (const b of input.banksToLogIn) attention.push({ kind: 'bank-login' });",
     "why": "[her-connections] 10.5 Home's login row does not name the bank"
+  },
+  {
+    "section": "cards",
+    "file": "packages/server/src/bank/kept-statements.ts",
+    "find": "if (card.last_statement_issue_date !== null) return card.last_statement_issue_date;",
+    "replace": "if (card.next_payment_due_date === 'never') return card.last_statement_issue_date;",
+    "why": "[her-cards] 52.5 statements are told apart by their due date only"
+  },
+  {
+    "section": "cards",
+    "file": "packages/server/src/bank/kept-statements.ts",
+    "find": "ON CONFLICT (plaid_account_id, statement_key) DO UPDATE SET raw = excluded.raw, last_sync = excluded.last_sync",
+    "replace": "ON CONFLICT (plaid_account_id, statement_key) DO NOTHING",
+    "why": "[her-cards] 52.5 a statement sent again with a change keeps the old one"
+  },
+  {
+    "section": "cards",
+    "file": "packages/server/src/sync/sync.ts",
+    "find": "    keepStatement(db, accountId, card, sync);\n",
+    "replace": "",
+    "why": "[her-cards] 52.5 no statement is kept"
+  },
+  {
+    "section": "cards",
+    "file": "packages/server/src/views/statement.ts",
+    "find": "const view = cardStatementView({ statement, before: read.at(-2) ?? null,",
+    "replace": "const view = cardStatementView({ statement, before: null,",
+    "why": "[her-cards] 52.4 the statement before is never known"
+  },
+  {
+    "section": "cards",
+    "file": "packages/server/src/views/home-cards.ts",
+    "find": "        : paid >= statement.statementBalance\n",
+    "replace": "        : paid > statement.statementBalance\n",
+    "why": "[her-cards] 52.1 paying exactly the statement balance is not paid in full"
+  },
+  {
+    "section": "cards",
+    "file": "packages/server/src/views/home-cards.ts",
+    "find": "    if (statement === undefined || off !== undefined) return",
+    "replace": "    if (statement === undefined) return",
+    "why": "[her-cards] 52.1 a card whose reminders are off still shows a statement"
+  },
+  {
+    "section": "cards",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "'second-card': owedAtSetup(setup, 'second-card') };",
+    "replace": "'second-card': owedAtSetup(setup, 'everyday-card') };",
+    "why": "[her-cards] 52.2 the second card starts from what the everyday card owed"
   }
 ]

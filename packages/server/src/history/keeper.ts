@@ -2,7 +2,7 @@ import { BankDesk, rolesComplete } from '../bank-desk.js';
 import { PLAID_URLS } from '../plaid/sandbox-lock.js';
 import type { IncomingMessage, Server } from 'node:http';
 import type { Agent } from 'node:https';
-import { rolesFor, type AccountId, type BankBalances, type Book, type CardStatement, type IsoDate, type Pot, type Switches } from '@budget-app/money';
+import { owedAtSetup, rolesFor, type AccountId, type BankBalances, type Book, type CardStatement, type EverydayCard, type IsoDate, type Pot, type Switches } from '@budget-app/money';
 import { UPSTREAM_START, type SetupStart } from '../setup-start.js';
 import { cardsNamed } from '../http/card-names.js';
 import { offTakenOut } from '../http/off-options.js';
@@ -21,6 +21,7 @@ import type { StoredAccount } from '../bank/stored-account.js';
 import { postingExamples, type PostingExample } from '../bank/posting-times.js';
 import { whyItDoesNotMatch } from '../bank/why.js';
 import { CARD_ORDER, cardStatement, closingDayOf } from '../bank/statements.js';
+import { keptStatements } from '../bank/kept-statements.js';
 import { canonical, refuse, ChoiceDesk } from '../choices.js';
 import type { TokenBox } from '../crypto/token-box.js';
 import { statement, type Db } from '../db/database.js';
@@ -47,14 +48,16 @@ import { trendsView } from '../trends.js';
 import { beforeSetupOf } from '../trends-db.js';
 import type { TrendsView } from '../views/trends.js';
 import type { ChoiceRequest, ChoiceResponse, MoveRequest, MoveResponse, RuleRequest, RuleResponse, SettingsRequest, SettingsResponse, SetupRequest, SetupResponse } from '../views/choice.js';
+import { withCards, homeCards, type HomeWithCards } from '../views/home-cards.js';
 import { homeView, type BankDetail, type CardRemindersOff, type CheckedAt, type HomeView, type PendingMoneyIn, type WhyLine } from '../views/home.js';
 import { paydayView, type PaydayView } from '../views/payday.js';
 import { reviewView, type ReviewView } from '../views/review.js';
 import { settingsView, type SettingsView } from '../views/settings.js';
 import type { SetupView } from '../views/setup.js';
 import type { StatusView } from '../views/status.js';
+import { statementScreenView, type StatementScreenView } from '../views/statement.js';
 import { recorderOf, totalsOf, type Answer, type Recorder, type SavedSetupAnswers } from './history.js';
-import { appendEvent, lastSeqOf, readDecision, readHistory, readLastChecked, replayHistory, saveDecision, saveLastChecked, sealHistory, type DeskName } from './history-db.js';
+import { appendEvent, lastSeqOf, readDecision, readHistory, readLastChecked, readSetupInput, replayHistory, saveDecision, saveLastChecked, sealHistory, type DeskName } from './history-db.js';
 import { timeIn, todayIn } from './today.js';
 
 // 0.7: how many events the books' history holds.
@@ -430,7 +433,7 @@ export class Keeper {
     return { statements, cardsOff };
   }
 
-  home(): HomeView {
+  home(): HomeWithCards {
     const view = homeView({
       today: this.today(),
       book: this.book(),
@@ -452,7 +455,39 @@ export class Keeper {
     });
     // 0.5, B82: the last safe to spend the bank backed up, and when.
     if (view.state === 'tracking' && view.safeToSpend.shown) saveLastChecked(this.#db, { amount: view.safeToSpend.amount, at: timeIn(this.timeZone(), this.#now()) });
-    return view;
+    // Her rulebook, 52.1 and 52.2: each card, with what is set aside for it.
+    return this.#withCards(view);
+  }
+
+  // Her rulebook, 52.1 and 52.2: Home with each card, from what each owed on
+  // setup day as setup day counted it. Only in her setup, once tracking has
+  // started; upstream's Home is upstream's.
+  #withCards(view: HomeView): HomeWithCards {
+    const book = this.book();
+    const setup = book === null || this.#switches().secondCard !== 'on' ? null : readSetupInput(this.#db);
+    if (book === null || setup === null) return view;
+    const atSetup = { 'everyday-card': owedAtSetup(setup, 'everyday-card'), 'second-card': owedAtSetup(setup, 'second-card') };
+    return withCards(view, homeCards({ atSetup }, this.today(), book, this.#bank(), this.#statements(), this.#cardsOff()));
+  }
+
+  // Her rulebook, 52.4 and 52.5: a card's last statement, from the
+  // statements kept (her step 3), the book and the bank history. Only in her
+  // setup; it only reads.
+  statement(card: EverydayCard): StatementScreenView {
+    if (this.#switches().secondCard !== 'on') return { state: 'off' };
+    const account = readAccounts(this.#db).find((a) => a.role === card);
+    const settings = this.book()?.settings() ?? null;
+    return statementScreenView({
+      today: this.today(),
+      card,
+      kept: account === undefined ? [] : keptStatements(this.#db, account.plaidAccountId),
+      closingDay: settings === null ? null : closingDayOf(card, settings),
+      book: this.book(),
+      items: readItems(this.#db),
+      accountId: account?.plaidAccountId ?? '',
+      bankRules: readBankRules(this.#db),
+      madeUpData: false,
+    });
   }
 
   // Step 3: "Checked at": the last read of the bank, in his home time zone.
@@ -1038,6 +1073,7 @@ export class Keeper {
       syncEvery: (_request, minutes) => this.changeSyncEvery(minutes),
       alerts: () => this.alertsView(),
       status: () => this.statusView(backups),
+      statement: (_request, card) => this.statement(card),
       health: () => this.healthy(),
       ...(backups === undefined ? {} : { backups }),
       ...(webhook === undefined ? {} : { webhook }),

@@ -12,7 +12,7 @@ texts already moved here from section H in their places (PR 3: "Off in this
 setup" after section 1, section 2, 12.2, 40.2 and 40.4; PR 4: section 2,
 3.1, 10.15, 13.2 and section 51; PR 5: section 1, 1.2, 4.1, 4.8, 5.1, 9.1,
 9.3, 9.8, 12.1, 12.6 and 14.2; PR 6: 0.5, 0.7, 1.1, 1.3, section 2's sync
-line, 10.5, 10.7, 10.13 and 12.3). The rest of her
+line, 10.5, 10.7, 10.13 and 12.3; PR 7+8: section 52). The rest of her
 setup is in section "H. Approved for her setup, not built yet" at the end:
 the texts he approved on Oct 23, 2026 (docs/her-plan.txt). A text there is not in
 force until the pull request named above it moves it into its place here,
@@ -1139,6 +1139,68 @@ a.  Future and Habits on the Trends tab, as 40.10 to 40.17: Needs and Wants
       10 days after the last one says so on its card.
 
 
+## 52. Both cards: set aside, reminders and statements
+
+52.1  Home shows each card: its statement balance and due date, what the
+      payments since the statement have paid toward it (9.3), what it
+      owes now in all (the statement plus purchases since), and how much
+      of that is set aside (52.2). From the first reminder day it says
+      due, and after the due date, overdue, in words, not only color
+      (9.6). With the card's reminders off (9.8), it says so instead.
+      Tapping a card opens its statement (52.4).
+52.2  Set aside. Every purchase on a card already came out of its bucket
+      on the day you made it (4.1), so the money to pay the card is not
+      in any bucket: it stays in your bank accounts until you pay. So
+      what is set aside for a card is all of what it owes now as the app
+      counts it (its balance on setup day, plus purchases, fees and
+      interest since, less refunds and the payments that reached it),
+      pending charges included. When the totals match the bank (12.3),
+      that is exactly what the bank says the card owes. Purchases still
+      waiting to be sorted count too: they are held back from safe to
+      spend until you sort them (4.3). If the savings account holds more
+      than the buckets that live there (3.8, "extra"), Home says how much
+      of the set-aside money is in savings rather than checking.
+52.3  Reminder days, for each card: 7 days and 2 days before the due date
+      (section 2). Each card's reminders, due line and overdue alert are
+      its own.
+52.4  Statement. For each card, its last statement: from the day after
+      the statement before closed to its own closing day (9.8). It lists
+      what is on it in lines that add up to the statement balance
+      exactly, to the cent:
+      - what was carried in from the statement before, less the payments
+        and credits that reached the card in this statement's days;
+      - each purchase, fee and interest charge, less refunds, by the
+        bucket it is sorted to now (needs, wants, or still unsorted), and
+        again by the pay period (paycheck) it was counted in, each with
+        its total;
+      - purchases from before setup day, read by today's rules and marked
+        "Before setup day", as Trends reads them (40.1);
+      - anything the app's lines do not account for is one more line,
+        "Not matched to a purchase", with its amount. It is never hidden,
+        and the lines still add up exactly.
+      The carried-in line needs the statement before. For the first
+      statement the app sees, it is "From before the app saw this card"
+      instead. Tapping a bucket or a paycheck lists its purchases. It
+      only reads: it never changes a bucket, a rule or the history.
+52.5  Each statement the bank sends is kept, so the statement before is
+      known from the second one on.
+
+In plain words, the card's sheet in the app (made-up numbers):
+
+  Why paying your card isn't spending. When you buy $30 of groceries on
+  a card, the app takes the $30 out of Needs that same day. Your checking
+  account still has the $30, because you haven't paid the card yet. So
+  the $30 isn't in any bucket any more, but it's still in your account,
+  waiting for the card bill. That's what "set aside" means. When you pay
+  the card $30 from checking, checking goes down $30 and the card goes
+  down $30, and no bucket changes, because the $30 was already counted
+  on the day you bought the groceries. You don't have to work out the
+  bill or save for it separately. If every purchase is sorted, the money
+  for each card is already there.
+
+Readings HB12 to HB18 (docs/her-questions.txt), for his check.
+
+
 ## 60. Answers on her setup (Oct 23, 2026)
 
 a.  A Wishlist item bought for less or more than its price is marked
@@ -1186,67 +1248,9 @@ change with the answer.
   In place: 0.5, 0.7, 1.1, 1.3, section 2's sync line, 10.5, 10.7, 10.13
   and 12.3.
 
-### PR 7. Both cards on Home, set aside, reminders per card
+### PR 7+8. Both cards on Home, set aside, reminders per card, and the statement
 
-  52.1  Home shows each card: its statement balance and due date, what the
-        payments since the statement have paid toward it (9.3), what it
-        owes now in all (the statement plus purchases since), and how much
-        of that is set aside (52.2). From the first reminder day it says
-        due, and after the due date, overdue, in words, not only color
-        (9.6). With the card's reminders off (9.8), it says so instead.
-        Tapping a card opens its statement (52.4).
-  52.2  Set aside. Every purchase on a card already came out of its bucket
-        on the day you made it (4.1), so the money to pay the card is not
-        in any bucket: it stays in your bank accounts until you pay. So
-        what is set aside for a card is all of what it owes now as the app
-        counts it (its balance on setup day, plus purchases, fees and
-        interest since, less refunds and the payments that reached it),
-        pending charges included. When the totals match the bank (12.3),
-        that is exactly what the bank says the card owes. Purchases still
-        waiting to be sorted count too: they are held back from safe to
-        spend until you sort them (4.3). If the savings account holds more
-        than the buckets that live there (3.8, "extra"), Home says how much
-        of the set-aside money is in savings rather than checking.
-  52.3  Reminder days, for each card: 7 days and 2 days before the due date
-        (section 2). Each card's reminders, due line and overdue alert are
-        its own.
-
-  In plain words, for the card's sheet in the app (made-up numbers):
-
-    Why paying your card isn't spending. When you buy $30 of groceries on
-    a card, the app takes the $30 out of Needs that same day. Your checking
-    account still has the $30, because you haven't paid the card yet. So
-    the $30 isn't in any bucket any more, but it's still in your account,
-    waiting for the card bill. That's what "set aside" means. When you pay
-    the card $30 from checking, checking goes down $30 and the card goes
-    down $30, and no bucket changes, because the $30 was already counted
-    on the day you bought the groceries. You don't have to work out the
-    bill or save for it separately. If every purchase is sorted, the money
-    for each card is already there.
-
-### PR 8. The statement, per card
-
-  52.4  Statement. For each card, its last statement: from the day after
-        the statement before closed to its own closing day (9.8). It lists
-        what is on it in lines that add up to the statement balance
-        exactly, to the cent:
-        - what was carried in from the statement before, less the payments
-          and credits that reached the card in this statement's days;
-        - each purchase, fee and interest charge, less refunds, by the
-          bucket it is sorted to now (needs, wants, Wishlist, or still
-          unsorted), and again by the pay period (paycheck) it was counted
-          in, each with its total;
-        - purchases from before setup day, read by today's rules and marked
-          "Before setup day", as Trends reads them (40.1);
-        - anything the app's lines do not account for is one more line,
-          "Not matched to a purchase", with its amount. It is never hidden,
-          and the lines still add up exactly.
-        The carried-in line needs the statement before. For the first
-        statement the app sees, it is "From before the app saw this card"
-        instead. Tapping a bucket or a paycheck lists its purchases. It
-        only reads: it never changes a bucket, a rule or the history.
-  52.5  Each statement the bank sends is kept, so the statement before is
-        known from the second one on.
+  In place: section 52.
 
 ### PR 9. The Wishlist bucket
 
@@ -1283,6 +1287,8 @@ change with the answer.
         zero, since that is usually a typo.
   10.1 and 10.2 are unchanged: the low and empty alerts are for needs and
   wants only.
+  52.4, the buckets a purchase is listed by: needs, wants, Wishlist, or
+  still unsorted.
   40.2 and 40.4: Wishlist spending is its own part of each pay period's
   bar. 40.5: Wishlist over time beside savings, its own amount. 40.11: no
   estimate for Wishlist.

@@ -48,6 +48,8 @@ Plan Q8, Oct 23: the bank names stay (Capital One, American Express).
 
 PART B. READINGS FOR HIM TO CHECK
 
+HB1 to HB5: PR 4, merged with them. HB6 to HB11: agreed by him, Oct 24.
+
 HB1 (PR 4). Turning "Ask before splitting a paycheck" off while a paycheck
     waits for her yes: it keeps waiting for her yes. Only paychecks that
     post after the change are split by themselves. Turning it on changes
@@ -139,3 +141,62 @@ HB11 (PR 6). Webhooks. A webhook names its connection by Plaid's item_id,
     timer's sync reads both banks, one after the other. Pointing the
     webhooks at the hosted server (serve/webhook-address.mjs) points both
     connections; a new connection gets the address when it is made.
+
+HB12 (PR 7+8, 52.1, 52.2). "What it owes now in all" and "set aside" are the
+    same number: 52.2 sets aside all of what a card owes. Home says it once:
+    "Owes $96.61 now, all of it set aside." A card that owes less than
+    nothing (a refund bigger than what it owed) has a credit, and nothing is
+    set aside for it: "A credit of $0.01: nothing to set aside." The total
+    set aside is both cards' set-aside amounts added up.
+
+HB13 (52.2). What a card owed on setup day is what setup day counted: its
+    balance plus its charges still pending then (14.2). A payment that had
+    already landed on the card on setup day is in that balance; one still on
+    its way lowers what it owes when it lands. "How much is in savings" is
+    one line under both cards: the extra the savings account holds over the
+    savings bucket (3.8), never more than all that is set aside, and said
+    only when it is more than $0.00. While the bank cannot be read, it is
+    not said.
+
+HB14 (52.4). Which transactions are on a statement: those the bank posted
+    in its days, by the day the bank posted them (Plaid's date). A charge
+    still pending is on none yet; one pending before the closing day and
+    posted after it is on the next (the posted side), and one posted on the
+    closing day is on that statement. A charge the bank takes back (4.10)
+    stays on the statement it posted in, and the take-back is a line on the
+    statement it came in, under the same bucket, less.
+
+HB15 (52.4). Where each line is counted. A purchase, fee or interest charge
+    under the bucket it is sorted to now: a split one under each of its
+    buckets; still waiting in review, "Still unsorted". A refund matched to
+    a purchase goes under that purchase's bucket ("less refunds"); a refund
+    of all of a split purchase at once gives each bucket its part back, and
+    any other refund of a split one is under its first part. A refund still
+    waiting in review is "Still unsorted"; one sorted as payback to needs or
+    wants is under that bucket. "Payments and credits" (the carried-in line)
+    are the payments that reached the card and money back on it sorted
+    anywhere else (not mine, for example). A charge pending on setup day:
+    the part setup day counted is "Before setup day", any later difference
+    is under its bucket.
+
+HB16 (52.4). "The pay period it was counted in": the books' pay period whose
+    days the purchase's day falls in (4.1: a purchase comes out of a bucket
+    on the day it is made); the first is from setup day to the first
+    paycheck ("From setup day, Thu, Oct 1"), each after it by its paycheck
+    ("Paycheck of Fri, Oct 9"). A take-back by the day it came. Before setup
+    day is its own group.
+
+HB17 (52.4). The first statement the app sees: its days start the day after
+    the same day a month before (as 9.8 counts a closing day). Its
+    purchases in those days are listed as usual; "From before the app saw
+    this card" is what is left of the balance, so it has no "Not matched"
+    line.
+
+HB18 (52.4, 52.5). Before setup day, the bank history on the card is read
+    by today's bank rules: a transfer reaching the card is a payment (the
+    carried-in line), anything else is "Before setup day". Statements are
+    kept only in her setup (her step 3, her_statements), each by its
+    statement date, or by its due date when the bank sends none; the same
+    one sent again with a change replaces it. Her step 3 starts from the
+    statement each card already had. Upstream's setup has no section 52:
+    no cards on Home and no statement screen.

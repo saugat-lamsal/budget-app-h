@@ -45,6 +45,29 @@ export const HER_STEPS: readonly string[] = [
     failing_since TEXT
   );
   `,
+  `
+  -- Her step 3 (her rulebook, 52.5, PR 7+8): each statement the bank sends,
+  -- kept, so the statement before is known from the second one on. Upstream's
+  -- statements table keeps only the latest for each card. A statement is told
+  -- from another by its statement date, or by its due date when the bank sends
+  -- no statement date (9.8); a later answer about the same one replaces it.
+  CREATE TABLE her_statements (
+    plaid_account_id TEXT NOT NULL,
+    statement_key TEXT NOT NULL,
+    raw TEXT NOT NULL,
+    first_sync INTEGER NOT NULL,
+    last_sync INTEGER NOT NULL,
+    PRIMARY KEY (plaid_account_id, statement_key)
+  );
+
+  -- The latest one of each card, already read before this step.
+  INSERT INTO her_statements (plaid_account_id, statement_key, raw, first_sync, last_sync)
+  SELECT plaid_account_id,
+    COALESCE(json_extract(raw, '$.last_statement_issue_date'), 'due ' || json_extract(raw, '$.next_payment_due_date')),
+    raw, updated_by_sync, updated_by_sync
+  FROM statements
+  WHERE COALESCE(json_extract(raw, '$.last_statement_issue_date'), json_extract(raw, '$.next_payment_due_date')) IS NOT NULL;
+  `,
 ];
 
 export const HER_SCHEMA_VERSION = HER_STEPS.length;

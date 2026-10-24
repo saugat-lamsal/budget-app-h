@@ -48,7 +48,21 @@ export type Route =
   // 0.7 (A57): the status page, opened from Settings (real server only). It only reads.
   | { readonly screen: 'status' }
   // Setup day, one step at a time (section 14).
-  | { readonly screen: 'setup'; readonly step: SetupStepName };
+  | { readonly screen: 'setup'; readonly step: SetupStepName }
+  // Her rulebook, 52.4: one card's statement, opened from its row on Home. It only reads.
+  | { readonly screen: 'statement'; readonly card: StatementCard };
+
+// Her rulebook, 52.4 (PR 7+8): each card's statement, at its own address,
+// /statement/everyday-card. Kept apart from upstream's screens. The server
+// answers each with the app (packages/server/src/http/server.ts,
+// HER_SCREEN_PATHS; a test checks).
+export const STATEMENT_CARDS = ['everyday-card', 'second-card'] as const;
+export type StatementCard = (typeof STATEMENT_CARDS)[number];
+export const HER_SCREEN_ROUTES: readonly Route[] = Object.freeze(STATEMENT_CARDS.map((card): Route => ({ screen: 'statement', card })));
+
+export function statementPath(card: StatementCard): string {
+  return `/statement/${card}`;
+}
 
 // ----- Setup day (section 14) -----
 
@@ -100,6 +114,8 @@ export function pathOfRoute(route: Route): string {
       return '/status';
     case 'setup':
       return setupPath(route.step);
+    case 'statement':
+      return statementPath(route.card);
   }
 }
 
@@ -112,6 +128,8 @@ export function routeOf(pathname: string): Route | null {
   if (path === '/alerts') return { screen: 'alerts' };
   if (path === '/bank') return { screen: 'bank' };
   if (path === '/status') return { screen: 'status' };
+  const card = /^\/statement\/([^/]+)$/.exec(path)?.[1];
+  if (card !== undefined && (STATEMENT_CARDS as readonly string[]).includes(card)) return { screen: 'statement', card: card as StatementCard };
   const step = /^\/setup\/([^/]+)$/.exec(path)?.[1];
   if (step !== undefined && (SETUP_STEPS as readonly string[]).includes(step)) return { screen: 'setup', step: step as SetupStepName };
   const slug = /^\/buckets\/([^/]+)$/.exec(path)?.[1];
@@ -123,10 +141,10 @@ export function routeOf(pathname: string): Route | null {
 }
 
 // Which tab is lit while a screen is showing: a bucket's screen and Payday
-// are about the buckets; Setup day leads to Home; the alerts are opened from
-// Settings.
+// are about the buckets; Setup day and a card's statement lead to Home; the
+// alerts are opened from Settings.
 export function tabOfRoute(route: Route): Tab {
-  return route.screen === 'tab' ? route.tab : route.screen === 'setup' ? 'home' : route.screen === 'alerts' || route.screen === 'bank' || route.screen === 'status' ? 'settings' : 'buckets';
+  return route.screen === 'tab' ? route.tab : route.screen === 'setup' || route.screen === 'statement' ? 'home' : route.screen === 'alerts' || route.screen === 'bank' || route.screen === 'status' ? 'settings' : 'buckets';
 }
 
 export function routeTitle(route: Route): string {
@@ -145,6 +163,8 @@ export function routeTitle(route: Route): string {
       return 'Status · Budget';
     case 'setup':
       return 'Setup day · Budget';
+    case 'statement':
+      return 'Statement · Budget';
   }
 }
 
@@ -165,14 +185,16 @@ export function routeLabel(route: Route): string {
       return 'Status';
     case 'setup':
       return SETUP_STEP_TITLES[route.step];
+    case 'statement':
+      return 'Statement';
   }
 }
 
 // Where "back" goes from a screen: the screen he came from, if the app knows
 // it (the address it left, kept in the history entry), otherwise Buckets (the
-// alerts: Settings, where they are opened).
+// alerts: Settings, where they are opened; a card's statement: Home).
 export function backTarget(route: Route, cameFrom: unknown): Route {
-  const home: Route = { screen: 'tab', tab: route.screen === 'alerts' || route.screen === 'bank' || route.screen === 'status' ? 'settings' : 'buckets' };
+  const home: Route = { screen: 'tab', tab: route.screen === 'alerts' || route.screen === 'bank' || route.screen === 'status' ? 'settings' : route.screen === 'statement' ? 'home' : 'buckets' };
   if (typeof cameFrom !== 'string') return home;
   const from = routeOf(cameFrom);
   if (from === null || pathOfRoute(from) === pathOfRoute(route)) return home;

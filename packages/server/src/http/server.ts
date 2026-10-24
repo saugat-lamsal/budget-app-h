@@ -38,6 +38,13 @@ export const APP_PATHS: readonly string[] = ['/', '/home', '/buckets', '/review'
 // packages/web/src/app/routes.ts (a test checks).
 export const SCREEN_PATHS: readonly string[] = ['/payday', '/alerts', '/bank', '/status', ...Object.keys(POT_SLUGS).map((slug) => `/buckets/${slug}`)];
 
+// Her rulebook, 52.4 (PR 7+8): each card's statement, opened from Home. Kept
+// apart from upstream's screens, and from what the demo loads (views/
+// statement.ts). Must match packages/web/src/app/routes.ts HER_SCREEN_ROUTES
+// (a test checks).
+export const STATEMENT_CARDS = ['everyday-card', 'second-card'] as const;
+export const HER_SCREEN_PATHS: readonly string[] = STATEMENT_CARDS.map((card) => `/statement/${card}`);
+
 // 1.1 to 1.3: the Bank connection screen, the one page Plaid Link opens on
 // (its page rules let Plaid's login in: bankPageHeaders), and its numbers and
 // what it sends. They change which bank the app reads, never money (0.4).
@@ -96,7 +103,7 @@ export const AUTH_ROUTES: readonly Route[] = [
 // (scripts, styles, icons) are open: the login page needs them, and they hold
 // nothing of his.
 export const ROUTES: readonly Route[] = [
-  ...[...APP_PATHS, ...SCREEN_PATHS, ...SETUP_PATHS].map((path): Route => ({ method: 'GET', path, login: true })),
+  ...[...APP_PATHS, ...SCREEN_PATHS, ...SETUP_PATHS, ...HER_SCREEN_PATHS].map((path): Route => ({ method: 'GET', path, login: true })),
   { method: 'GET', path: LOGIN_PATH, login: false },
   { method: 'GET', path: HEALTH_PATH, login: false },
   // A43: the backups' health, for a second monitor, and Litestream's beat (from this machine only).
@@ -104,7 +111,7 @@ export const ROUTES: readonly Route[] = [
   { method: 'GET', path: BACKUP_BEAT_PATH, login: false },
   // Section 2 (A47): Plaid's webhooks. Plaid has no login: each call is checked by Plaid's own signature instead.
   { method: 'POST', path: WEBHOOK_PATH, login: false },
-  ...['home', 'buckets', 'review', 'trends', 'settings', 'setup', 'payday', 'alerts', 'status', ...Object.keys(POT_SLUGS).map((slug) => `activity/${slug}`)].map((name): Route => ({ method: 'GET', path: `/api/${name}`, login: true })),
+  ...['home', 'buckets', 'review', 'trends', 'settings', 'setup', 'payday', 'alerts', 'status', ...Object.keys(POT_SLUGS).map((slug) => `activity/${slug}`), ...STATEMENT_CARDS.map((card) => `statement/${card}`)].map((name): Route => ({ method: 'GET', path: `/api/${name}`, login: true })),
   { method: 'POST', path: '/api/choice', login: true },
   { method: 'POST', path: '/api/seen', login: true },
   { method: 'POST', path: SYNC_EVERY_PATH, login: true },
@@ -178,6 +185,8 @@ export interface AppServerOptions {
   // 0.7 (A57): the status page, the real server only. Without it (the demo),
   // /api/status is not there.
   readonly status?: (request: IncomingMessage) => StatusView | Promise<StatusView>;
+  // Her rulebook, 52.4: one card's statement, /api/statement/everyday-card. It only reads.
+  readonly statement?: (request: IncomingMessage, card: (typeof STATEMENT_CARDS)[number]) => StatementShown | Promise<StatementShown>;
   // Phase 5, the phone: the Notifications card, for the device asking. Without
   // it (the demo, which sends no alerts), the addresses are not there.
   readonly push?: PushHandlers;
@@ -193,6 +202,11 @@ export interface AppServerOptions {
   // Section 2 (A47): Plaid's webhooks, with the exact bytes of each body.
   // Without it (the demo), the address is not there.
   readonly webhook?: WebhookHandler;
+}
+
+// Her rulebook, 52.4: the statement screen's view (views/statement.ts, StatementScreenView).
+export interface StatementShown {
+  readonly state: string;
 }
 
 export interface WebhookHandler {
@@ -619,6 +633,20 @@ export function createAppServer(options: AppServerOptions): Server {
         return;
       }
     }
+    // Her rulebook, 52.4: one card's statement: /api/statement/second-card.
+    const statementCard = STATEMENT_CARDS.find((card) => path === `/api/statement/${card}`);
+    if (statementCard !== undefined && options.statement !== undefined) {
+      let view: StatementShown;
+      try {
+        view = await options.statement(request, statementCard);
+      } catch (error) {
+        options.onError?.(error);
+        send(response, 500, 'application/json; charset=utf-8', JSON.stringify({ error: 'statement-unavailable' }), 'no-store');
+        return;
+      }
+      send(response, 200, 'application/json; charset=utf-8', JSON.stringify(view), 'no-store');
+      return;
+    }
     if (path === '/api/payday' && options.payday !== undefined) {
       let view: PaydayView;
       try {
@@ -653,7 +681,7 @@ export function createAppServer(options: AppServerOptions): Server {
       return;
     }
 
-    if (APP_PATHS.includes(path) || SCREEN_PATHS.includes(path) || SETUP_PATHS.includes(path) || (options.gate !== undefined && path === LOGIN_PATH)) {
+    if (APP_PATHS.includes(path) || SCREEN_PATHS.includes(path) || SETUP_PATHS.includes(path) || HER_SCREEN_PATHS.includes(path) || (options.gate !== undefined && path === LOGIN_PATH)) {
       await sendFile(response, join(webRoot, 'index.html'), 'no-cache');
       return;
     }
@@ -744,7 +772,7 @@ async function atTheGate(gate: Gate, request: IncomingMessage, response: ServerR
     send(response, 401, 'application/json; charset=utf-8', JSON.stringify({ error: 'login-needed' }), 'no-store');
     return true;
   }
-  if (path === '/' || APP_PATHS.includes(path) || SCREEN_PATHS.includes(path) || SETUP_PATHS.includes(path)) {
+  if (path === '/' || APP_PATHS.includes(path) || SCREEN_PATHS.includes(path) || SETUP_PATHS.includes(path) || HER_SCREEN_PATHS.includes(path)) {
     for (const [name, value] of Object.entries(SECURITY_HEADERS)) response.setHeader(name, value);
     response.setHeader('Location', LOGIN_PATH);
     response.setHeader('Cache-Control', 'no-store');

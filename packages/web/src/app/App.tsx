@@ -12,10 +12,11 @@ import { ReviewScreen } from '../screens/Review.js';
 import { SettingsScreen } from '../screens/Settings.js';
 import { TrendsScreen } from '../screens/Trends.js';
 import { SetupScreen } from '../screens/Setup.js';
+import { StatementScreen } from '../screens/Statement.js';
 import { Backdrop } from '../ui/blocks.js';
 import { TabBar } from '../ui/TabBar.js';
-import { useActivity, useAlerts, useBank, useBuckets, useHome, usePayday, useReview, useSettings, useSetup, useStatus, useTrends, type Reload } from './api.js';
-import { backTarget, pathOfRoute, routeLabel, routeOf, routeTitle, tabOfRoute, type Route, type SetupStepName, type Tab } from './routes.js';
+import { useActivity, useAlerts, useBank, useBuckets, useHome, usePayday, useReview, useSettings, useSetup, useStatement, useStatus, useTrends, type Reload } from './api.js';
+import { backTarget, pathOfRoute, routeLabel, routeOf, routeTitle, tabOfRoute, type Route, type SetupStepName, type StatementCard, type Tab } from './routes.js';
 
 // Each of these loads its numbers when its screen opens, so it is always fresh.
 // A change on one of them (a choice, a move) also asks Home for its numbers
@@ -67,6 +68,12 @@ function StatusTab({ back }: { readonly back: Back }) {
 function BankTab({ back }: { readonly back: Back }) {
   const [load, reload] = useBank();
   return <BankScreen load={load} onRetry={reload} back={back} />;
+}
+
+// Her rulebook, 52.4: a card's statement, opened from Home. It only reads.
+function StatementTab({ card, back }: { readonly card: StatementCard; readonly back: Back }) {
+  const [load, reload] = useStatement(card);
+  return <StatementScreen card={card} load={load} onRetry={reload} back={back} />;
 }
 
 // Setup day (section 14). Once tracking starts, Home shows.
@@ -164,6 +171,8 @@ export function App() {
         <BankTab back={back} />
       ) : route.screen === 'status' ? (
         <StatusTab back={back} />
+      ) : route.screen === 'statement' ? (
+        <StatementTab key={route.card} card={route.card} back={back} />
       ) : route.screen === 'setup' ? (
         <SetupTab
           step={route.step}

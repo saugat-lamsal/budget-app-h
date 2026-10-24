@@ -57,9 +57,9 @@ bank names (Capital One, American Express) may appear (his OK, Oct 23).
 - Never weaken, skip, or delete a failing test to make it pass. Fix the code
   or raise the question.
 - Any bug found later becomes a test first, then gets fixed.
-- Never turn on auto-merge for the money-math PRs (3 to 10 in
-  docs/her-plan.txt): open the PR, let CI run, and stop for his review. He
-  merges after he has checked it.
+- Auto-merge only where point 7 says so (PRs 7+8 and 10+11). Never for
+  the money-math PRs (3 to 6 and 9): open the PR, let CI run, and stop for
+  his review. He merges after he has checked it.
 
 
 ## Upstream, and keeping close to it
@@ -117,11 +117,25 @@ This applies to every PR and every session, cloud or local.
    check (packages/money/worked-examples-h.txt and
    packages/server/worked-examples-h.txt). Each one is also a test.
 6. Type-check and run the tests as "Test only what changed" says below.
-7. A PR that changes the money math (packages/money) gets the full bar:
-   all of the above, plus the long simulator runs (1,000 her lives of 5
-   years, `node scripts/simulate.mjs --profile her`, and 20 simulated years
-   through the bank connection and the database with restarts), and the
-   upstream lives too, unchanged.
+7. Which bar each PR gets from PR 7 on (his OK, Oct 24, 2026). PRs 7 and
+   8 are one PR, and 10 and 11 are one PR. The order: 7+8, 9, 10+11, 12.
+   - View and read-only PRs (7+8, 10+11): tests for the new code only. No
+     long simulator runs. Break-it at most about 25 breaks, on the new
+     logic. No twin tests. Browser tests locally in Chromium for the
+     screens touched only (CI runs Chromium and WebKit). Auto-merge when
+     CI is green.
+   - PR 9 (the Wishlist bucket, money math): tests first for every rule;
+     the random tests (paycheck parts add up, no cent made or lost, the
+     self-check holds); her lives 200 x 2 years only (`node
+     scripts/simulate.mjs --profile her --lives 200 --years 2`); break-it
+     about 25, on the money code. Stop for his review, no auto-merge.
+   - Upstream's lives are not rerun unless shared money code changes.
+   - PR 12 keeps the full end check: 1,000 her lives of 5 years (`node
+     scripts/simulate.mjs --profile her`), and 20 simulated years through
+     the bank connection and the database with restarts.
+   (PRs 3 to 6 had the full bar: all of the above, plus 1,000 her lives of
+   5 years, 20 years through the bank connection and the database with
+   restarts, and the upstream lives too, unchanged.)
 8. End of each PR: a short report of the rules and their tests, the test
    count, the break-it results, and anything not tested and why.
 
@@ -132,8 +146,7 @@ Test only what changed (upstream's rule, kept):
 - Before each push, run one full `SKIP_BROWSER_TESTS=1 npm test`. Run
   browser tests locally only for the screens you touched; CI runs the rest.
 - Never rerun a suite that already passed on the same code.
-- Long simulations only when the money math or the simulator changes, and
-  then always (point 7).
+- Long simulations only as point 7 says.
 - A commit with only docs or notes gets [skip ci], with one exception:
   main needs the four CI checks (checks, chromium, webkit, image) before a
   pull request can merge, and a pull request whose last commit says
@@ -305,3 +318,20 @@ or "Due" on Wishlist items and cards, never color alone.
   Home's login rows and greyed safe to spend by name, status per bank.
   Tests: two-banks-her.test.ts, sync-random-her.test.ts, her simulated life
   through two Items (harness twoBanks, bothBanks). PLAID_PLAN.md.
+- PR 6 merged (Oct 24, 2026). His answers: HB6 to HB11 agreed; Liabilities
+  stays in products, as upstream; she connects from a computer, no OAuth
+  redirect. His new testing bar for PRs 7 to 12 (point 7).
+- PR 7+8, both cards on Home and each card's statement (branch
+  her-cards-statements). Section 52 in place. Money, read only: a hook on
+  the book (Book.cardEntries), set-aside.ts (52.2: what each card owes as
+  the books count it, from what setup day counted, owedAtSetup) and
+  statement.ts (52.4: lines that add up to the statement balance, with
+  "Not matched" never hidden). Server: Home's card rows (views/home-cards.ts,
+  her setup only), the Statement screen's view (views/statement.ts) at
+  /api/statement/<card> and /statement/<card> (HER_SCREEN_PATHS, kept apart
+  from upstream's SCREEN_PATHS), her step 3 (her_statements, 52.5, kept by
+  each sync in her setup). Web: "Your cards" on Home with the sheet "Why
+  paying your card isn't spending", the Statement screen (by bucket, by
+  paycheck). Readings HB12 to HB18. Random test: her lives, every day each
+  card's owed against the simulated bank, every statement adds up with
+  nothing not matched (cards-random-her.test.ts).
