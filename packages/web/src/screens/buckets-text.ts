@@ -1,4 +1,5 @@
 import type { OnItsWay } from '@budget-app/server/views';
+import { nameOf } from '../ui/card-names.js';
 import { shortDate } from '../ui/dates.js';
 import { ACCOUNT_NAMES } from './review-text.js';
 
@@ -13,7 +14,9 @@ export function onItsWayTitle(item: Pick<OnItsWay, 'to'>): string {
     case 'checking':
       return 'To checking';
     case 'everyday-card':
-      return 'Payment to the everyday card';
+      return `Payment to ${nameOf(item.to) ?? 'the everyday card'}`;
+    case 'second-card':
+      return `Payment to ${nameOf(item.to) ?? 'the second card'}`;
     case 'old-card':
       return 'Payment to the old card';
   }
@@ -21,8 +24,8 @@ export function onItsWayTitle(item: Pick<OnItsWay, 'to'>): string {
 
 export function onItsWayDetail(item: Pick<OnItsWay, 'from' | 'to' | 'date' | 'seen' | 'counted'>): string {
   const from = ACCOUNT_NAMES[item.from];
-  const card = item.to === 'everyday-card' || item.to === 'old-card';
-  const to = card ? `the ${ACCOUNT_NAMES[item.to].toLowerCase()}` : ACCOUNT_NAMES[item.to];
+  const card = item.to === 'everyday-card' || item.to === 'old-card' || item.to === 'second-card';
+  const to = nameOf(item.to) ?? (card ? `the ${ACCOUNT_NAMES[item.to].toLowerCase()}` : ACCOUNT_NAMES[item.to]);
   const where = item.seen === 'left' ? `Left ${from} ${shortDate(item.date)}. Not ${card ? 'on' : 'in'} ${to} yet.` : `Reached ${to} ${shortDate(item.date)}. Not shown leaving ${from} yet.`;
   return item.counted ? where : `${where} Not part of the check with your bank: the old card is kept apart.`;
 }

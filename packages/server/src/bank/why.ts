@@ -14,18 +14,20 @@ import type { WhyAccount, WhyLine } from '../views/home.js';
 //   the app side. Every transaction the books count since moves the books by
 //   as much as it moves the bank side, so what each account's figure moved
 //   beyond its transactions is that account's part of the difference: for
-//   checking or savings, what it counted plus its transactions; for the card,
-//   which the bank side takes away, less what it counted, plus its
-//   transactions. What the accounts do not account for is the rest: the
-//   books moving otherwise than the bank's transactions (something waiting
-//   for his decision, say). So the lines always add up to the difference.
+//   checking or savings, what it counted plus its transactions; for a card
+//   (the everyday card, and her second card), which the bank side takes
+//   away, less what it counted, plus its transactions. What the accounts do
+//   not account for is the rest: the books moving otherwise than the bank's
+//   transactions (something waiting for his decision, say). So the lines
+//   always add up to the difference.
 // - A cause is named only when it accounts for an account's move to the cent:
 //   the fewest pending items whose parts add up to it, oldest first. Otherwise
 //   the whole move is one line: its balance went up or down with no
 //   transaction from the bank yet.
 
 export type CheckAccount = WhyAccount;
-const ACCOUNTS: readonly CheckAccount[] = ['checking', 'savings', 'everyday-card'];
+const ACCOUNTS: readonly CheckAccount[] = ['checking', 'savings', 'everyday-card', 'second-card'];
+const isCard = (account: CheckAccount): boolean => account === 'everyday-card' || account === 'second-card';
 
 // One account as a read of the bank left it.
 export interface AccountAtRead {
@@ -46,8 +48,10 @@ export interface PendingAtRead {
 }
 
 // What a read of the bank keeps (bank_reads.bank, database step 11).
+// Her second card is there only when one is picked: upstream's reads, and
+// any kept before it, have none.
 export interface BankAtRead {
-  readonly accounts: Readonly<Record<CheckAccount, AccountAtRead>>;
+  readonly accounts: Readonly<Record<Exclude<CheckAccount, 'second-card'>, AccountAtRead>> & { readonly 'second-card'?: AccountAtRead };
   // Every pending item Plaid listed on the three accounts then.
   readonly pending: readonly PendingAtRead[];
   // The last sync saved by then: an item first seen in a later one came since.
@@ -94,8 +98,10 @@ export function whyItDoesNotMatch(input: WhyInput): WhyLine[] {
   for (const account of ACCOUNTS) {
     const before = then.accounts[account];
     const after = now.accounts[account];
+    // An account one of the two reads did not have: its part is in the rest.
+    if (before === undefined || after === undefined) continue;
     const counted = subtractCents(after.counted, before.counted);
-    const move = addCents(account === 'everyday-card' ? -counted : counted, subtractCents(after.items, before.items));
+    const move = addCents(isCard(account) ? -counted : counted, subtractCents(after.items, before.items));
     if (move === 0) continue;
     explained = addCents(explained, move);
     const candidates = candidatesOn(account, input).filter((c) => c.amount !== 0);
@@ -107,9 +113,9 @@ export function whyItDoesNotMatch(input: WhyInput): WhyLine[] {
       for (const i of chosen) lines.push(candidates[i]!);
       continue;
     }
-    const balance = account !== 'everyday-card' && after.available !== null ? 'available' : 'posted';
+    const balance = !isCard(account) && after.available !== null ? 'available' : 'posted';
     // A card's balance going up is the bank side going down.
-    const up = account === 'everyday-card' ? move < 0 : move > 0;
+    const up = isCard(account) ? move < 0 : move > 0;
     lines.push({ kind: 'balance-moved', account, balance, went: up ? 'up' : 'down', by: Math.abs(move), amount: move });
   }
   const rest = subtractCents(difference, explained);
@@ -121,15 +127,15 @@ export function whyItDoesNotMatch(input: WhyInput): WhyLine[] {
 function candidatesOn(account: CheckAccount, input: WhyInput): Named[] {
   const then = input.then!;
   const pending = input.pendingNow.filter((p) => p.account === account);
-  const available = { then: then.accounts[account].available !== null, now: input.now.accounts[account].available !== null };
-  if (account === 'everyday-card' || (!available.then && !available.now)) {
+  const available = { then: (then.accounts[account]?.available ?? null) !== null, now: (input.now.accounts[account]?.available ?? null) !== null };
+  if (isCard(account) || (!available.then && !available.now)) {
     // The bank posted it, and Plaid still lists it as pending: the posted
     // balance has it, and the check adds a charge again (or leaves money in out).
     return pending.map((p) => ({ kind: 'posted-still-pending', account, description: p.description, charge: p.purchase && p.amount > 0, amount: -p.amount }));
   }
   // Read one way then and the other now: no cause can be named.
   if (!available.then || !available.now) return [];
-  const bankAccount = account;
+  const bankAccount = account as 'checking' | 'savings';
   // The available balance already has every pending item (A54), so a change
   // in what Plaid lists that it does not show yet moves the check by as much.
   const listedThen = new Map(then.pending.filter((p) => p.account === account).map((p) => [p.id, p.amount]));

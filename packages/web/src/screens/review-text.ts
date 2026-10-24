@@ -1,5 +1,6 @@
 import type { AccountId, Cents, PickTo, ReviewDetail, RuleOffer, SortedNow, SpendingSort, TransferOutcome } from '@budget-app/money';
 import type { BankRuleHint, ChoiceOf, Done } from '@budget-app/server/views';
+import { withCardNames } from '../ui/card-names.js';
 import { moneyText } from '../ui/money-format.js';
 import { POT_NAMES } from '../ui/names.js';
 
@@ -7,12 +8,14 @@ import { POT_NAMES } from '../ui/names.js';
 // is called, and what was done. The screen shows what the money math offers;
 // these are only its names.
 
-export const ACCOUNT_NAMES: Readonly<Record<AccountId, string>> = {
+// Her second card, and in her setup each card as its bank names it (HB6).
+export const ACCOUNT_NAMES: Readonly<Record<AccountId, string>> = withCardNames({
   checking: 'Checking',
   savings: 'Savings',
   'everyday-card': 'Everyday card',
   'old-card': 'Old card',
-};
+  'second-card': 'Second card',
+});
 
 export const BUCKET_NAMES: Readonly<Record<string, string>> = {
   ...POT_NAMES,
@@ -218,4 +221,4 @@ export function labeledText(h: BankRuleHint): string {
   return `Your bank labels this a transfer between your accounts (a card payment is one), but no bank rule reads it as one, so it counts as spending while it is pending. ${rule} This one you can mark “Transfer between my accounts” once it posts.`;
 }
 
-const ACCOUNT_PHRASES: Readonly<Record<AccountId, string>> = { checking: 'checking', savings: 'savings', 'everyday-card': 'the everyday card', 'old-card': 'the old card' };
+const ACCOUNT_PHRASES: Readonly<Record<AccountId, string>> = withCardNames({ checking: 'checking', savings: 'savings', 'everyday-card': 'the everyday card', 'old-card': 'the old card', 'second-card': 'the second card' });

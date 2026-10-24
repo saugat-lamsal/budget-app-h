@@ -367,12 +367,12 @@ export async function throughTheServer(seed: number, years: number, way: Way): P
     if (book === null || book === undefined || day === undefined) throw new Error(`${where}: no books to hold`);
     expect(book.pots(), `${where}: the books held are the simulator's at the end of ${day.date}`).toEqual(day.pots);
     expect(book.reviewItems().length, `${where}: what waits in the books held`).toBe(day.waiting);
-    return { waiting: day.waiting, payments: { 'everyday-card': book.cardPayments('everyday-card'), 'old-card': book.cardPayments('old-card') } };
+    return { waiting: day.waiting, payments: { 'everyday-card': book.cardPayments('everyday-card'), 'old-card': book.cardPayments('old-card'), 'second-card': book.cardPayments('second-card') } };
   };
   const liveSnapshot = (): Frozen => {
     const book = keeper?.book();
     if (book === null || book === undefined) throw new Error(`${where}: no books`);
-    return { waiting: book.reviewItems().length, payments: { 'everyday-card': book.cardPayments('everyday-card'), 'old-card': book.cardPayments('old-card') } };
+    return { waiting: book.reviewItems().length, payments: { 'everyday-card': book.cardPayments('everyday-card'), 'old-card': book.cardPayments('old-card'), 'second-card': book.cardPayments('second-card') } };
   };
   // An evening's alerts from books that stand still: the daily review if something waits, and the cards.
   const eveningFrom = (date: IsoDate, books: Frozen): AlertFacts[] => [

@@ -1,5 +1,6 @@
 import type { LeftoverChoice, RecheckedItem, Settings } from '@budget-app/money';
 import type { LogRow, RuleDone, RuleSpec, SettingsDone } from '@budget-app/server/views';
+import { nameOf } from '../ui/card-names.js';
 import { dayWithYear, shortDate } from '../ui/dates.js';
 import { moneyText } from '../ui/money-format.js';
 import { POT_NAMES } from '../ui/names.js';
@@ -35,7 +36,7 @@ export const LEFTOVER_NAMES: Readonly<Record<LeftoverChoice, string>> = {
   'move-to-savings': 'Always move to savings',
 };
 
-export const SETTING_NAMES: Readonly<Record<keyof Settings, string>> = {
+const SETTING_WORDS: Readonly<Record<keyof Settings, string>> = {
   split: 'Split',
   momReservePerPaycheck: 'Mom reserve per paycheck',
   momReserveCap: 'Mom reserve cap',
@@ -59,7 +60,25 @@ export const SETTING_NAMES: Readonly<Record<keyof Settings, string>> = {
   everydayCardClosingDay: 'Everyday card: statement closing day',
   oldCardClosingDay: 'Old card: statement closing day',
   askBeforeSplittingPaycheck: 'Ask before splitting a paycheck',
+  secondCardClosingDay: 'Second card: statement closing day',
 };
+
+// In her setup, each card's closing day is called by the card's name as its
+// bank gives it (HB6).
+export const SETTING_NAMES: Readonly<Record<keyof Settings, string>> = Object.freeze(
+  Object.defineProperties(
+    { ...SETTING_WORDS },
+    {
+      everydayCardClosingDay: { enumerable: true, get: () => closingDayName('everyday-card') },
+      secondCardClosingDay: { enumerable: true, get: () => closingDayName('second-card') },
+    },
+  ),
+);
+
+function closingDayName(card: 'everyday-card' | 'second-card'): string {
+  const named = nameOf(card);
+  return named === null ? SETTING_WORDS[card === 'everyday-card' ? 'everydayCardClosingDay' : 'secondCardClosingDay'] : `${named}: statement closing day`;
+}
 
 // Section 2: the home time zones offered on Settings, his first, and how each
 // is called. Any other zone (set some other way) is written as its name.
@@ -204,7 +223,8 @@ export function settingValueText<K extends keyof Settings>(key: K, value: Settin
       return permissionWarnText(v as number);
     case 'everydayCardClosingDay':
     case 'oldCardClosingDay':
-      return closingDayText(v as number | null);
+    case 'secondCardClosingDay':
+      return closingDayText((v ?? null) as number | null);
     case 'askBeforeSplittingPaycheck':
       return askPaycheckText(v as boolean | undefined);
     default:
@@ -297,8 +317,10 @@ export const NOTIFICATION_LINES: Readonly<Record<'notifications-on' | 'notificat
 };
 
 // 1.2: the four accounts picked, as the change log shows them (13.5); the
-// old card only when this setup has one ("Off in this setup").
-export function bankAccountsText(accounts: Readonly<Partial<Record<'checking' | 'savings' | 'everyday-card' | 'old-card', string>>>): string {
+// old card only when this setup has one ("Off in this setup"), and her second
+// card only in hers.
+export function bankAccountsText(accounts: Readonly<Partial<Record<'checking' | 'savings' | 'everyday-card' | 'old-card' | 'second-card', string>>>): string {
   const three = `Checking: ${accounts.checking ?? ''}; savings: ${accounts.savings ?? ''}; everyday card: ${accounts['everyday-card'] ?? ''}`;
-  return accounts['old-card'] === undefined ? three : `${three}; old card: ${accounts['old-card']}`;
+  const second = accounts['second-card'] === undefined ? three : `${three}; second card: ${accounts['second-card']}`;
+  return accounts['old-card'] === undefined ? second : `${second}; old card: ${accounts['old-card']}`;
 }

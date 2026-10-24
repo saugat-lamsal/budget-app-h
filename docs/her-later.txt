@@ -33,3 +33,16 @@ FROM THE PLAN (Oct 23)
    for the cards (statement date, balance, minimum, due date). Bank of
    America left out the statement date; either of hers may leave out
    something else.
+
+FROM PR 5 (Oct 23)
+
+6. WATCH, connection day. The names Capital One and American Express give
+   her two cards' accounts, which her screens and alerts use (HB6). If a
+   name is unclear on her phone (a product name she does not recognize,
+   say), a setting to call each card something else is a small change,
+   with his OK.
+
+7. LATER, PR 7 and PR 8. Home lists each card's due line and its
+   reminders-off line (9.6, 9.8) already; what each card owes in all and
+   what is set aside (52.1, 52.2), and each card's statement (52.4), come
+   with those PRs.

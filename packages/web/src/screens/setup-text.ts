@@ -1,25 +1,32 @@
 import type { AccountId } from '@budget-app/money';
 import type { BankRuleSpec, HalfLine, SetupMissing } from '@budget-app/server/views';
+import { nameOf, withCardNames } from '../ui/card-names.js';
 import { shortDate } from '../ui/dates.js';
 
 // Words on the Setup day screens (rulebook section 14). Every amount comes
 // from the money math on the server; these only name things.
 
-export const ACCOUNT_NAMES: Readonly<Record<AccountId, string>> = {
+// Her second card, and in her setup each card as its bank names it (HB6).
+export const ACCOUNT_NAMES: Readonly<Record<AccountId, string>> = withCardNames({
   checking: 'Checking',
   savings: 'Savings',
   'everyday-card': 'Everyday card',
   'old-card': 'Old card',
-};
+  'second-card': 'Second card',
+});
 
-// An account as it reads in a sentence: "checking", "the everyday card".
+// An account as it reads in a sentence: "checking", "the everyday card";
+// a card its bank names, by that name.
 export function accountPhrase(account: AccountId): string {
-  return account === 'everyday-card' || account === 'old-card' ? `the ${ACCOUNT_NAMES[account].toLowerCase()}` : ACCOUNT_NAMES[account].toLowerCase();
+  const named = nameOf(account);
+  if (named !== null) return named;
+  return account === 'everyday-card' || account === 'old-card' || account === 'second-card' ? `the ${ACCOUNT_NAMES[account].toLowerCase()}` : ACCOUNT_NAMES[account].toLowerCase();
 }
 
 // B48: what the bank shows of a transfer with one half showing.
 export function halfText(half: HalfLine): string {
-  if (half.kind === 'left') return `Left ${ACCOUNT_NAMES[half.from].toLowerCase()} on ${shortDate(half.date)} for the ${ACCOUNT_NAMES[half.to].toLowerCase()}. It does not show arriving yet.`;
+  const to = nameOf(half.to) ?? `the ${ACCOUNT_NAMES[half.to].toLowerCase()}`;
+  if (half.kind === 'left') return `Left ${ACCOUNT_NAMES[half.from].toLowerCase()} on ${shortDate(half.date)} for ${to}. It does not show arriving yet.`;
   return `Arrived in ${ACCOUNT_NAMES[half.to].toLowerCase()} on ${shortDate(half.date)} from ${ACCOUNT_NAMES[half.from].toLowerCase()}. ${ACCOUNT_NAMES[half.from]} does not show it leaving yet.`;
 }
 

@@ -15,7 +15,8 @@ export const MEANING_NAMES: Readonly<Record<BankMeaning, string>> = {
 };
 
 const ACCOUNTS: readonly AccountId[] = ['checking', 'savings', 'everyday-card', 'old-card'];
-const isCard = (account: AccountId): boolean => account === 'everyday-card' || account === 'old-card';
+// Her second card is a card too (her rulebook, section 1).
+const isCard = (account: AccountId): boolean => account === 'everyday-card' || account === 'old-card' || account === 'second-card';
 
 // What a rule on this account can say an item is (section 2): payments to
 // people leave checking or savings; fees and interest are on a card.

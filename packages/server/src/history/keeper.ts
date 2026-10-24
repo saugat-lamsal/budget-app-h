@@ -4,7 +4,9 @@ import type { IncomingMessage, Server } from 'node:http';
 import type { Agent } from 'node:https';
 import { rolesFor, type AccountId, type BankBalances, type Book, type CardStatement, type IsoDate, type Pot, type Switches } from '@budget-app/money';
 import { UPSTREAM_START, type SetupStart } from '../setup-start.js';
+import { cardsNamed } from '../http/card-names.js';
 import { offTakenOut } from '../http/off-options.js';
+import { cardNamesOf, type CardNames } from '../bank/card-names.js';
 import { alertScreen } from '../alerts/alerts.js';
 import { applyAlerts, nextAlertsEvent, nextDueIn, stillTrueNow, type AlertLedger, type AlertWorld } from '../alerts/plan.js';
 import { addToOutbox, markFailed, markNotSent, markSent, markTrying, outboxCounts, outboxUnsent, readOutbox, type OutboxRow } from '../alerts/outbox.js';
@@ -18,7 +20,7 @@ import { bankAtRead, bankView, postedSince, type BankView } from '../bank/balanc
 import type { StoredAccount } from '../bank/stored-account.js';
 import { postingExamples, type PostingExample } from '../bank/posting-times.js';
 import { whyItDoesNotMatch } from '../bank/why.js';
-import { cardStatement } from '../bank/statements.js';
+import { CARD_ORDER, cardStatement, closingDayOf } from '../bank/statements.js';
 import { canonical, refuse, ChoiceDesk } from '../choices.js';
 import type { TokenBox } from '../crypto/token-box.js';
 import { statement, type Db } from '../db/database.js';
@@ -227,6 +229,8 @@ export class Keeper {
         { account: 'checking', posted: v.posted.checking, available: v.available.checking, counted: v.withPending.checking },
         { account: 'savings', posted: v.posted.savings, available: v.available.savings, counted: v.withPending.savings },
         { account: 'everyday-card', posted: v.posted.everydayCard, available: null, counted: v.withPending.everydayCard },
+        // Her second card, when one is picked (12.1).
+        ...(v.posted.secondCard === undefined ? [] : [{ account: 'second-card' as const, posted: v.posted.secondCard, available: null, counted: v.withPending.secondCard ?? 0 }]),
       ],
       since: since === null ? null : timeIn(this.timeZone(), new Date(since)),
       why: this.#why(v, accounts, items),
@@ -285,6 +289,7 @@ export class Keeper {
       today,
       bookLines: () => book?.changeLog().length ?? 0,
       oldCardOff: () => this.#switches().oldCard === 'off',
+      secondCardOff: () => this.#switches().secondCard === 'off',
     });
     let setup: SetupDesk | null = null;
     if (book === null) {
@@ -339,6 +344,11 @@ export class Keeper {
     return this.#bankNow().bank;
   }
 
+  // Her setup (HB6): each card's name as its bank gives it; null without a second card.
+  cardNames(): CardNames | null {
+    return cardNamesOf(readAccounts(this.#db));
+  }
+
   #statements(): CardStatement[] {
     return this.#bankNow().statements;
   }
@@ -383,15 +393,16 @@ export class Keeper {
     const cardsOff: CardRemindersOff[] = [];
     for (const a of readAccounts(this.#db)) {
       const raw = stored.get(a.plaidAccountId)?.raw;
-      if ((a.role !== 'everyday-card' && a.role !== 'old-card') || raw === undefined) continue;
-      const closingDay = settings === null ? null : a.role === 'everyday-card' ? settings.everydayCardClosingDay : settings.oldCardClosingDay;
+      if ((a.role !== 'everyday-card' && a.role !== 'old-card' && a.role !== 'second-card') || raw === undefined) continue;
+      const closingDay = settings === null ? null : closingDayOf(a.role, settings);
       const read = cardStatement(a.role, raw, closingDay);
       if (read.ok) statements.push(read.statement);
       // Off for want of the closing day only when a closing day would read it.
       else cardsOff.push({ card: a.role, why: closingDay === null && cardStatement(a.role, raw, 1).ok ? 'no-statement-date' : 'unreadable' });
     }
-    // The everyday card first, as everywhere on the screens.
-    cardsOff.sort((x, y) => (x.card === y.card ? 0 : x.card === 'everyday-card' ? -1 : 1));
+    // The everyday card first, then her second card, as everywhere on the screens.
+    cardsOff.sort((x, y) => CARD_ORDER.indexOf(x.card) - CARD_ORDER.indexOf(y.card));
+    statements.sort((x, y) => CARD_ORDER.indexOf(x.card) - CARD_ORDER.indexOf(y.card));
     return { statements, cardsOff };
   }
 
@@ -714,7 +725,7 @@ export class Keeper {
     const book = this.book();
     if (book === null) return null;
     const connection = readConnection(this.#db);
-    return { book, now: this.#now(), zone: this.timeZone(), bank: this.#bank(), needsLogin: connection?.needsLogin ?? false, statements: this.#statements(), lastRead: this.lastRead(), permissionEnds: connection?.permissionEnds ?? null, mismatchSince: this.mismatchSince() };
+    return { book, now: this.#now(), zone: this.timeZone(), bank: this.#bank(), needsLogin: connection?.needsLogin ?? false, statements: this.#statements(), lastRead: this.lastRead(), permissionEnds: connection?.permissionEnds ?? null, mismatchSince: this.mismatchSince(), cardNames: this.cardNames() };
   }
 
   // Works out every alert due now (alerts/plan.ts) and keeps it: each
@@ -885,8 +896,9 @@ export class Keeper {
     this.#origin = origin;
     this.#startedAt ??= this.#now();
     const auth = this.#auth;
-    // "Off in this setup": what is off is taken out of each screen before it is sent.
-    return createAppServer(offTakenOut(() => this.#switches(), {
+    // "Off in this setup": what is off is taken out of each screen before it
+    // is sent; and in her setup each card is named as its bank names it (HB6).
+    return createAppServer(cardsNamed(() => this.cardNames(), offTakenOut(() => this.#switches(), {
       webRoot,
       ...(onError === undefined ? {} : { onError }),
       gate: {
@@ -935,7 +947,7 @@ export class Keeper {
           return session === null ? NOT_LOGGED_IN : this.#push.test(session);
         },
       },
-    }));
+    })));
   }
 
   // The device asking, by its login (the gate let it through only logged in).

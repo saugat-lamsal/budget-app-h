@@ -5,6 +5,7 @@ import { readHistory, replayHistory } from '../history/history-db.js';
 import type { PlaidAccount, PlaidCreditCard } from '../plaid/types.js';
 import type { Attention, ItemStatus, StoredItem } from '../sync/plan.js';
 import { statement, type Db } from './database.js';
+import { hasHerSteps, migrateHer } from './her-steps.js';
 
 // Reading and writing the database. Nothing here talks to the bank.
 
@@ -58,10 +59,12 @@ export function saveConnectionState(db: Db, state: { cursor: string | null; hist
 
 export { rolesOf, type StoredAccount } from '../bank/stored-account.js';
 
+// Her second card's pick is kept in her own table (her-steps.ts, her step 1).
 export function readAccounts(db: Db): StoredAccount[] {
-  return (db.prepare('SELECT plaid_account_id, role, raw FROM accounts ORDER BY plaid_account_id').all() as { plaid_account_id: string; role: AccountId | null; raw: string }[]).map(
-    (row) => ({ plaidAccountId: row.plaid_account_id, role: row.role, raw: JSON.parse(row.raw) as PlaidAccount, rawText: row.raw }),
-  );
+  const sql = hasHerSteps(db)
+    ? 'SELECT a.plaid_account_id, COALESCE(a.role, h.role) AS role, a.raw FROM accounts a LEFT JOIN her_account_roles h ON h.plaid_account_id = a.plaid_account_id ORDER BY a.plaid_account_id'
+    : 'SELECT plaid_account_id, role, raw FROM accounts ORDER BY plaid_account_id';
+  return (db.prepare(sql).all() as { plaid_account_id: string; role: AccountId | null; raw: string }[]).map((row) => ({ plaidAccountId: row.plaid_account_id, role: row.role, raw: JSON.parse(row.raw) as PlaidAccount, rawText: row.raw }));
 }
 
 export function saveAccount(db: Db, account: PlaidAccount, rawText: string, sync: number): void {
@@ -71,11 +74,17 @@ export function saveAccount(db: Db, account: PlaidAccount, rawText: string, sync
 }
 
 export function setAccountRoles(db: Db, roles: Readonly<Record<string, AccountId | null>>): void {
+  // Her steps first, when her second card is picked (her-steps.ts).
+  if (Object.values(roles).includes('second-card')) migrateHer(db);
+  const her = hasHerSteps(db);
   db.transaction(() => {
     db.prepare('UPDATE accounts SET role = NULL').run();
+    if (her) db.prepare('DELETE FROM her_account_roles').run();
     for (const [id, role] of Object.entries(roles)) {
-      const changed = db.prepare('UPDATE accounts SET role = ? WHERE plaid_account_id = ?').run(role, id);
+      const second = role === 'second-card';
+      const changed = db.prepare('UPDATE accounts SET role = ? WHERE plaid_account_id = ?').run(second ? null : role, id);
       if (changed.changes !== 1) throw new Error(`there is no account ${id}`);
+      if (second) db.prepare('INSERT INTO her_account_roles (plaid_account_id, role) VALUES (?, ?)').run(id, role);
     }
   })();
 }

@@ -75,6 +75,10 @@ export interface Settings {
   // is split by itself. So upstream's DEFAULT_SETTINGS stay as they are, and
   // a history saved before it opens as upstream (B242).
   readonly askBeforeSplittingPaycheck?: boolean;
+  // Her rulebook, section 2 and 9.8: the closing day of her second card's
+  // statement, as for the everyday card. Only her setup has a second card, so
+  // upstream's settings do not have it, and missing is not set.
+  readonly secondCardClosingDay?: number | null;
 }
 
 export const DEFAULT_SETTINGS: Settings = deepFreeze({
@@ -103,7 +107,7 @@ export const DEFAULT_SETTINGS: Settings = deepFreeze({
 });
 
 // Her settings, which upstream's DEFAULT_SETTINGS do not have (see each in Settings).
-const HER_SETTING_KEYS: readonly (keyof Settings)[] = ['askBeforeSplittingPaycheck'];
+const HER_SETTING_KEYS: readonly (keyof Settings)[] = ['askBeforeSplittingPaycheck', 'secondCardClosingDay'];
 
 const LEFTOVER_CHOICES: readonly LeftoverChoice[] = ['ask', 'roll-over', 'move-to-savings'];
 
@@ -156,6 +160,7 @@ export function validateSettings(settings: Settings): Settings {
   check(s.everydayCardClosingDay === null || isWholeInRange(s.everydayCardClosingDay, 1, 31), "the everyday card's statement closing day must be a day of the month from 1 to 31");
   check(s.oldCardClosingDay === null || isWholeInRange(s.oldCardClosingDay, 1, 31), "the old card's statement closing day must be a day of the month from 1 to 31");
   check(!('askBeforeSplittingPaycheck' in s) || typeof s.askBeforeSplittingPaycheck === 'boolean', 'ask before splitting a paycheck must be on or off');
+  check(s.secondCardClosingDay === undefined || s.secondCardClosingDay === null || isWholeInRange(s.secondCardClosingDay, 1, 31), "the second card's statement closing day must be a day of the month from 1 to 31");
   return deepFreeze(copySettings(s));
 }
 

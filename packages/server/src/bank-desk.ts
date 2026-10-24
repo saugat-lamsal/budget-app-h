@@ -31,7 +31,7 @@ export function rolesComplete(accounts: readonly StoredAccount[], asked: readonl
   return asked.every((role) => roles.includes(role));
 }
 
-const ROLE_WORDS: Readonly<Record<AccountId, string>> = { checking: 'checking', savings: 'savings', 'everyday-card': 'the everyday card', 'old-card': 'the old card' };
+const ROLE_WORDS: Readonly<Record<AccountId, string>> = { checking: 'checking', savings: 'savings', 'everyday-card': 'the everyday card', 'old-card': 'the old card', 'second-card': 'the second card' };
 const countWord = (roles: readonly AccountId[]): string => (roles.length === 3 ? 'three' : 'four');
 
 // "Pick each of the four: checking, savings, the everyday card, and the old card."

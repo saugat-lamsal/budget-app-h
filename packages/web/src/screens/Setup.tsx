@@ -162,14 +162,15 @@ function SetupReady({ step, view, reload, onStarted }: { readonly step: SetupSte
 function BankStep({ view }: { readonly view: SetupReadyView }) {
   return (
     <>
-      <Hero label="Starting money" sub="Checking + savings − everyday card, with the charges still pending. Transfers on their way come next." testId="setup-hero">
+      <Hero label="Starting money" sub={`Checking + savings − ${cardsWord(view)}, with the charges still pending. Transfers on their way come next.`} testId="setup-hero">
         <Money cents={view.bankSide} hero testId="bank-side" />
       </Hero>
       <Card title="Your accounts today" testId="accounts">
         <dl className="figures">
           <AccountFigure name="Checking" line={view.checking} testId="checking" />
           <AccountFigure name="Savings" line={view.savings} testId="savings" />
-          <AccountFigure name="Everyday card owes" line={view.everydayCard} testId="everyday-card" owes />
+          <AccountFigure name={`${ACCOUNT_NAMES['everyday-card']} owes`} line={view.everydayCard} testId="everyday-card" owes />
+          {view.secondCard !== undefined && <AccountFigure name={`${ACCOUNT_NAMES['second-card']} owes`} line={view.secondCard} testId="second-card" owes />}
           <dt className="figures__total">Starting money</dt>
           <dd className="figures__total">
             <Money cents={view.bankSide} testId="bank-side-total" />
@@ -215,6 +216,11 @@ function BankStep({ view }: { readonly view: SetupReadyView }) {
       )}
     </>
   );
+}
+
+// 14.2: the cards whose balances come off: her setup has two (her rulebook, section 1).
+function cardsWord(view: Pick<SetupReadyView, 'secondCard'>): string {
+  return view.secondCard === undefined ? 'everyday card' : 'both cards';
 }
 
 function AccountFigure({ name, line, owes = false, testId }: { readonly name: string; readonly line: SetupReadyView['checking']; readonly owes?: boolean; readonly testId: string }) {
@@ -650,7 +656,7 @@ function CheckStep({ view, sender, reload, onStarted }: { readonly view: SetupRe
   };
   return (
     <>
-      <Hero label="Starting money" sub="Checking + savings − everyday card, with charges pending and money on its way." testId="setup-hero">
+      <Hero label="Starting money" sub={`Checking + savings − ${cardsWord(view)}, with charges pending and money on its way.`} testId="setup-hero">
         <Money cents={view.startingMoney} hero testId="starting-money" />
       </Hero>
       {after !== null && (
@@ -683,7 +689,7 @@ function CheckStep({ view, sender, reload, onStarted }: { readonly view: SetupRe
             </Notice>
             <Card title="Self-check" testId="self-check">
               <dl className="figures">
-                <dt>The bank: checking + savings − everyday card</dt>
+                <dt>The bank: checking + savings − {cardsWord(view)}</dt>
                 <dd>
                   <Money cents={view.selfCheck.bankSide} testId="check-bank" />
                 </dd>

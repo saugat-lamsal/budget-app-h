@@ -273,3 +273,21 @@ or "Due" on Wishlist items and cards, never color alone.
   late, and sometimes "not a paycheck" first, then her paycheck after all.
   Rulebook: section 2, 3.1, 10.15, 13.2, section 51. Readings HB1 to HB5 in
   docs/her-questions.txt, for his check.
+- PR 4 merged (Oct 23, 2026).
+- PR 5, the second card (branch her-second-card). A fifth account,
+  'second-card' (the Amex card; the Capital One card is 'everyday-card'),
+  switched on by a third switch, secondCard: off is upstream's (and any
+  book saved before it), on is hers (HER_SWITCHES). ALL_ACCOUNTS lists all
+  five; upstream's ACCOUNTS stays its four. Money: BankBalances.secondCard
+  (optional), the bank side and setup day take both cards off, reminders
+  treat it as the everyday card (EverydayCard), review offers it as a
+  transfer after the everyday card (optionsInThisSetup), her setting
+  secondCardClosingDay (optional, like askBeforeSplittingPaycheck). Server:
+  her first database step (db/her-steps.ts, her_account_roles, version in
+  her_schema; run only in her setup), the bank side and why-lines per card,
+  each card's statement with its own closing day, bank rules on it. Card
+  names (HB6): each card as its bank names it, sent with the screens that
+  name cards (http/card-names.ts) and in the reminders' facts; the web
+  remembers them (ui/card-names.ts). Twins: second-card-twins-her.test.ts
+  runs upstream's money tests again through a mirror (test/twin) with the
+  second card in the everyday card's place. Readings HB6, HB7.

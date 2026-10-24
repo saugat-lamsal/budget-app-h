@@ -34,6 +34,8 @@ export interface BankRulesDeskInput {
   readonly bookLines: () => number;
   // "Off in this setup": no bank rule can be about the old card. Upstream's when not given.
   readonly oldCardOff?: () => boolean;
+  // Upstream's setup has no second card (her rulebook, section 1): no rule is about it.
+  readonly secondCardOff?: () => boolean;
 }
 
 export class BankRulesDesk {
@@ -132,8 +134,11 @@ export class BankRulesDesk {
 
   #offWhy(change: BankRuleChange): string | null {
     const rule = 'add' in change ? change.add : 'change' in change ? change.change : null;
-    if (rule === null || this.#input.oldCardOff?.() !== true) return null;
-    return rule.account === 'old-card' || (rule.means === 'transfer' && rule.other === 'old-card') ? 'This setup has no old card.' : null;
+    if (rule === null) return null;
+    const about = (card: 'old-card' | 'second-card'): boolean => rule.account === card || (rule.means === 'transfer' && rule.other === card);
+    if (this.#input.secondCardOff?.() === true && about('second-card')) return 'This setup has no second card.';
+    if (this.#input.oldCardOff?.() !== true) return null;
+    return about('old-card') ? 'This setup has no old card.' : null;
   }
 
   #nextId(): string {

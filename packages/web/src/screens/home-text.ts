@@ -1,5 +1,6 @@
 import type { IsoDate } from '@budget-app/money';
 import type { CardRemindersOff, OnItsWayIn } from '@budget-app/server/views';
+import { nameOf } from '../ui/card-names.js';
 import { checkedAtText, shortDate } from '../ui/dates.js';
 
 // Words on Home.
@@ -35,7 +36,9 @@ export function dueText(daysLeft: number): string {
 // 9.8 (A52): a card whose reminders are off, on Home and on Settings, in the
 // rulebook's words.
 export function cardsOffText(off: CardRemindersOff): { readonly title: string; readonly detail: string } {
-  const title = `Card reminders are off for the ${off.card === 'everyday-card' ? 'everyday card' : 'old card'}`;
+  // Her second card too; in her setup each card by the name its bank gives it (HB6).
+  const plain = off.card === 'everyday-card' ? 'the everyday card' : off.card === 'second-card' ? 'the second card' : 'the old card';
+  const title = `Card reminders are off for ${nameOf(off.card) ?? plain}`;
   return off.why === 'no-statement-date'
     ? { title, detail: 'The bank did not send its statement date. Enter the day its statement closes in Settings.' }
     : { title, detail: 'The bank sent a statement for it that cannot be read.' };

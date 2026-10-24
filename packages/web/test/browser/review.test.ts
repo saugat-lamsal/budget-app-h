@@ -1327,7 +1327,7 @@ describe.each(ENGINES)('Review, details, in %s', (_name, engine) => {
       'old-card-purchase': 'New purchase on the old card',
       leftover: 'Left over at payday',
     };
-    const accounts = { checking: 'Checking', savings: 'Savings', 'everyday-card': 'Everyday card', 'old-card': 'Old card' } as const;
+    const accounts = { checking: 'Checking', savings: 'Savings', 'everyday-card': 'Everyday card', 'old-card': 'Old card', 'second-card': 'Second card' } as const;
     for (const d of book.reviewDetails()) {
       const key = d.item.type === 'spending' || d.item.type === 'money-in' ? `${d.item.type}:${d.item.reason}` : d.item.type;
       const parts = (await item(page, d.item.id).locator('.decision__detail').first().innerText()).replace(/\s+/g, ' ').replace(/^Pending /, '').split(' · ');

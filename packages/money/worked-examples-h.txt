@@ -161,3 +161,122 @@ App side = 3,993.83 + 996.29 + 547.53 = 5,537.65, as before: the money
 only moved from "waiting" into the buckets.
 
 Check: savings 3,993.83 | needs 996.29 | wants 547.53 | unsorted money in 0.00 | app side 5,537.65
+
+
+========================================================================
+EXAMPLE 7. The bank side with both cards, pending charges included (12.1)
+========================================================================
+
+Her two cards are both used day to day (rulebook, section 1). In the app
+they are the everyday card (Capital One) and the second card (Amex).
+
+What the bank shows, posted:
+        Checking                                  2,140.55
+        Savings                                   6,300.00
+        Everyday card owes                          412.18
+        Second card owes                          1,075.92
+
+Still pending:
+        A debit card charge (checking)               15.00
+        A charge on the everyday card                23.40
+        A charge on the second card                  61.07
+
+Step 1. Pending charges count (12.1): a debit lowers checking, a card
+        charge raises what that card owes.
+        Checking      2,140.55 - 15.00 = 2,125.55
+        Everyday card   412.18 + 23.40 =   435.58
+        Second card   1,075.92 + 61.07 = 1,136.99
+
+Step 2. Bank side = checking + savings - everyday card - second card
+                  = 2,125.55 + 6,300.00 - 435.58 - 1,136.99
+                  = 8,425.55 - 435.58 - 1,136.99
+                  = 7,989.97 - 1,136.99
+                  = 6,852.98
+
+Check: bank side 6,852.98
+
+
+========================================================================
+EXAMPLE 8. Setup day with both cards and a payment on its way (14.2, 12.5)
+========================================================================
+
+The bank as in Example 7. And yesterday 200.00 left checking to pay the
+second card; it has not reached the card yet. Checking's 2,140.55 is
+already without it; the second card still owes the 1,075.92.
+
+Step 1. Starting money = bank side + money on its way (14.2, 12.5)
+                       = 6,852.98 + 200.00
+                       = 7,052.98
+
+Step 2. She assigns it:
+        Savings                                   6,300.00
+        Needs                                       452.98
+        Wants                                       300.00
+        Held for others                               0.00
+        Together: 6,300.00 + 452.98 + 300.00 = 7,052.98, all of it, so
+        tracking starts (14.3).
+
+Step 3. The self-check: bank side 6,852.98 + in transit 200.00
+        = 7,052.98 = app side. Difference 0.00.
+
+Step 4. Two days later the 200.00 lands. The second card owes
+        1,136.99 - 200.00 = 936.99. Bank side = 2,125.55 + 6,300.00
+        - 435.58 - 936.99 = 7,052.98, nothing in transit, and the
+        difference is still 0.00. No bucket changed: paying a card is not
+        spending (5.1).
+
+Check: starting money 7,052.98 | in transit on setup day 200.00 | difference on setup day 0.00 | in transit after it lands 0.00 | difference after it lands 0.00 | needs 452.98
+
+
+========================================================================
+EXAMPLE 9. One payment to each card, the same amount, landing late (12.5)
+========================================================================
+
+Setup day: savings 1,000.00, needs 500.00, wants 250.00 (1,750.00 in
+all). The bank: checking 1,400.00, savings 1,000.00, the everyday card
+owes 300.00, the second card owes 350.00.
+        1,400.00 + 1,000.00 - 300.00 - 350.00 = 1,750.00. It matches.
+
+Oct 5: 300.00 leaves checking for the everyday card, and another 300.00
+for the second card. Checking: 800.00. Neither has landed.
+        In transit: 600.00.
+        Bank side: 800.00 + 1,000.00 - 300.00 - 350.00 = 1,150.00
+        Bank side + in transit = 1,750.00 = app side. Difference 0.00.
+
+Oct 6: the second card's payment lands, a day late. The bank does not
+say which payment it was. It is the same amount as both, but it can only
+be the one sent to the second card (12.5: between the same accounts).
+The second card owes 350.00 - 300.00 = 50.00.
+        In transit: 300.00 (the everyday card's, still on its way).
+        Bank side: 800.00 + 1,000.00 - 300.00 - 50.00 = 1,450.00
+        1,450.00 + 300.00 = 1,750.00. Difference 0.00.
+
+Oct 7: the everyday card's lands, two days late. It owes 0.00.
+        In transit: 0.00. Bank side: 800.00 + 1,000.00 - 0.00 - 50.00
+        = 1,750.00. Difference 0.00.
+
+No bucket moved on any day: needs stays 500.00.
+
+Check: in transit after both leave 600.00 | in transit after the second lands 300.00 | difference after the second lands 0.00 | in transit after both land 0.00 | difference after both land 0.00 | needs 500.00
+
+
+========================================================================
+EXAMPLE 10. The second card's statement, paid in parts (9.1, 9.3)
+========================================================================
+
+The second card's statement closed Oct 1: balance 812.40, minimum 35.00,
+due Oct 26. Reminders come 7 and 2 days before: Oct 19 and Oct 24.
+
+Oct 10: she pays the minimum, 35.00.
+Oct 19: paid since the statement: 35.00. That is the minimum, but not the
+        statement balance, so the reminder comes (9.3): one reminder.
+Oct 20: she pays 777.39. Paid: 35.00 + 777.39 = 812.39, one cent short.
+Oct 24: still one cent short of 812.40, so the reminder comes again.
+        Still to pay: 812.40 - 812.39 = 0.01.
+        That evening she pays the 0.01. Paid: 812.40, the full statement
+        balance: no more reminders.
+
+(The test reads the number of reminders as dollars: one reminder is 1.00,
+none is 0.00.)
+
+Check: paid by the first reminder 35.00 | reminders on the first reminder day 1.00 | paid by the second reminder 812.39 | reminders on the second reminder day 1.00 | still to pay on the second reminder day 0.01 | reminders after the last cent 0.00

@@ -5,10 +5,11 @@ import { BankDataError } from '../errors.js';
 import type { PendingMoneyIn } from '../views/home.js';
 import { centsFromPlaid } from './amounts.js';
 import { readPlaidItem } from './plaid-item.js';
-import type { BankAtRead, CheckAccount, PendingItemNow, PostedItemSince } from './why.js';
+import type { AccountAtRead, BankAtRead, CheckAccount, PendingItemNow, PostedItemSince } from './why.js';
 
 // Rule 12.1, the bank side of the self-check: checking + savings - everyday
-// card balance, including pending charges.
+// card balance (her rulebook: - the second card's too), including pending
+// charges.
 //
 // Plaid's "current" balance is the posted one: what a bank account holds, or
 // what a card owes, before anything pending (B36; checked against the test
@@ -78,7 +79,7 @@ export function bankView(accounts: readonly StoredAccount[], items: ReadonlyMap<
     for (const a of accounts) if (a.role !== null) roles.set(a.plaidAccountId, a.role);
     const pendingCharges: PendingCharge[] = [];
     const pendingIn: (PendingMoneyIn & { readonly firstSync: number })[] = [];
-    const counts: Record<CheckAccount, Cents> = { checking: 0, savings: 0, 'everyday-card': 0 };
+    const counts: Record<CheckAccount, Cents> = { checking: 0, savings: 0, 'everyday-card': 0, 'second-card': 0 };
     const pending: PendingItemNow[] = [];
     // Plaid's sign: money going out is above zero, money coming in below.
     const pendingItems = new Map<AccountId, Cents[]>();
@@ -115,8 +116,10 @@ export function bankView(accounts: readonly StoredAccount[], items: ReadonlyMap<
       if (available === null) return posted(role);
       return addCents(available, ...(pendingItems.get(role) ?? []));
     };
-    const balances: BankBalances = { checking: posted('checking'), savings: posted('savings'), everydayCard: posted('everyday-card') };
-    const countedBalances: BankBalances = { checking: counted('checking'), savings: counted('savings'), everydayCard: balances.everydayCard };
+    // Her second card, when one is picked (1.2): what it owes, as for the everyday card.
+    const second = accounts.some((a) => a.role === 'second-card') ? { secondCard: posted('second-card') } : {};
+    const balances: BankBalances = { checking: posted('checking'), savings: posted('savings'), everydayCard: posted('everyday-card'), ...second };
+    const countedBalances: BankBalances = { checking: counted('checking'), savings: counted('savings'), everydayCard: balances.everydayCard, ...second };
     // "Off in this setup": with no old card, no account is picked as it, and it owes nothing.
     // (Upstream picks all four at once, 1.2, so it always has one here.)
     const oldCardPosted = accounts.some((a) => a.role === 'old-card') ? posted('old-card') : 0;
@@ -143,23 +146,28 @@ export function bankView(accounts: readonly StoredAccount[], items: ReadonlyMap<
 }
 
 function checkAccountOf(role: AccountId): CheckAccount | null {
-  return role === 'checking' || role === 'savings' || role === 'everyday-card' ? role : null;
+  return role === 'checking' || role === 'savings' || role === 'everyday-card' || role === 'second-card' ? role : null;
 }
 
 // 12.6 (A57): what a read of the bank keeps, from the bank as it is then.
 // syncs: the last sync saved by then.
 export function bankAtRead(view: BankView, syncs: number): BankAtRead {
-  const figures = (account: CheckAccount): BankAtRead['accounts'][CheckAccount] => {
-    const key = account === 'everyday-card' ? 'everydayCard' : account;
-    return {
-      posted: view.posted[key],
-      available: account === 'everyday-card' ? null : view.available[account],
-      counted: view.withPending[key],
-      items: view.items[account],
-    };
-  };
+  const figures = (account: CheckAccount, posted: Cents, counted: Cents): AccountAtRead => ({
+    posted,
+    available: account === 'checking' || account === 'savings' ? view.available[account] : null,
+    counted,
+    items: view.items[account],
+  });
+  const { posted, withPending } = view;
+  // Her second card only when one is picked; upstream's reads stay as they were.
+  const second = posted.secondCard === undefined ? {} : { 'second-card': figures('second-card', posted.secondCard, withPending.secondCard ?? 0) };
   return {
-    accounts: { checking: figures('checking'), savings: figures('savings'), 'everyday-card': figures('everyday-card') },
+    accounts: {
+      checking: figures('checking', posted.checking, withPending.checking),
+      savings: figures('savings', posted.savings, withPending.savings),
+      'everyday-card': figures('everyday-card', posted.everydayCard, withPending.everydayCard),
+      ...second,
+    },
     pending: view.pending.map((p) => ({ id: p.id, account: p.account, amount: p.amount })),
     syncs,
   };

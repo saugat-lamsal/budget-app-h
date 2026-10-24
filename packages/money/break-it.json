@@ -814,8 +814,8 @@
   {
     "section": "9",
     "file": "packages/money/src/reminders.ts",
-    "find": "  return card === 'everyday-card'\n    ? [",
-    "replace": "  return card !== 'everyday-card'\n    ? [",
+    "find": "  return isEverydayCard(card)\n    ? [",
+    "replace": "  return !isEverydayCard(card)\n    ? [",
     "why": "9.2 show the statement balance on the old card instead"
   },
   {
@@ -926,8 +926,8 @@
   {
     "section": "12",
     "file": "packages/money/src/self-check.ts",
-    "find": "return subtractCents(addCents(bank.checking, bank.savings), bank.everydayCard);",
-    "replace": "return addCents(bank.checking, bank.savings, bank.everydayCard);",
+    "find": "return subtractCents(subtractCents(addCents(bank.checking, bank.savings), bank.everydayCard), bank.secondCard ?? 0);",
+    "replace": "return subtractCents(addCents(bank.checking, bank.savings, bank.everydayCard), bank.secondCard ?? 0);",
     "why": "12.1 add the card balance instead of taking it off"
   },
   {
@@ -1542,7 +1542,7 @@
   {
     "section": "9",
     "file": "packages/money/src/reminders.ts",
-    "find": "toPay: card === 'everyday-card' ? statementBalance : minimumPayment",
+    "find": "toPay: isEverydayCard(card) ? statementBalance : minimumPayment",
     "replace": "toPay: minimumPayment",
     "why": "9.3 stop everyday card reminders at the minimum again"
   },
@@ -2137,8 +2137,8 @@
   {
     "section": "4",
     "file": "packages/money/src/transactions.ts",
-    "find": "  purchase: ['checking', 'everyday-card', 'old-card'],",
-    "replace": "  purchase: ['checking', 'savings', 'everyday-card', 'old-card'],",
+    "find": "  purchase: ['checking', 'everyday-card', 'old-card', 'second-card'],",
+    "replace": "  purchase: ['checking', 'savings', 'everyday-card', 'old-card', 'second-card'],",
     "why": "4.9 let a purchase be on savings (A16)"
   },
   {
@@ -2312,7 +2312,7 @@
   {
     "section": "5",
     "file": "packages/money/src/book.ts",
-    "find": "    if (typeof other !== 'string' || !(ACCOUNTS as readonly string[]).includes(other)) {",
+    "find": "    if (typeof other !== 'string' || !(ALL_ACCOUNTS as readonly string[]).includes(other)) {",
     "replace": "    if (typeof other !== 'string') {",
     "why": "5.6 let a transfer be with an account that is not one of his four (A12)"
   },
@@ -4034,8 +4034,8 @@
   {
     "section": "1",
     "file": "packages/money/src/switches.ts",
-    "find": "|| !isSwitch(switches.oldCard)) {",
-    "replace": ") {",
+    "find": "|| !isSwitch(switches.oldCard) ||",
+    "replace": "||",
     "why": "[her-switches] Off in this setup: a switch that is neither on nor off is let through"
   },
   {
@@ -4174,14 +4174,14 @@
   {
     "section": "5",
     "file": "packages/money/src/book.ts",
-    "find": "return { ...detail, options: offOptionsRemoved(this.#switches, detail.options) };",
+    "find": "return { ...detail, options: optionsInThisSetup(this.#switches, detail.options) };",
     "replace": "return detail;",
     "why": "[her-switches] Off in this setup: 5.2 review items offer what is off"
   },
   {
     "section": "12",
     "file": "packages/money/src/book.ts",
-    "find": "return detail.resortable ? Object.freeze({ ...detail, options: offOptionsRemoved(this.#switches, detail.options) }) : detail;",
+    "find": "return detail.resortable ? Object.freeze({ ...detail, options: optionsInThisSetup(this.#switches, detail.options) }) : detail;",
     "replace": "return detail;",
     "why": "[her-switches] Off in this setup: 12.4 sorting again offers what is off"
   },
@@ -4230,15 +4230,15 @@
   {
     "section": "1",
     "file": "packages/money/src/her-setup.ts",
-    "find": "checkSwitches({ momReserve: 'off', oldCard: 'off' })",
-    "replace": "checkSwitches({ momReserve: 'off', oldCard: 'on' })",
+    "find": "checkSwitches({ momReserve: 'off', oldCard: 'off', secondCard: 'on' })",
+    "replace": "checkSwitches({ momReserve: 'off', oldCard: 'on', secondCard: 'on' })",
     "why": "[her-switches] Off in this setup: her setup has the old card"
   },
   {
     "section": "1",
     "file": "packages/money/src/her-setup.ts",
-    "find": "checkSwitches({ momReserve: 'off', oldCard: 'off' })",
-    "replace": "checkSwitches({ momReserve: 'on', oldCard: 'off' })",
+    "find": "checkSwitches({ momReserve: 'off', oldCard: 'off', secondCard: 'on' })",
+    "replace": "checkSwitches({ momReserve: 'on', oldCard: 'off', secondCard: 'on' })",
     "why": "[her-switches] Off in this setup: her setup has the mom reserve"
   },
   {
@@ -4356,15 +4356,253 @@
   {
     "section": "2",
     "file": "packages/money/src/settings.ts",
-    "find": "const HER_SETTING_KEYS: readonly (keyof Settings)[] = ['askBeforeSplittingPaycheck'];",
-    "replace": "const HER_SETTING_KEYS: readonly (keyof Settings)[] = [];",
+    "find": "const HER_SETTING_KEYS: readonly (keyof Settings)[] = ['askBeforeSplittingPaycheck', 'secondCardClosingDay'];",
+    "replace": "const HER_SETTING_KEYS: readonly (keyof Settings)[] = ['secondCardClosingDay'];",
     "why": "[her-ask] section 2 the setting cannot be changed"
   },
   {
     "section": "2",
     "file": "packages/money/src/her-setup.ts",
-    "find": "askBeforeSplittingPaycheck: true });",
-    "replace": "askBeforeSplittingPaycheck: false });",
+    "find": "askBeforeSplittingPaycheck: true, secondCardClosingDay: null });",
+    "replace": "askBeforeSplittingPaycheck: false, secondCardClosingDay: null });",
     "why": "[her-ask] section 2 her setup starts with it off"
+  },
+  {
+    "section": "12",
+    "file": "packages/money/src/self-check.ts",
+    "find": "return subtractCents(subtractCents(addCents(bank.checking, bank.savings), bank.everydayCard), bank.secondCard ?? 0);",
+    "replace": "return subtractCents(addCents(bank.checking, bank.savings), bank.everydayCard);",
+    "why": "[her-second-card] 12.1 the second card left out of the bank side"
+  },
+  {
+    "section": "12",
+    "file": "packages/money/src/self-check.ts",
+    "find": "return subtractCents(subtractCents(addCents(bank.checking, bank.savings), bank.everydayCard), bank.secondCard ?? 0);",
+    "replace": "return addCents(subtractCents(addCents(bank.checking, bank.savings), bank.everydayCard), bank.secondCard ?? 0);",
+    "why": "[her-second-card] 12.1 the second card added instead of taken off"
+  },
+  {
+    "section": "12",
+    "file": "packages/money/src/self-check.ts",
+    "find": "    if (charge.account === 'second-card') secondCard = addCents(secondCard ?? 0, charge.amount);\n",
+    "replace": "",
+    "why": "[her-second-card] 12.1 a pending charge on the second card left out"
+  },
+  {
+    "section": "12",
+    "file": "packages/money/src/self-check.ts",
+    "find": "    if (charge.account === 'second-card') secondCard = addCents(secondCard ?? 0, charge.amount);",
+    "replace": "    if (charge.account === 'second-card') secondCard = subtractCents(secondCard ?? 0, charge.amount);",
+    "why": "[her-second-card] 12.1 a pending charge on the second card lowers what it owes"
+  },
+  {
+    "section": "12",
+    "file": "packages/money/src/self-check.ts",
+    "find": "    if (charge.account === 'second-card') secondCard = addCents(secondCard ?? 0, charge.amount);",
+    "replace": "    if (charge.account === 'second-card') everydayCard = addCents(everydayCard, charge.amount);",
+    "why": "[her-second-card] 12.1 a pending charge on the second card counted on the everyday card"
+  },
+  {
+    "section": "4",
+    "file": "packages/money/src/transactions.ts",
+    "find": "  purchase: ['checking', 'everyday-card', 'old-card', 'second-card'],",
+    "replace": "  purchase: ['checking', 'everyday-card', 'old-card'],",
+    "why": "[her-second-card] 4.1 a purchase on the second card refused"
+  },
+  {
+    "section": "4",
+    "file": "packages/money/src/transactions.ts",
+    "find": "  refund: ['checking', 'everyday-card', 'old-card', 'second-card'],",
+    "replace": "  refund: ['checking', 'everyday-card', 'old-card'],",
+    "why": "[her-second-card] 4.5 a refund on the second card refused"
+  },
+  {
+    "section": "4",
+    "file": "packages/money/src/transactions.ts",
+    "find": "  'card-charge': ['everyday-card', 'old-card', 'second-card'],",
+    "replace": "  'card-charge': ['everyday-card', 'old-card'],",
+    "why": "[her-second-card] 4.8 a fee on the second card refused"
+  },
+  {
+    "section": "5",
+    "file": "packages/money/src/transactions.ts",
+    "find": "    if (!ALL_ACCOUNTS.includes(txn.to) || txn.to === txn.from)",
+    "replace": "    if (!ALL_ACCOUNTS.filter((a) => a !== 'second-card').includes(txn.to) || txn.to === txn.from)",
+    "why": "[her-second-card] 5.1 a payment to the second card refused"
+  },
+  {
+    "section": "9",
+    "file": "packages/money/src/reminders.ts",
+    "find": "const isEverydayCard = (card: CardStatement['card']): card is EverydayCard => card === 'everyday-card' || card === 'second-card';",
+    "replace": "const isEverydayCard = (card: CardStatement['card']): card is EverydayCard => card === 'everyday-card';",
+    "why": "[her-second-card] 9.1 9.3 the second card reminded about like the old card"
+  },
+  {
+    "section": "9",
+    "file": "packages/money/src/reminders.ts",
+    "find": "  if (!isEverydayCard(statement.card) && statement.card !== 'old-card') {",
+    "replace": "  if (statement.card !== 'everyday-card' && statement.card !== 'old-card') {",
+    "why": "[her-second-card] 9.1 a statement of the second card refused"
+  },
+  {
+    "section": "1",
+    "file": "packages/money/src/switches.ts",
+    "find": "export const UPSTREAM_SWITCHES: Switches = Object.freeze({ momReserve: 'on', oldCard: 'on', secondCard: 'off' });",
+    "replace": "export const UPSTREAM_SWITCHES: Switches = Object.freeze({ momReserve: 'on', oldCard: 'on', secondCard: 'on' });",
+    "why": "[her-second-card] 1 upstream's setup has the second card"
+  },
+  {
+    "section": "1",
+    "file": "packages/money/src/switches.ts",
+    "find": "  const secondCard: unknown = switches.secondCard === undefined ? 'off' : switches.secondCard;",
+    "replace": "  const secondCard: unknown = switches.secondCard === undefined ? 'on' : switches.secondCard;",
+    "why": "[her-second-card] 1 B242 a book saved before the second card opens with one"
+  },
+  {
+    "section": "1",
+    "file": "packages/money/src/switches.ts",
+    "find": "|| !isSwitch(secondCard)) {",
+    "replace": ") {",
+    "why": "[her-second-card] 1 a second card switch that is neither on nor off is let through"
+  },
+  {
+    "section": "1",
+    "file": "packages/money/src/switches.ts",
+    "find": "  return ALL_ACCOUNTS.filter((account) => account !== 'old-card' || switches.oldCard === 'on');",
+    "replace": "  return ALL_ACCOUNTS.filter((account) => account !== 'second-card' && (account !== 'old-card' || switches.oldCard === 'on'));",
+    "why": "[her-second-card] 1.2 her setup never asks for the second card"
+  },
+  {
+    "section": "1",
+    "file": "packages/money/src/switches.ts",
+    "find": "  if (switches.secondCard === 'off') return switches.oldCard === 'off' ? ACCOUNTS.filter((account) => account !== 'old-card') : ACCOUNTS;",
+    "replace": "  if (switches.secondCard === 'on') return switches.oldCard === 'off' ? ACCOUNTS.filter((account) => account !== 'old-card') : ACCOUNTS;",
+    "why": "[her-second-card] 1.2 the second card asked about only when it is off"
+  },
+  {
+    "section": "1",
+    "file": "packages/money/src/switches.ts",
+    "find": "  if (switches.secondCard === 'off' && onSecondCard(txn)) refuse(`${NO_SECOND_CARD} Nothing on it is read.`);\n",
+    "replace": "",
+    "why": "[her-second-card] 1 with it off, the second card is read"
+  },
+  {
+    "section": "1",
+    "file": "packages/money/src/switches.ts",
+    "find": "bank.secondCard !== undefined && bank.secondCard !== 0) refuse",
+    "replace": "bank.secondCard !== undefined && bank.secondCard > 1) refuse",
+    "why": "[her-second-card] 12.1 with it off, a cent on the second card let through"
+  },
+  {
+    "section": "1",
+    "file": "packages/money/src/switches.ts",
+    "find": "  if (switches.secondCard === 'off' && (opening.setupActivity ?? []).some(onSecondCard)) refuse(`${NO_SECOND_CARD} It has nothing pending and nothing on its way.`);\n",
+    "replace": "",
+    "why": "[her-second-card] 14.2 with it off, a charge pending on the second card on setup day is taken"
+  },
+  {
+    "section": "1",
+    "file": "packages/money/src/switches.ts",
+    "find": "  if (switches.secondCard === 'off' && (opening.settings.secondCardClosingDay ?? null) !== null) refuse(`${NO_SECOND_CARD} The setting secondCardClosingDay must be empty.`);\n",
+    "replace": "",
+    "why": "[her-second-card] 9.8 with it off, a closing day for the second card is taken on setup day"
+  },
+  {
+    "section": "1",
+    "file": "packages/money/src/switches.ts",
+    "find": "  if (switches.secondCard === 'off' && 'secondCardClosingDay' in patch) refuse(`${NO_SECOND_CARD} There is no secondCardClosingDay to change.`);\n",
+    "replace": "",
+    "why": "[her-second-card] 9.8 with it off, its closing day can be set later"
+  },
+  {
+    "section": "1",
+    "file": "packages/money/src/switches.ts",
+    "find": "  if (switches.secondCard === 'off' && 'transfer' in choice && choice.transfer === 'second-card') refuse(`${NO_SECOND_CARD} Nothing can be a payment to it.`);\n",
+    "replace": "",
+    "why": "[her-second-card] 5.6 with it off, a payment to it is taken"
+  },
+  {
+    "section": "5",
+    "file": "packages/money/src/switches.ts",
+    "find": "  if (shown.type !== 'sort' || switches.secondCard === 'off' || !shown.transfer.includes('everyday-card')) return shown;",
+    "replace": "  if (shown.type !== 'sort' || switches.secondCard === 'on' || !shown.transfer.includes('everyday-card')) return shown;",
+    "why": "[her-second-card] 5.6 review never offers the second card as a transfer"
+  },
+  {
+    "section": "5",
+    "file": "packages/money/src/switches.ts",
+    "find": "(account === 'everyday-card' ? ['everyday-card', 'second-card'] : [account])",
+    "replace": "(account === 'everyday-card' ? ['second-card', 'everyday-card'] : [account])",
+    "why": "[her-second-card] 5.6 the second card offered before the everyday card"
+  },
+  {
+    "section": "5",
+    "file": "packages/money/src/switches.ts",
+    "find": "    transferOutcome: outcome === undefined ? shown.transferOutcome : { ...shown.transferOutcome, 'second-card': outcome },",
+    "replace": "    transferOutcome: shown.transferOutcome,",
+    "why": "[her-second-card] 5.6 no outcome said for the second card"
+  },
+  {
+    "section": "5",
+    "file": "packages/money/src/book.ts",
+    "find": "    if (typeof other !== 'string' || !(ALL_ACCOUNTS as readonly string[]).includes(other)) {",
+    "replace": "    if (typeof other !== 'string' || !(ALL_ACCOUNTS.filter((a) => a !== 'second-card') as readonly string[]).includes(other)) {",
+    "why": "[her-second-card] 5.6 a purchase marked a payment to the second card refused"
+  },
+  {
+    "section": "12",
+    "file": "packages/money/src/book.ts",
+    "find": "    refuseOffBalances(this.#switches, bank);\n",
+    "replace": "",
+    "why": "[her-second-card] 12.1 with it off, a second card balance counted"
+  },
+  {
+    "section": "14",
+    "file": "packages/money/src/book.ts",
+    "find": ", setupActivity });",
+    "replace": " });",
+    "why": "[her-second-card] 14.2 with it off, setup day activity on the second card is not looked at"
+  },
+  {
+    "section": "14",
+    "file": "packages/money/src/setup.ts",
+    "find": "  refuseOffBalances(checkSwitches(input.switches), input.bankBalances);\n",
+    "replace": "",
+    "why": "[her-second-card] 14.2 with it off, a second card balance is in the starting money"
+  },
+  {
+    "section": "2",
+    "file": "packages/money/src/settings.ts",
+    "find": "isWholeInRange(s.secondCardClosingDay, 1, 31)",
+    "replace": "isWholeInRange(s.secondCardClosingDay, 0, 31)",
+    "why": "[her-second-card] 9.8 a second card closing day of 0 is taken"
+  },
+  {
+    "section": "2",
+    "file": "packages/money/src/settings.ts",
+    "find": "isWholeInRange(s.secondCardClosingDay, 1, 31)",
+    "replace": "isWholeInRange(s.secondCardClosingDay, 1, 30)",
+    "why": "[her-second-card] 9.8 a second card closing day of 31 refused"
+  },
+  {
+    "section": "2",
+    "file": "packages/money/src/settings.ts",
+    "find": "const HER_SETTING_KEYS: readonly (keyof Settings)[] = ['askBeforeSplittingPaycheck', 'secondCardClosingDay'];",
+    "replace": "const HER_SETTING_KEYS: readonly (keyof Settings)[] = ['askBeforeSplittingPaycheck'];",
+    "why": "[her-second-card] 9.8 the second card's closing day cannot be changed"
+  },
+  {
+    "section": "1",
+    "file": "packages/money/src/her-setup.ts",
+    "find": "checkSwitches({ momReserve: 'off', oldCard: 'off', secondCard: 'on' })",
+    "replace": "checkSwitches({ momReserve: 'off', oldCard: 'off', secondCard: 'off' })",
+    "why": "[her-second-card] her setup has no second card"
+  },
+  {
+    "section": "2",
+    "file": "packages/money/src/her-setup.ts",
+    "find": "askBeforeSplittingPaycheck: true, secondCardClosingDay: null });",
+    "replace": "askBeforeSplittingPaycheck: true, secondCardClosingDay: 1 });",
+    "why": "[her-second-card] her setup starts with the second card's closing day set"
   }
 ]

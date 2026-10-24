@@ -85,3 +85,28 @@ HB5 (PR 4). "Not a paycheck" keeps every other choice money in has: other
     transfer from her other account (5.6). A paycheck waiting gets no
     sorting rule ("always do this"), as an early paycheck gets none (6.2,
     B55).
+
+HB6 (PR 5). A card's name on her screens and in her alerts is the name its
+    bank gives the account (Plaid's account name), as docs/her-plan.txt
+    says (Piece C: "Screens use the bank's own name for each account, so no
+    card name is written in the code"). The rulebook's "the Capital One
+    card" and "the Amex card" (section 1, 9.8) stand for those names: 9.8
+    reads "Card reminders are off for <the card's name>". Two cards the
+    banks name the same are told apart by their last digits, as the Bank
+    screen already shows them; a card with no name is "Everyday card" or
+    "Second card". Upstream's setup, which has no second card, keeps its
+    own words ("Everyday card", "Old card"). Before her accounts are picked
+    (the Bank screen), the roles are called "Everyday card" and "Second
+    card"; in the code the Capital One card is the everyday card and the
+    Amex card is the second card.
+
+HB7 (PR 5). Until PR 6 brings her second connection, the app still makes
+    one connection (1.1 as it is), and her four accounts are picked from
+    it. In the rehearsal on Plaid's test bank (npm run serve -- --connect)
+    the test bank's second made-up card (••4444) is her second card, and
+    the old card is not picked. The second card's pick is kept in her own
+    table (her_account_roles, her first database step): upstream's
+    accounts table allows only its own four roles and its steps are never
+    changed. Her steps run only in her setup (her server's start, or the
+    first time a second card is picked), so upstream's database is exactly
+    upstream's.

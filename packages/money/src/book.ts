@@ -1,4 +1,4 @@
-import { ACCOUNTS, type AccountId } from './accounts.js';
+import { ALL_ACCOUNTS, type AccountId } from './accounts.js';
 import { ACTIVITY_KINDS, foldLines, type ActivityKind, type ActivityRow, type ActivityWhat, type BucketActivity, type LedgerLine, type PeriodSummary } from './activity.js';
 import { bucketLevel, type Alert, type AlertInput } from './alerts.js';
 import { isSpendingBucket, type SplitBucket } from './buckets.js';
@@ -26,7 +26,7 @@ import {
   type SortingRule,
 } from './rules.js';
 import { changeSettings as applySettingsChange, matchesTextRule, validateSettings, type LeftoverChoice, type Settings } from './settings.js';
-import { checkOpening, checkSwitches, offOptionsRemoved, refuseOffChoice, refuseOffMove, refuseOffRule, refuseOffSettings, refuseOffTransaction, type Switches } from './switches.js';
+import { checkOpening, checkSwitches, optionsInThisSetup, refuseOffBalances, refuseOffChoice, refuseOffMove, refuseOffRule, refuseOffSettings, refuseOffTransaction, type Switches } from './switches.js';
 import {
   checkTransaction,
   sameTransaction,
@@ -304,7 +304,7 @@ export interface InTransitItem {
   readonly id: string;
   readonly date: IsoDate;
   readonly from: 'checking' | 'savings';
-  readonly to: 'checking' | 'savings' | 'everyday-card' | 'old-card';
+  readonly to: AccountId;
   readonly amount: Cents;
   // Which half the app has seen.
   readonly seen: 'left' | 'arrived';
@@ -707,7 +707,7 @@ export class Book {
     this.#settings = validateSettings(input.settings);
     this.#switches = checkSwitches(input.switches);
     const setupActivity = [...(input.countedAtSetup ?? []), ...(input.inTransitAtSetup ?? [])];
-    checkOpening(this.#switches, { momReserve, oldCardDebt: input.oldCardDebt, settings: this.#settings, oldCardActivity: setupActivity.some((t) => ('account' in t && t.account === 'old-card') || ('to' in t && t.to === 'old-card')) });
+    checkOpening(this.#switches, { momReserve, oldCardDebt: input.oldCardDebt, settings: this.#settings, oldCardActivity: setupActivity.some((t) => ('account' in t && t.account === 'old-card') || ('to' in t && t.to === 'old-card')), setupActivity });
     this.#periodSplit = splitSettingsOf(this.#settings);
     this.#rules = checkRules(input.rules ?? []);
     for (const rule of this.#rules) refuseOffRule(this.#switches, rule);
@@ -881,7 +881,7 @@ export class Book {
   reviewDetails(): ReviewDetail[] {
     return [...this.#review].map((id) => {
       const detail = this.#reviewDetail(this.#entry(id));
-      return { ...detail, options: offOptionsRemoved(this.#switches, detail.options) };
+      return { ...detail, options: optionsInThisSetup(this.#switches, detail.options) };
     });
   }
 
@@ -899,6 +899,7 @@ export class Book {
   // Rules 12.1 to 12.5. The bank balances must include pending charges
   // (withPendingCharges). The old card is not part of the check.
   selfCheck(bank: BankBalances): SelfCheck {
+    refuseOffBalances(this.#switches, bank);
     const bankTotal = bankSide(bank);
     const appTotal = this.appSide();
     const difference = subtractCents(addCents(bankTotal, this.#totals.inTransit), appTotal);
@@ -1010,7 +1011,7 @@ export class Book {
   // Payments the app has seen to a card, oldest first, for the reminders
   // (9.3, 9.4): the day each left and the day it reached the card (12.5).
   // A transfer seen in two halves is one payment.
-  cardPayments(card: 'everyday-card' | 'old-card'): CardPayment[] {
+  cardPayments(card: 'everyday-card' | 'old-card' | 'second-card'): CardPayment[] {
     const payments: CardPayment[] = [];
     for (const entry of this.#entries.values()) {
       const txn = 'txn' in entry ? entry.txn : null;
@@ -1241,7 +1242,7 @@ export class Book {
   // Off in this setup: sorting again never offers what is off.
   #resortShown(id: string, entry: Entry): ResortDetail {
     const detail = this.#resortOf(id, entry);
-    return detail.resortable ? Object.freeze({ ...detail, options: offOptionsRemoved(this.#switches, detail.options) }) : detail;
+    return detail.resortable ? Object.freeze({ ...detail, options: optionsInThisSetup(this.#switches, detail.options) }) : detail;
   }
 
   #resortOf(id: string, entry: Entry | undefined): ResortDetail {
@@ -2285,7 +2286,7 @@ export class Book {
   // or out of needs when it pays the old card from checking (5.2). What the
   // bank sent is kept, so sorting it another way later brings it back.
   #markAsTransfer(entry: Entry, other: unknown): void {
-    if (typeof other !== 'string' || !(ACCOUNTS as readonly string[]).includes(other)) {
+    if (typeof other !== 'string' || !(ALL_ACCOUNTS as readonly string[]).includes(other)) {
       throw new MoneyError('bad-choice', `a transfer is with one of your four accounts, not ${String(other)}`);
     }
     const account = other as AccountId;

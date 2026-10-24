@@ -62,7 +62,7 @@ export type ReviewFacts =
   | {
       readonly type: 'money-in';
       readonly reason: MoneyInReason;
-      readonly account: 'checking' | 'savings' | 'everyday-card' | 'old-card';
+      readonly account: 'checking' | 'savings' | 'everyday-card' | 'old-card' | 'second-card';
       // B54: older than the last paycheck, so it cannot start a pay period.
       readonly olderThanLastPaycheck: boolean;
       // Her rulebook, 51.2: an older paycheck waits for a yes first.

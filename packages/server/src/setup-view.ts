@@ -134,6 +134,8 @@ export function setupView(input: SetupViewInput): SetupView {
     checking: line(base.posted.checking, 'checking', withPending.checking),
     savings: line(base.posted.savings, 'savings', withPending.savings),
     everydayCard: line(base.posted.everydayCard, 'everyday-card', withPending.everydayCard),
+    // Her second card (her rulebook, 14.2: both cards' balances come off).
+    ...(base.posted.secondCard === undefined ? {} : { secondCard: line(base.posted.secondCard, 'second-card', withPending.secondCard ?? 0) }),
     pendingCharges: charges.map((c) => ({ id: c.id, account: c.account, date: c.date, description: c.description, amount: c.amount })),
     oldCard: { posted: base.oldCardBalance, pending: pendingOn('old-card'), debt: startingDebt(base.oldCardBalance, charges) },
     bankSide: startingMoney(base.posted, charges),

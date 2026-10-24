@@ -10,7 +10,7 @@ import { plaidKeysFromEnv } from '../src/plaid/sandbox-lock.js';
 import { setUpTracking, setupPreview, type SetupOutcome } from '../src/setup-day.js';
 import { bankStatus } from '../src/status.js';
 import { syncBank, type SyncInput, type SyncResult } from '../src/sync/sync.js';
-import { ACCOUNT_IDS, FakePlaid, fourAccounts } from './fake-plaid.js';
+import { ACCOUNT_IDS, FakePlaid, fourAccounts, secondCardAccount } from './fake-plaid.js';
 
 // A bank connection to the made-up test bank, in a database that lives only
 // in memory. Every name and number is made up.
@@ -63,11 +63,13 @@ export const POSTED_AT_START = { checking: 300_000, savings: 500_000, everyday: 
 // Connected, with the first sync done and his accounts and bank rules set.
 export async function connected(
   // path: a database file, for tests that open it again (a restart); in memory otherwise.
-  // herSetup: her setup's picks (1.2, "Off in this setup"): the old card is never picked, so its account is never read.
-  options: { posted?: typeof POSTED_AT_START; history?: (fake: FakePlaid) => void; rules?: readonly BankRule[]; today?: IsoDate; path?: string; herSetup?: boolean } = {},
+  // herSetup: her setup's picks (1.2, "Off in this setup"): the old card is never picked, so its account is never read;
+  // her second card is (secondCard: what it owes at the start, 0 when left out).
+  options: { posted?: typeof POSTED_AT_START; history?: (fake: FakePlaid) => void; rules?: readonly BankRule[]; today?: IsoDate; path?: string; herSetup?: boolean; secondCard?: Cents } = {},
 ): Promise<Harness> {
   const today = options.today ?? SETUP_DAY;
-  const fake = new FakePlaid(fourAccounts(options.posted ?? POSTED_AT_START));
+  const her = options.herSetup === true;
+  const fake = new FakePlaid([...fourAccounts(options.posted ?? POSTED_AT_START), ...(her ? [secondCardAccount(options.secondCard ?? 0)] : [])]);
   options.history?.(fake);
   const db = openDatabase(options.path ?? ':memory:');
   const lines: LogLine[] = [];
@@ -81,7 +83,7 @@ export async function connected(
     [ACCOUNT_IDS.checking]: 'checking',
     [ACCOUNT_IDS.savings]: 'savings',
     [ACCOUNT_IDS.everyday]: 'everyday-card',
-    ...(options.herSetup === true ? {} : { [ACCOUNT_IDS.old]: 'old-card' as const }),
+    ...(her ? { [ACCOUNT_IDS.second]: 'second-card' as const } : { [ACCOUNT_IDS.old]: 'old-card' as const }),
   });
   setBankRules(db, options.rules ?? BANK_RULES, today);
   return { fake, db, lines, plaid, box, sync };

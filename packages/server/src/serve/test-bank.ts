@@ -95,7 +95,11 @@ export async function connectLikeHis(input: ConnectLikeHisInput): Promise<void> 
     if (tries >= 40) throw new Error('the test bank did not finish sending the history in time; run with --sync later');
     await wait(3_000);
   }
-  const roles = Object.fromEntries(readAccounts(db).flatMap((a) => (a.raw.mask !== null && a.raw.mask !== undefined && TEST_BANK_MASKS[a.raw.mask] !== undefined ? [[a.plaidAccountId, TEST_BANK_MASKS[a.raw.mask] ?? null]] : [])));
   const asked = input.roles;
+  // Her setup (her rulebook, 1.2) has no old card and a second card: on this one
+  // connection, the card at 4444 is her second card. (PR 6 brings her second bank.)
+  const secondCard = asked !== undefined && asked.includes('second-card') && !asked.includes('old-card');
+  const roleOf = (mask: string): AccountId | undefined => (secondCard && TEST_BANK_MASKS[mask] === 'old-card' ? 'second-card' : TEST_BANK_MASKS[mask]);
+  const roles = Object.fromEntries(readAccounts(db).flatMap((a) => (a.raw.mask !== null && a.raw.mask !== undefined && roleOf(a.raw.mask) !== undefined ? [[a.plaidAccountId, roleOf(a.raw.mask) ?? null]] : [])));
   setAccountRoles(db, asked === undefined ? roles : Object.fromEntries(Object.entries(roles).filter(([, role]) => role !== null && asked.includes(role))));
 }
