@@ -357,6 +357,19 @@ describe('12.6 why the totals do not match, with lines for the second card', () 
     expect(safe.detail?.accounts.find((a) => a.account === 'second-card')).toEqual({ account: 'second-card', posted: SECOND_OWES + 700, available: null, counted: SECOND_OWES + 700 });
     expect(safe.detail?.why).toEqual([{ kind: 'balance-moved', account: 'second-card', balance: 'posted', went: 'up', by: 700, amount: -700 }]);
   });
+
+  it('12.6 a purchase posted on the second card since the read that matched accounts for its own move: only what is left is a line', async () => {
+    const life = await setUp();
+    await day(life, '2026-10-02');
+    expect(tracking(life).safeToSpend.shown).toBe(true);
+    life.h.fake.addPosted({ id: 'cafe-s', account: SECOND, amount: 1_250, date: '2026-10-03', description: 'MADE UP CAFE' });
+    life.h.fake.drift(SECOND, 700);
+    await day(life, '2026-10-03');
+    const safe = tracking(life).safeToSpend;
+    if (safe.shown || safe.why !== 'totals-do-not-match') throw new Error('the totals should not match');
+    expect(safe.check.difference).toBe(-700);
+    expect(safe.detail?.why).toEqual([{ kind: 'balance-moved', account: 'second-card', balance: 'posted', went: 'up', by: 700, amount: -700 }]);
+  });
 });
 
 describe('HB6 each card named by its bank, on the screens of her setup only', () => {

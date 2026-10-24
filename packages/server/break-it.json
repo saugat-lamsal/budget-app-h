@@ -6603,9 +6603,15 @@
   {
     "section": "home",
     "file": "packages/server/src/http/card-names.ts",
-    "find": "      return cardNames === null || typeof shown !== 'object' || shown === null ? shown : { ...shown, cardNames };",
+    "find": "      return cardNames === null || typeof shown !== 'object' || shown === null || off ? shown : { ...shown, cardNames };",
     "replace": "      return shown;",
     "why": "[her-second-card] HB6 the screens get no names"
+  },
+  {
+    "file": "packages/server/src/http/card-names.ts",
+    "find": "      return cardNames === null || typeof shown !== 'object' || shown === null || off ? shown : { ...shown, cardNames };",
+    "replace": "      return cardNames === null || typeof shown !== 'object' || shown === null ? shown : { ...shown, cardNames };",
+    "why": "[her-second-card] Off in this setup: an off answer gets the card names"
   },
   {
     "section": "home",

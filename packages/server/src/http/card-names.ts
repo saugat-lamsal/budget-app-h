@@ -15,7 +15,9 @@ export function cardsNamed(names: () => CardNames | null, options: AppServerOpti
     return (async (request: IncomingMessage, ...rest: never[]) => {
       const shown = await view(request, ...rest);
       const cardNames = names();
-      return cardNames === null || typeof shown !== 'object' || shown === null ? shown : { ...shown, cardNames };
+      // An answer that something is off in this setup names nothing.
+      const off = typeof shown === 'object' && shown !== null && (shown as { state?: unknown }).state === 'off';
+      return cardNames === null || typeof shown !== 'object' || shown === null || off ? shown : { ...shown, cardNames };
     }) as unknown as F;
   };
   const { home, buckets, review, activity, settings, setupView } = options;

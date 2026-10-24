@@ -15,10 +15,11 @@ import type { WhyAccount, WhyLine } from '../views/home.js';
 //   as much as it moves the bank side, so what each account's figure moved
 //   beyond its transactions is that account's part of the difference: for
 //   checking or savings, what it counted plus its transactions; for a card
-//   (the everyday card, and her second card), which the bank side takes away, less what it counted, plus its
-//   transactions. What the accounts do not account for is the rest: the
-//   books moving otherwise than the bank's transactions (something waiting
-//   for his decision, say). So the lines always add up to the difference.
+//   (the everyday card, and her second card), which the bank side takes
+//   away, less what it counted, plus its transactions. What the accounts do
+//   not account for is the rest: the books moving otherwise than the bank's
+//   transactions (something waiting for his decision, say). So the lines
+//   always add up to the difference.
 // - A cause is named only when it accounts for an account's move to the cent:
 //   the fewest pending items whose parts add up to it, oldest first. Otherwise
 //   the whole move is one line: its balance went up or down with no

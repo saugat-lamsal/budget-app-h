@@ -126,6 +126,14 @@ describe('1 with the second card off, nothing on it is read', () => {
     const options = b.reviewDetails()[0]?.options as Extract<ReviewOptions, { type: 'sort' }>;
     expect(options.transfer).toEqual(['savings', 'everyday-card', 'old-card']);
   });
+
+  it('5.6 while it is off, marking something a payment to it is refused, in review and on a re-sort, and nothing changes', () => {
+    const b = upstreamBook();
+    b.receive(purchase('p1', '2026-10-02', 500, 'MADE UP SHOP', { account: 'checking' }));
+    refusedOff(b, () => b.sort('p1', { transfer: 'second-card' }, '2026-10-02'));
+    b.sort('p1', { to: 'needs' }, '2026-10-02');
+    refusedOff(b, () => b.sort('p1', { transfer: 'second-card' }, '2026-10-03'));
+  });
 });
 
 describe('2 settings: a statement closing day for each card', () => {
