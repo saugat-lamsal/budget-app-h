@@ -61,7 +61,7 @@ type Tracking = Extract<ReviewView, { state: 'tracking' }>;
 const targetOf = (detail: KeyedDetail): Target => ({ id: detail.item.id, label: titleOf(detail.item), kind: detail.item.type, seen: detail.key });
 
 function ReviewReady({ view, reload, onChanged }: { readonly view: Tracking; readonly reload: Reload; readonly onChanged: Reload }) {
-  const flow = useChoiceFlow({ resort: false, reload, onChanged, keys: new Map(view.items.map((d) => [d.item.id, d.key])), view });
+  const flow = useChoiceFlow({ resort: false, reload, onChanged, keys: new Map(view.items.map((d) => [d.item.id, d.key])), view, wishlistItems: view.wishlistItems });
   const { sheet, said, sending, setSaid, submit, choose, openSheet } = flow;
   // "Later" (a swipe to the left, or its button) only moves a card to the end
   // of the list on this screen. It answers nothing and sends nothing.

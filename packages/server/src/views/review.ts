@@ -1,4 +1,4 @@
-import type { AccountId, Book, Cents, IsoDate, ReviewDetail } from '@budget-app/money';
+import type { AccountId, Book, Cents, IsoDate, ReviewDetail, WishlistItem } from '@budget-app/money';
 import type { BankMeaning } from './bank-rules.js';
 import { itemKey } from '../item-key.js';
 
@@ -26,6 +26,8 @@ export type ReviewView =
       // Payday questions first, then money in, spending, and old card flags;
       // each group oldest first (B32: all of them wait here).
       readonly items: readonly KeyedDetail[];
+      // Her rulebook, 50.3: her Wishlist list, for "which thing on your list was it".
+      readonly wishlistItems?: readonly WishlistItem[];
     };
 
 // Step 3: an item with its key, sent back with an answer about it (seen), so

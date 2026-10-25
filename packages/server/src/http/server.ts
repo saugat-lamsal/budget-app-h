@@ -7,6 +7,7 @@ import { BACKUP_BEAT_PATH, BACKUP_HEALTH_PATH, fromThisMachine } from '../backup
 import { WEBHOOK_BODY_LIMIT, WEBHOOK_PATH } from './webhook-path.js';
 import type { BankAnswer, BankConnectedRequest, BankConnectionView, BankLinkAnswer, BankLinkRequest, BankRolesRequest } from '../views/bank.js';
 import { parseRequest } from '../choices.js';
+import type { WishlistRequest, WishlistResponse } from '../wishlist-items.js';
 import { HER_POT_SLUGS, POT_SLUGS, potOfSlug, type ActivityView } from '../views/activity.js';
 import type { AlertsView } from '../views/alerts.js';
 import type { StatusView } from '../views/status.js';
@@ -180,6 +181,8 @@ export interface AppServerOptions {
   // His change to the bank rules (section 2, 24c), on Setup day or Settings.
   // It asks first, with what the rule would match. Without it, none can be sent.
   readonly bankRule?: BankRuleHandler;
+  // Her rulebook, 50.1 and 50.3: a change to her Wishlist list. Without it, none can be sent.
+  readonly wishlist?: WishlistHandler;
   // The real server's login (Step 2). Without it, no login: the demo.
   readonly gate?: Gate;
   // Step 3: how often the real server syncs with the bank, in minutes (section
@@ -244,6 +247,7 @@ export type SettingsHandler = (request: IncomingMessage, change: SettingsRequest
 export type RuleHandler = (request: IncomingMessage, change: RuleRequest) => RuleResponse | Promise<RuleResponse>;
 export type SetupHandler = (request: IncomingMessage, answer: SetupRequest) => SetupResponse | Promise<SetupResponse>;
 export type BankRuleHandler = (request: IncomingMessage, change: BankRuleRequest) => BankRuleResponse | Promise<BankRuleResponse>;
+export type WishlistHandler = (request: IncomingMessage, change: WishlistRequest) => WishlistResponse | Promise<WishlistResponse>;
 
 // What handles each kind of request sent to /api/choice.
 interface ChoiceHandlers {
@@ -253,6 +257,7 @@ interface ChoiceHandlers {
   readonly ruleChange: RuleHandler | undefined;
   readonly setup: SetupHandler | undefined;
   readonly bankRule: BankRuleHandler | undefined;
+  readonly wishlist: WishlistHandler | undefined;
 }
 
 // The most a "seen" request may carry; the real one is under 100 bytes.
@@ -378,7 +383,9 @@ async function takeChoice(request: IncomingMessage, response: ServerResponse, ha
             ? await handlers.setup?.(request, parsed)
             : 'bankRule' in parsed
               ? await handlers.bankRule?.(request, parsed)
-              : await handlers.choice?.(request, parsed);
+              : 'wishlist' in parsed
+                ? await handlers.wishlist?.(request, parsed)
+                : await handlers.choice?.(request, parsed);
   if (answer === undefined) {
     send(response, 404, 'application/json; charset=utf-8', JSON.stringify({ error: 'not-found' }), 'no-store');
     return;
@@ -573,7 +580,7 @@ export function createAppServer(options: AppServerOptions): Server {
     }
     // His choices, moves, and changes to the settings: they change the app's
     // books, never the bank (0.4).
-    const handlers: ChoiceHandlers = { choice: options.choice, move: options.move, settingsChange: options.settingsChange, ruleChange: options.ruleChange, setup: options.setup, bankRule: options.bankRule };
+    const handlers: ChoiceHandlers = { choice: options.choice, move: options.move, settingsChange: options.settingsChange, ruleChange: options.ruleChange, setup: options.setup, bankRule: options.bankRule, wishlist: options.wishlist };
     if (path === '/api/choice' && Object.values(handlers).some((handler) => handler !== undefined)) {
       if (request.method !== 'POST') {
         response.setHeader('Allow', 'POST');

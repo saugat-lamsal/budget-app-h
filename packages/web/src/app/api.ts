@@ -31,6 +31,8 @@ import type {
   SetupResponse,
   SetupShown as SetupView,
   StatementScreenView,
+  WishlistRequest,
+  WishlistResponse,
 } from '@budget-app/server/views';
 import type { StatementCard } from './routes.js';
 // "Off in this setup" (her rulebook): the views as the phone gets them,
@@ -134,6 +136,23 @@ export async function sendChoice(
   if (response.status !== 200 && response.status !== 422) throw new Error(`sending the choice answered ${response.status}`);
   const answer = (await response.json()) as ChoiceResponse | MoveResponse | SettingsResponse | RuleResponse | SetupResponse | BankRuleResponse;
   if (typeof answer !== 'object' || answer === null || typeof answer.ok !== 'boolean') throw new Error('the choice was answered with something unexpected');
+  return answer;
+}
+
+// Her rulebook, 50.1 and 50.3: a change to her Wishlist list, to the same
+// address as a choice. A refusal comes back as an answer with the reason;
+// anything else throws, and the same request can be sent again.
+export async function sendWishlist(request: WishlistRequest): Promise<WishlistResponse> {
+  const response = await fetch('/api/choice', {
+    method: 'POST',
+    cache: 'no-store',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+  toLogin(response);
+  if (response.status !== 200 && response.status !== 422) throw new Error(`changing the list answered ${response.status}`);
+  const answer = (await response.json()) as WishlistResponse;
+  if (typeof answer !== 'object' || answer === null || typeof answer.ok !== 'boolean') throw new Error('the change was answered with something unexpected');
   return answer;
 }
 

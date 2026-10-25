@@ -21,3 +21,5 @@ export type * from './bank.js';
 export type * from './status.js';
 export * from './off.js';
 export * from './cards.js';
+// Her rulebook, 50.1 to 50.3: the Wishlist list's requests and answers.
+export type { WishlistEdit, WishlistListView, WishlistRequest, WishlistResponse } from '../wishlist-items.js';

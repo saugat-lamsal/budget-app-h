@@ -10,6 +10,7 @@ import { POT_NAMES } from '../ui/names.js';
 import { ChoiceSheet, RuleOfferSheet, SaidNotice, subjectOfRow, useChoiceFlow, type Said } from './choose.js';
 import { MoveMoney } from './Move.js';
 import { ACCOUNT_NAMES } from './review-text.js';
+import { WishlistList } from './wishlist-items.js';
 import type { ActivityRowShown as ActivityRow } from '@budget-app/server/views';
 
 // What went in and out of one bucket this pay period (QUESTIONS.md B97 to
@@ -124,12 +125,14 @@ export function rowTitle(row: ActivityRow): string {
 function ActivityReady({ view, reload, onChanged }: { readonly view: Tracking; readonly reload: Reload; readonly onChanged: Reload }) {
   const { activity, pot, balances } = view;
   const name = POT_NAMES[pot];
-  const flow = useChoiceFlow({ resort: true, reload, onChanged, keys: new Map(Object.entries(view.keys)), view });
+  const flow = useChoiceFlow({ resort: true, reload, onChanged, keys: new Map(Object.entries(view.keys)), view, wishlistItems: view.wishlistItems });
   const [moving, setMoving] = useState(false);
   const [moved, setMoved] = useState<Said | null>(null);
   const { sheet, said, sending, setSaid, submit, openSheet } = flow;
 
   const open = sheet === null ? undefined : activity.rows.find((r) => r.id === sheet.item);
+  // Her rulebook, 50.3: a purchase marked bought says which thing it was.
+  const boughtNames = new Map((view.list?.bought ?? []).map((b) => [b.purchase, b.name]));
   // Moving money starts from this bucket, to the one next to it (needs <-> wants).
   const other: AnyPot = pot === 'needs' ? 'wants' : pot === 'wants' ? 'needs' : 'needs';
 
@@ -173,6 +176,9 @@ function ActivityReady({ view, reload, onChanged }: { readonly view: Tracking; r
         Move money
       </Button>
 
+      {/* Her rulebook, 50.1 to 50.3: on Wishlist's screen, her list. */}
+      {view.list !== undefined && <WishlistList list={view.list} reload={reload} onChanged={onChanged} />}
+
       <Card title="What went in and out" testId="activity-list">
         {activity.rows.length === 0 ? (
           <ListRow icon="check" tone="ok" title={`Nothing has gone in or out of ${name} yet this pay period`} testId="activity-empty" />
@@ -188,6 +194,7 @@ function ActivityReady({ view, reload, onChanged }: { readonly view: Tracking; r
                   {row.account === null ? '' : ` · ${ACCOUNT_NAMES[row.account]}`}
                   {row.partOfSplit ? ' · Part of a split' : ''}
                   {row.refunded > 0 ? ` · Refunded ${moneyText(row.refunded)}` : ''}
+                  {boughtNames.has(row.id) ? ` · Bought: ${boughtNames.get(row.id) ?? ''}` : ''}
                 </>
               }
               trailing={<Money cents={row.amount} signed testId="row-amount" />}

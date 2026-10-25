@@ -111,3 +111,4 @@ export { OLDER_PAYCHECK_FIRST, type WaitingPaycheck } from './paycheck-ask.js';
 export { cardOwes, owedAtSetup, setAside, type CardSetAside, type SetAside } from './set-aside.js';
 export { wishlistMove, type DueStatement, type WishlistMove, type WishlistMoveInput, type WishlistMoveWhen } from './wishlist.js';
 export { cardStatementView, type BeforeSetupLine, type CarriedIn, type StatementBucket, type StatementInput, type StatementItem, type StatementPeriod, type StatementView } from './statement.js';
+export { EMPTY_WISHLIST, WISHLIST_MAX_ITEMS, WISHLIST_MAX_NAME, changeWishlist, fillWishlist, type BoughtItem, type FilledItem, type WishlistChange, type WishlistFill, type WishlistItem, type WishlistList, type WishlistLogLine } from './wishlist-items.js';

@@ -1,4 +1,5 @@
-import { type AnyPot, type Book, type BucketActivity, type Cents, type IsoDate, type Pot } from '@budget-app/money';
+import { type AnyPot, type Book, type BucketActivity, type Cents, type IsoDate, type Pot, type WishlistItem } from '@budget-app/money';
+import type { WishlistListView } from '../wishlist-items.js';
 import { itemKey } from '../item-key.js';
 
 // What the screen for one bucket shows (QUESTIONS.md B97 to B102), worked out
@@ -34,6 +35,10 @@ export type ActivityView =
       // 13.6, 13.8: by the id of each row that can be sorted again, what
       // "always do this" starts from: the place's name, or its description.
       readonly ruleTexts: Readonly<Record<string, string>>;
+      // Her rulebook, 50.3: her Wishlist list, for a purchase sorted again to Wishlist.
+      readonly wishlistItems?: readonly WishlistItem[];
+      // Her rulebook, 50.2 and 50.3: on Wishlist's list, how the bucket fills her items.
+      readonly list?: WishlistListView;
     };
 
 export function activityView(input: ActivityInput): ActivityView {

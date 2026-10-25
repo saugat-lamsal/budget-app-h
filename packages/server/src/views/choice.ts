@@ -65,6 +65,9 @@ export interface ChoiceRequest {
   // numbers). If the item is not that any more (a sync brought something new
   // about it), the answer is refused with how it is now, and nothing changes.
   readonly seen?: string;
+  // Her rulebook, 50.3: sorting a purchase to Wishlist, which thing on her
+  // list it was (an item's id), or 'none'. Asked while the list has items.
+  readonly wishlistItem?: string;
 }
 
 // What was done.

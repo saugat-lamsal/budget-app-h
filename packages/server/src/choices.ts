@@ -54,6 +54,7 @@ import type {
 } from './views/choice.js';
 import { ruleViewOf } from './views/settings.js';
 import type { BankRuleRequest, BankRuleSpec } from './views/bank-rules.js';
+import { parseWishlistRequest, type WishlistRequest } from './wishlist-items.js';
 
 // How a tap reaches the books (Phase 4). The screen sends the choice it was
 // offered; the money math decides. Three promises:
@@ -88,8 +89,8 @@ const MAX_TEXT_LENGTH = 200;
 // The request, if it is exactly the right shape, otherwise null. Nothing is
 // guessed or repaired.
 export function parseChoiceRequest(value: unknown): ChoiceRequest | null {
-  if (!isRecord(value) || !onlyKeys(value, ['id', 'item', 'choice', 'always', 'confirmed', 'resort', 'seen'])) return null;
-  const { id, item, choice, always, confirmed, resort, seen } = value;
+  if (!isRecord(value) || !onlyKeys(value, ['id', 'item', 'choice', 'always', 'confirmed', 'resort', 'seen', 'wishlistItem'])) return null;
+  const { id, item, choice, always, confirmed, resort, seen, wishlistItem } = value;
   if (typeof id !== 'string' || !ID_FORMAT.test(id)) return null;
   if (typeof item !== 'string' || item === '' || item.length > MAX_ITEM_LENGTH) return null;
   const parsed = parseChoice(choice);
@@ -104,6 +105,7 @@ export function parseChoiceRequest(value: unknown): ChoiceRequest | null {
   if (confirmed !== undefined && typeof confirmed !== 'boolean') return null;
   if (resort !== undefined && resort !== true) return null;
   if (seen !== undefined && (typeof seen !== 'string' || !KEY_FORMAT.test(seen))) return null;
+  if (wishlistItem !== undefined && (typeof wishlistItem !== 'string' || !/^(none|item-[1-9][0-9]{0,8})$/.test(wishlistItem))) return null;
   return {
     id,
     item,
@@ -112,6 +114,7 @@ export function parseChoiceRequest(value: unknown): ChoiceRequest | null {
     ...(confirmed === undefined ? {} : { confirmed }),
     ...(resort === undefined ? {} : { resort: true as const }),
     ...(seen === undefined ? {} : { seen }),
+    ...(wishlistItem === undefined ? {} : { wishlistItem }),
   };
 }
 
@@ -131,8 +134,10 @@ export function parseMoveRequest(value: unknown): MoveRequest | null {
 
 // Whatever the phone sent: a move, a settings change, or a rule change if it
 // says so, otherwise a choice.
-export function parseRequest(value: unknown): ChoiceRequest | MoveRequest | SettingsRequest | RuleRequest | SetupRequest | BankRuleRequest | null {
+export function parseRequest(value: unknown): ChoiceRequest | MoveRequest | SettingsRequest | RuleRequest | SetupRequest | BankRuleRequest | WishlistRequest | null {
   if (!isRecord(value)) return null;
+  // Her rulebook, 50.1: a change to her Wishlist list.
+  if ('wishlist' in value) return parseWishlistRequest(value);
   if ('bankRule' in value) return parseBankRuleRequest(value);
   if ('move' in value) return parseMoveRequest(value);
   if ('settings' in value) return parseSettingsRequest(value);

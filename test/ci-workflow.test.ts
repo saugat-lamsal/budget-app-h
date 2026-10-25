@@ -84,10 +84,18 @@ describe('CI: the jobs together are exactly npm test', () => {
     expect([...skipped.matchAll(/name: '([\w-]+)'/g)].map((m) => m[1])).toEqual(['web-browser']);
   });
 
-  it('each browser job runs every browser test in its own engine', () => {
+  it('each browser job runs its shard of the browser tests in its own engine', () => {
     const browser = steps().filter((s) => s.if === "matrix.part != 'checks'" && s.run?.startsWith('npx vitest') === true);
-    expect(browser.map((s) => s.run)).toEqual(['npx vitest run --project web-browser']);
+    expect(browser.map((s) => s.run)).toEqual(['npx vitest run --project web-browser --shard=${{ matrix.shard }}/2']);
     expect(browser[0]?.env).toEqual({ BROWSER_ENGINE: '${{ matrix.part }}' });
+  });
+
+  it('the browser tests run in two shards at the same time, 1/2 and 2/2, which together are every browser test; the checks job is one job', () => {
+    expect(workflow).toMatch(/\n\s+shard: \[1, 2\]\n/);
+    // The checks job is not sharded: only its first shard runs.
+    expect(workflow).toMatch(/\n\s+exclude:\n\s+- part: checks\n\s+shard: 2\n/);
+    // The jobs' names, which main requires: checks, webkit 1/2 and webkit 2/2 (and image).
+    expect(workflow).toContain("name: ${{ matrix.part }}${{ matrix.part != 'checks' && format(' {0}/2', matrix.shard) || '' }} (${{ matrix.os }})");
   });
 
   it('every step runs in every job, or in the checks job, or in the browser jobs: nothing else picks', () => {
