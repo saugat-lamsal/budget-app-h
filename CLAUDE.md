@@ -417,3 +417,15 @@ or "Due" on Wishlist items and cards, never color alone.
   hers): a second swipe test and two [b264] breaks. The code was already
   here. Node was already 22.23.4 in the Dockerfile (af53eee). Her six
   files unchanged by the merge; upstream changed none of them.
+- PR 12, the end check (branch her-end-check): docs/her-report.txt has
+  the runs, the table of every rule and its tests, and what is not tested.
+  Section H of the rulebook is empty. Her pay period for the agent:
+  npm run pay-period-agent-her (packages/web/test/browser/pay-period-her,
+  agent-pay-period-h/, the same days through the desks in
+  packages/server/test/pay-period-her.test.ts). The agent's findings,
+  fixed with tests first: a needs and wants split with nothing left for
+  Wishlist (HB30, in upstream's choices.ts), Status per bank (0.7, HB32),
+  the paycheck rule's sheet (no mom reserve, Wishlist row), the split in
+  the change log; the rest settled in agent-pay-period-h/settled.txt.
+  HB31 waits on his answer. BREAK_IT_BAIL=1 makes a test run stop at its
+  first failure (break-it over hundreds of breaks; same verdicts).
