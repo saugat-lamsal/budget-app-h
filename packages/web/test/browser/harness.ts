@@ -14,14 +14,18 @@ import { MINUS } from '../../src/ui/money-format.js';
 
 export const WEB_ROOT = fileURLToPath(new URL('../../dist/', import.meta.url));
 
-// BROWSER_ENGINE=chromium (or webkit) runs one engine only. The break-it check
-// uses it to go faster: a break that one engine's tests catch is caught.
+// BROWSER_ENGINE=chromium (or webkit) runs one engine only. With none given,
+// the default run (npm test, CI on every pull request) uses WebKit, iPhone
+// Safari's engine, and the slow run (TEST_SLOW=1, npm run test:slow) uses
+// Chromium. The break-it check uses BROWSER_ENGINE to go faster: a break that
+// one engine's tests catch is caught.
+const ENGINE = process.env['BROWSER_ENGINE'] ?? (process.env['TEST_SLOW'] === '1' ? 'chromium' : 'webkit');
 export const ENGINES: readonly (readonly [string, BrowserType])[] = (
   [
     ['chromium', chromium],
     ['webkit', webkit],
   ] as const
-).filter(([name]) => process.env['BROWSER_ENGINE'] === undefined || process.env['BROWSER_ENGINE'] === name);
+).filter(([name]) => ENGINE === name);
 
 // An iPhone 15 as a home-screen app: the whole screen, no browser bars.
 export const IPHONE = { width: 393, height: 852 } as const;

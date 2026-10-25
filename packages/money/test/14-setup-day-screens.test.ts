@@ -17,6 +17,7 @@ import {
   type TransferSent,
 } from '../src/index.js';
 import { TEST_SETTINGS, arrived, codeOf, purchase, sent } from './helpers.js';
+import { runs } from './slow.js';
 
 // What the Setup day screens show, from the money math (rulebook section 14
 // with 12.4, 12.5; QUESTIONS.md A10, B42, B43, B48). Every number is made up.
@@ -66,7 +67,7 @@ describe('14.2 B48 what each transfer on its way does to the starting money', ()
         const expected = halves.reduce((sum, h) => sum + inTransitEffect(h), bankSide(bank));
         expect(startingMoney(bank, [], halves)).toBe(expected);
       }),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 });
@@ -171,7 +172,7 @@ describe('14.2 14.3 what is assigned, and what is left to assign', () => {
         expect(result.book.pots()).toEqual({ ...assignment, unsortedIn: 0, unsortedOut: 0 });
         expect(result.book.selfCheck(withPendingCharges(bank, charges))).toMatchObject({ ok: true, difference: 0 });
       }),
-      { numRuns: 1_000 },
+      { numRuns: runs(1_000) },
     );
   });
 });

@@ -1,11 +1,13 @@
-# Runs the type check and every test (npm test), split in three jobs that
-# run at the same time, so each finishes well inside its time limit:
+# Two runs (CLAUDE.md, "Two test runs"). On every pull request, the default
+# run (npm test), split in two jobs that run at the same time:
 # - checks: the type check, then every test that does not use a browser
 #   (money, server, web, repo), with SKIP_BROWSER_TESTS=1;
-# - chromium: the browser tests in Chromium only (BROWSER_ENGINE=chromium);
-# - webkit: the browser tests in WebKit only (BROWSER_ENGINE=webkit).
+# - webkit: the browser tests in WebKit only (BROWSER_ENGINE=webkit), iPhone
+#   Safari's engine.
 # Together they are exactly npm test: test/ci-workflow.test.ts checks that no
-# test is left out. (One job took 38 min 46 s on PR #16, against 45.)
+# test is left out. By hand (Actions, Tests, Run workflow, "Run the slow
+# tests" ticked) the slow run (npm run test:slow, TEST_SLOW=1) instead:
+# checks with the slow tests in, and the browser tests in Chromium.
 # The checks job first puts Litestream on the runner (Phase 6: the backup
 # tests run it against a stand-in for R2), kept between runs.
 #
@@ -31,6 +33,10 @@ on:
           - linux
           - both
         default: windows
+      slow:
+        description: Run the slow tests (npm run test:slow), with the browser tests in Chromium instead of WebKit
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -48,9 +54,11 @@ jobs:
       fail-fast: false
       matrix:
         os: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-latest"]' || inputs.systems == 'both' && '["ubuntu-latest","windows-latest"]' || inputs.systems == 'linux' && '["ubuntu-latest"]' || '["windows-latest"]') }}
-        part: [checks, chromium, webkit]
+        part: ${{ fromJSON(inputs.slow == true && '["checks","chromium"]' || '["checks","webkit"]') }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 45
+    timeout-minutes: ${{ inputs.slow == true && 150 || 45 }}
+    env:
+      TEST_SLOW: ${{ inputs.slow == true && '1' || '0' }}
     steps:
       # Pinned to exact commits; the comment says which release each one is.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -84,8 +92,8 @@ jobs:
           SKIP_BROWSER_TESTS: '1'
         run: npx vitest run
 
-      # The browser tests use the screens in Chromium and in WebKit (iPhone
-      # Safari's engine): Playwright's own copies, at the version in
+      # The browser tests use the screens in WebKit (iPhone Safari's engine; in
+      # the slow run, Chromium): Playwright's own copies, at the version in
       # package-lock.json. Each browser job downloads only its own browser.
       # The browsers are kept between runs, one copy per system, browser and
       # Playwright version; a new version downloads them again.

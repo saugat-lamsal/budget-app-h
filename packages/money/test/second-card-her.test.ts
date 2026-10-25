@@ -33,6 +33,7 @@ import {
   type Switches,
 } from '../src/index.js';
 import { LAST_PAYCHECK, PAYROLL, START_DATE, arrived, cardCharge, codeOf, posted, purchase, refund, sent, transfer } from './helpers.js';
+import { runs } from './slow.js';
 
 type Card = 'everyday-card' | 'second-card';
 const CARDS: readonly Card[] = ['everyday-card', 'second-card'];
@@ -541,7 +542,7 @@ describe('12.5 random lives with both cards, payments landing late on each card'
           expect(book.pots(), day).toEqual(book.recountPots());
         });
       }),
-      { numRuns: 300 },
+      { numRuns: runs(300) },
     );
   });
 
@@ -555,7 +556,7 @@ describe('12.5 random lives with both cards, payments landing late on each card'
           expect(paid.reduce((sum, p) => sum + p.amount, 0)).toBe(paidTo[which]);
         }
       }),
-      { numRuns: 100 },
+      { numRuns: runs(100) },
     );
   });
 });
@@ -573,7 +574,7 @@ describe('1 both cards work the same way: the second card\'s activity moved onto
         });
         expect(moved).toEqual(days);
       }),
-      { numRuns: 300 },
+      { numRuns: runs(300) },
     );
   });
 });

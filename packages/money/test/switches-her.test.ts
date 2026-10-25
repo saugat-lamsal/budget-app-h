@@ -23,6 +23,7 @@ import {
   type Switches,
 } from '../src/index.js';
 import { PAYROLL, START_DATE, LAST_PAYCHECK, ZERO_POTS, cardCharge, codeOf, deposit, payPerson, paycheck, posted, purchase, refund, sent, arrived, transfer } from './helpers.js';
+import { runs } from './slow.js';
 
 const HER: Settings = changeSettings(HER_SETTINGS, { paycheckRule: { contains: PAYROLL } });
 const POTS = { savings: 100_000, needs: 50_000, wants: 30_000, momReserve: 0, heldForOthers: 0 };
@@ -516,7 +517,7 @@ describe('Off in this setup: off is not zero (a twin test, 500 random lives)', (
   it('Off in this setup: mom off and mom at $0.00 hold the same cents every day; only the offers differ', () => {
     fc.assert(
       fc.property(fc.array(stepArb, { minLength: 1, maxLength: 60 }), (steps) => liveTwins(steps)),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 });

@@ -328,6 +328,8 @@ export function vitestRunner({ only, timeLimitMs = TIME_LIMIT_MS }) {
         NODE_OPTIONS: `${process.env.NODE_OPTIONS ?? ''} --max-old-space-size=${MEMORY_CAP_MB}`.trim(),
         SKIP_BROWSER_TESTS: withBrowsers ? '0' : '1',
         BREAK_IT_RUN: '1',
+        // A break is judged against every test, the slow ones too.
+        TEST_SLOW: '1',
         // Browsers keep their profiles in the temp folder: one folder for each copy.
         TEMP: workspace.tmp,
         TMP: workspace.tmp,

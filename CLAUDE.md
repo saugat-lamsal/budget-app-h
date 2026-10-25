@@ -122,7 +122,7 @@ This applies to every PR and every session, cloud or local.
    - View and read-only PRs (7+8, 10+11): tests for the new code only. No
      long simulator runs. Break-it at most about 25 breaks, on the new
      logic. No twin tests. Browser tests locally in Chromium for the
-     screens touched only (CI runs Chromium and WebKit). Auto-merge when
+     screens touched only (CI runs WebKit, see "Two test runs"). Auto-merge when
      CI is green.
    - PR 9 (the Wishlist bucket, money math): tests first for every rule;
      the random tests (paycheck parts add up, no cent made or lost, the
@@ -154,6 +154,36 @@ Test only what changed (upstream's rule, kept):
   commit that is not the last commit of a pull request with code in it;
   the last commit of such a pull request always runs CI.
 
+
+## Two test runs (his OK, Oct 24, 2026)
+
+One good test per case beats many that check the same thing.
+
+- Default run: `npm test`, and CI on every pull request (jobs: checks,
+  webkit, image). It leaves out the slow files, runs fast-check at most
+  150 times a property, one short simulated life where a file needs one,
+  and the browser tests in WebKit only (her phone is an iPhone, Safari's
+  engine). Locally, `BROWSER_ENGINE=chromium` picks Chromium.
+- Slow run: `npm run test:slow` (sets TEST_SLOW=1). Everything, with the
+  counts each test file had before, and the browser tests in Chromium. By
+  hand in CI: Actions, Tests, Run workflow, tick "Run the slow tests".
+  Run it for PR 12, when shared money code changes, and before trusting a
+  change to the simulator or the harness. Break-it (scripts/break-it.mjs)
+  judges every break against the slow run's tests.
+- What is slow: SLOW_FILES in vitest.config.ts (the second-card twins,
+  the long simulated lives and the alert and Trends random lives, the
+  browser random-lives, break-it's own tests), the Litestream heartbeat
+  test (real minutes), and the larger counts in each package's
+  test/slow.ts (`runs(n)` for fast-check, `lives(slow, default)` for
+  lives, years and scenarios).
+- A new test is fast by default. A long one is either added to SLOW_FILES
+  or written with `runs()`, `lives()` or `it.runIf(SLOW)`. A rule's test
+  in a slow file still counts for the rule table. Upstream's test files
+  stay where they are (merges stay easy).
+- Her own tests: one rule is proved at the lowest level that can prove it,
+  plus one browser test per screen. A test at a higher level stays only if
+  it checks something the lower one cannot (the wiring, the database, the
+  words). A her-only duplicate is dropped, never upstream's.
 
 ## Technical decisions already made
 
@@ -358,3 +388,7 @@ or "Due" on Wishlist items and cards, never color alone.
   money by hand and does 50.4's move.
 - His answer to HA6 (Oct 24): Trends' Wishlist parts are built in PR 10+11
   (rulebook 60f; section H's PR 10+11 block).
+- Test speed-up (branch her-test-speed, before PR 10+11): two test runs,
+  see "Two test runs". Before it, the default run took 4 min 20 s here
+  without browsers, and CI 17 min 30 s; the PR text has the times after.
+  Required checks on main: checks, webkit, image.

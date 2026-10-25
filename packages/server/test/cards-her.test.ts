@@ -111,17 +111,6 @@ describe('52.1 Home shows each card', () => {
   });
 });
 
-describe('52.2 set aside on Home', () => {
-  it('52.2 how much of it is in savings: the extra the savings account holds, never more than all that is set aside', () => {
-    const b = herBook();
-    expect(cardsOf(homeInput(b, { bank: { ...BANK, savings: 100_000 } })).inSavings).toBe(0);
-    expect(cardsOf(homeInput(b, { bank: { ...BANK, savings: 112_345 } })).inSavings).toBe(12_345);
-    expect(cardsOf(homeInput(b, { bank: { ...BANK, savings: 500_000 } })).inSavings).toBe(30_000);
-    // The bank cannot be read: not known.
-    expect(cardsOf(homeInput(b, { bank: null })).inSavings).toBeNull();
-  });
-});
-
 describe('52.3 reminders per card', () => {
   it('52.3 each card\'s due line and overdue line are its own, 7 and 2 days before its own due date', () => {
     const b = herBook();

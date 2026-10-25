@@ -7,9 +7,10 @@
 import { describe, expect, it } from 'vitest';
 import { cardOwes, cardStatementView, owedAtSetup, type BankTransaction, type CardStatement, type Cents, type EverydayCard, type IsoDate, type SetupInput } from '../src/index.js';
 import { liveALife } from './sim/life.js';
+import { lives as count } from './slow.js';
 
-const SEEDS = Number(process.env['SIM_HER_CARD_SEEDS'] ?? 4);
-const YEARS = Number(process.env['SIM_HER_CARD_YEARS'] ?? 1);
+const SEEDS = Number(process.env['SIM_HER_CARD_SEEDS'] ?? count(4, 1));
+const YEARS = Number(process.env['SIM_HER_CARD_YEARS'] ?? count(1, 0.3));
 const CARDS: readonly EverydayCard[] = ['everyday-card', 'second-card'];
 
 interface Seen {

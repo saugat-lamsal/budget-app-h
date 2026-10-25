@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "test": "npm run typecheck && vitest run",
+    "test:slow": "node scripts/test-slow.mjs",
     "test:watch": "vitest",
     "test:sandbox": "vitest run --config packages/server/vitest.live.config.ts --silent=false",
     "typecheck": "tsc -p tsconfig.json && npm run typecheck --workspaces --if-present",

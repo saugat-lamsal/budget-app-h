@@ -6,6 +6,7 @@ import { setUpTracking } from '../src/setup-day.js';
 import { bankStatus } from '../src/status.js';
 import { ACCOUNT, SIM_BANK_RULES, inPlaidFormat } from './sim-bank.js';
 import { connected } from './harness.js';
+import { lives as count } from './slow.js';
 
 // The simulated you (Phase 2), through the bank connection. The simulator
 // lives its life as always: its own bank, which posts transactions, holds
@@ -95,8 +96,8 @@ async function throughTheBankConnection(seed: number, years: number): Promise<{ 
 }
 
 const FIRST_SEED = Number(process.env['SIM_BANK_FIRST_SEED'] ?? 1);
-const SEEDS = Number(process.env['SIM_BANK_SEEDS'] ?? 2);
-const YEARS = Number(process.env['SIM_BANK_YEARS'] ?? 1);
+const SEEDS = Number(process.env['SIM_BANK_SEEDS'] ?? count(2, 1));
+const YEARS = Number(process.env['SIM_BANK_YEARS'] ?? count(1, 0.25));
 
 describe('the simulated you, through the bank connection in Plaid\'s format', () => {
   it.each(Array.from({ length: SEEDS }, (_, i) => FIRST_SEED + i))(

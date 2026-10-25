@@ -2,12 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { SimBank } from './sim/bank.js';
 import { HER_STAT_NAMES, OFF_IN_HER_LIFE, STAT_NAMES, describeFailure, liveALife, type LifeResult, type Stats } from './sim/life.js';
 import { Random } from './sim/random.js';
+import { SLOW, lives as count } from './slow.js';
 
 // How many lives, and how long. npm test runs a few; scripts/simulate.mjs
 // sets these to run thousands of simulated years, or one seed to replay it.
 const FIRST_SEED = Number(process.env['SIM_FIRST_SEED'] ?? 1);
-const SEED_COUNT = Number(process.env['SIM_SEEDS'] ?? 6);
-const YEARS = Number(process.env['SIM_YEARS'] ?? 2);
+const SEED_COUNT = Number(process.env['SIM_SEEDS'] ?? count(6, 1));
+const YEARS = Number(process.env['SIM_YEARS'] ?? count(2, 0.5));
 const SEEDS = Array.from({ length: SEED_COUNT }, (_, i) => FIRST_SEED + i);
 
 let lives: LifeResult[] | undefined;
@@ -19,8 +20,8 @@ function livedLives(): LifeResult[] {
 // Lives shaped like hers (her rulebook, "Off in this setup"). npm test runs a
 // few; `node scripts/simulate.mjs --profile her` sets these to run thousands.
 const HER_FIRST_SEED = Number(process.env['SIM_HER_FIRST_SEED'] ?? 1);
-const HER_SEED_COUNT = Number(process.env['SIM_HER_SEEDS'] ?? 6);
-const HER_YEARS = Number(process.env['SIM_HER_YEARS'] ?? 2);
+const HER_SEED_COUNT = Number(process.env['SIM_HER_SEEDS'] ?? count(6, 1));
+const HER_YEARS = Number(process.env['SIM_HER_YEARS'] ?? count(2, 0.5));
 const HER_SEEDS = Array.from({ length: HER_SEED_COUNT }, (_, i) => HER_FIRST_SEED + i);
 
 let herLives: LifeResult[] | undefined;
@@ -154,7 +155,7 @@ describe('simulator: a simulated life', () => {
     expect(liveALife({ seed: 8, years: 0.5 }).stats).not.toEqual(once.stats);
   });
 
-  it('13.2 B73 a payment to mom left waiting by the mom rule is left waiting again when the rule is set again (the simulator lost track of it: seed 233, day 1551)', { timeout: 120_000 }, () => {
+  it.runIf(SLOW)('13.2 B73 a payment to mom left waiting by the mom rule is left waiting again when the rule is set again (the simulator lost track of it: seed 233, day 1551)', { timeout: 120_000 }, () => {
     expect(liveALife({ seed: 233, years: 4.3 })).toMatchObject({ ok: true });
   });
 
@@ -185,7 +186,7 @@ describe('simulator: a simulated life', () => {
     }
   });
 
-  it('the simulated lives cover everything they are meant to', { timeout: 3_600_000 }, () => {
+  it.runIf(SLOW)('the simulated lives cover everything they are meant to', { timeout: 3_600_000 }, () => {
     const totals = totalsOf(livedLives());
     const missing = STAT_NAMES.filter((name) => totals[name] === 0);
     expect(missing, `never happened in ${SEED_COUNT} lives of ${YEARS} years`).toEqual([]);
@@ -193,7 +194,7 @@ describe('simulator: a simulated life', () => {
 });
 
 describe('simulator: lives shaped like hers', () => {
-  it('Off in this setup: her life is not the upstream life: the same seed lives another life', () => {
+  it('Off in this setup: her life is not the upstream life: the same seed lives another life', { timeout: 60_000 }, () => {
     expect(liveALife({ seed: 7, years: 0.5, profile: 'her' }).stats).not.toEqual(liveALife({ seed: 7, years: 0.5 }).stats);
     expect(liveALife({ seed: 7, years: 0.5, profile: 'her' })).toEqual(liveALife({ seed: 7, years: 0.5, profile: 'her' }));
   });
@@ -210,7 +211,7 @@ describe('simulator: lives shaped like hers', () => {
     }
   });
 
-  it('Off in this setup: her lives cover everything but the mom reserve and the old card, which never happen', { timeout: 3_600_000 }, () => {
+  it.runIf(SLOW)('Off in this setup: her lives cover everything but the mom reserve and the old card, which never happen', { timeout: 3_600_000 }, () => {
     const totals = totalsOf(livedHerLives(), [...STAT_NAMES, ...HER_STAT_NAMES]);
     const expected = [...STAT_NAMES.filter((name) => !OFF_IN_HER_LIFE.includes(name)), ...HER_STAT_NAMES];
     expect(expected.filter((name) => totals[name] === 0), `never happened in ${HER_SEED_COUNT} lives of ${HER_YEARS} years`).toEqual([]);

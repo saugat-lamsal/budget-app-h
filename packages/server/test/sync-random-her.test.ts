@@ -8,6 +8,7 @@ import { syncBank } from '../src/sync/sync.js';
 import { ACCOUNT_IDS, type FakePlaid } from './fake-plaid.js';
 import { SETUP_DAY, SORTING_RULES, book, bothBanks, connected, status, type Harness } from './harness.js';
 import { HER_BANK_RULES } from './her-harness.js';
+import { lives as count } from './slow.js';
 
 // Her rulebook, PR 6 (testing bar point 4): random weeks of activity at her
 // two banks, each its own connection (1.1), through two copies of the app.
@@ -264,7 +265,7 @@ async function run(seed: number): Promise<void> {
 
 describe('her random scenarios through two bank connections', () => {
   const only = process.env['SEED'];
-  const runs = Number(process.env['HER_BANK_SCENARIOS'] ?? 20);
+  const runs = Number(process.env['HER_BANK_SCENARIOS'] ?? count(20, 8));
   const seeds = only === undefined ? Array.from({ length: runs }, (_, i) => i + 1) : [Number(only)];
   it.each(seeds)('section 2 12.3 5.1 random: seed %i, her two banks, keeps every rule above', async (seed) => {
     await run(seed);

@@ -2,6 +2,7 @@ import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { centsFromPlaid } from '../src/bank/amounts.js';
 import { BankDataError } from '../src/errors.js';
+import { runs } from './slow.js';
 
 // Rule 0.1: all amounts are whole cents. Plaid sends dollars as JSON numbers
 // (72.1 for $72.10). Multiplying by 100 in floating point gets some of them
@@ -63,7 +64,7 @@ describe('0.1 Plaid amounts become whole cents exactly', () => {
         const dollars = Number(`${sign}${Math.floor(abs / 100)}.${String(abs % 100).padStart(2, '0')}`);
         expect(centsFromPlaid(dollars)).toBe(cents === 0 ? 0 : cents);
       }),
-      { numRuns: 5000 },
+      { numRuns: runs(5000) },
     );
   });
 });

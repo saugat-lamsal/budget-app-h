@@ -1,10 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-// CI runs npm test split in three jobs (.github/workflows/test.yml): the type
-// check and every test without a browser, then the browser tests in each
-// engine. Together they must be exactly npm test: no test left out. These
-// checks read the workflow, the test config, and the browser harness as text.
+// CI runs npm test (the default run) split in two jobs
+// (.github/workflows/test.yml): the type check and every test without a
+// browser, then the browser tests in WebKit. Together they must be exactly
+// npm test: no test left out. By hand, the same workflow runs the slow run
+// (npm run test:slow): the checks job with the slow tests in, and the browser
+// tests in Chromium. These checks read the workflow, the test config, and the
+// browser harness as text.
 
 const read = (path: string): string => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
@@ -44,18 +47,30 @@ function steps(job = 'test'): Step[] {
 // The engines the browser tests can be run in, one at a time.
 const engines = [...harness.matchAll(/\['(\w+)', \w+\],/g)].map((m) => m[1] ?? '');
 
-describe('CI: the three jobs together are exactly npm test', () => {
+describe('CI: the jobs together are exactly npm test', () => {
   it('npm test is the type check, then every vitest project', () => {
     expect(packageJson.scripts['test']).toBe('npm run typecheck && vitest run');
   });
 
-  it('the browser tests run in Chromium and WebKit, and BROWSER_ENGINE picks one', () => {
+  it('the browser tests can run in Chromium and WebKit; BROWSER_ENGINE picks one, and with none it is WebKit, or Chromium in the slow run', () => {
     expect(engines).toEqual(['chromium', 'webkit']);
-    expect(harness).toContain("process.env['BROWSER_ENGINE'] === undefined || process.env['BROWSER_ENGINE'] === name");
+    expect(harness).toContain("process.env['BROWSER_ENGINE'] ?? (process.env['TEST_SLOW'] === '1' ? 'chromium' : 'webkit')");
   });
 
-  it('the parts are the checks and one job for each browser engine', () => {
-    expect(/\n\s+part: \[(.+)\]/.exec(workflow)?.[1]?.split(',').map((p) => p.trim())).toEqual(['checks', ...engines]);
+  it('the parts are the checks and WebKit on a pull request; with the slow run ticked, the checks and Chromium', () => {
+    const parts = /\n\s+part: \$\{\{ fromJSON\(inputs\.slow == true && '(.+)' \|\| '(.+)'\) \}\}/.exec(workflow);
+    expect(JSON.parse(parts?.[2] ?? 'null')).toEqual(['checks', 'webkit']);
+    expect(JSON.parse(parts?.[1] ?? 'null')).toEqual(['checks', 'chromium']);
+    expect(workflow).toContain("TEST_SLOW: ${{ inputs.slow == true && '1' || '0' }}");
+  });
+
+  it('npm run test:slow is the same tests with TEST_SLOW=1, and the default run leaves out exactly the slow files', () => {
+    expect(packageJson.scripts['test:slow']).toBe('node scripts/test-slow.mjs');
+    expect(read('scripts/test-slow.mjs')).toContain("TEST_SLOW: '1'");
+    expect(config).toContain("const slow = process.env['TEST_SLOW'] === '1';");
+    expect(config).toContain('const left = (files: readonly string[]): string[] => (slow ? [] : [...files]);');
+    for (const project of ['money', 'server', 'repo']) expect(config).toMatch(new RegExp(`name: '${project}'.*left\\(SLOW_FILES\\.\\w+\\)`));
+    expect(config).toContain('exclude: [...configDefaults.exclude, ...left(SLOW_FILES.webBrowser)]');
   });
 
   it('the checks job runs the type check and every test, with only the browser tests left out', () => {
