@@ -48,6 +48,21 @@ describe('0.7 the status page: each of her banks', () => {
     ]);
   });
 
+  // PR 12, found by the agent on her screens (HB32): it said the totals match
+  // while one bank could not be read and the check waited.
+  it('0.7 12.3 while a bank cannot be read, the daily check says it waits for that bank, not that the totals match (HB32)', () => {
+    const banks = (second: 'failed' | 'needs-login' | 'new'): NonNullable<StatusView['banks']> => [
+      { bank: 1, name: 'Made-up First Bank', lastRead: '2026-10-16T15:05:00-04:00', lastSync: { at: '2026-10-16T15:05:00-04:00', result: 'new' } },
+      { bank: 2, name: 'Made-up Second Bank', lastRead: '2026-10-15T09:00:00-04:00', lastSync: { at: '2026-10-16T15:05:00-04:00', result: second } },
+    ];
+    const check = (b: NonNullable<StatusView['banks']>): unknown => statusLines(view({ banks: b })).find((l) => l.id === 'difference');
+    expect(check(banks('failed'))).toEqual({ id: 'difference', title: 'Daily check', detail: 'Waiting until Made-up Second Bank can be read.', look: false });
+    expect(check(banks('needs-login'))).toEqual({ id: 'difference', title: 'Daily check', detail: 'Waiting until Made-up Second Bank can be read.', look: false });
+    expect(check(banks('new'))).toEqual({ id: 'difference', title: 'Daily check', detail: 'The totals match the bank.', look: false });
+    // A difference that began before still says since when (10.4).
+    expect(statusLines(view({ banks: banks('failed'), mismatchSince: '2026-10-16T11:00:00-04:00' })).find((l) => l.id === 'difference')).toMatchObject({ detail: 'The totals have not matched the bank since 11:00 AM.', look: true });
+  });
+
   it("0.7 upstream's setup, with no banks: the one bank's lines, as they were", () => {
     expect(statusLines(view()).slice(0, 2).map((l) => l.id)).toEqual(['last-read', 'last-sync']);
   });

@@ -14,14 +14,15 @@ setup" after section 1, section 2, 12.2, 40.2 and 40.4; PR 4: section 2,
 9.3, 9.8, 12.1, 12.6 and 14.2; PR 6: 0.5, 0.7, 1.1, 1.3, section 2's sync
 line, 10.5, 10.7, 10.13 and 12.3; PR 7+8: section 52; PR 9: section 2's
 split, 3.3, 3.4, 3.8, 4.2, 4.4, 11.3, 12.2, 13.1, 13.4, 14.2, 50.4 and
-52.4's buckets; PR 10+11: 40.2, 40.4, 40.5, 40.11 and 50.1 to 50.3). The
-rest of her
-setup is in section "H. Approved for her setup, not built yet" at the end:
-the texts he approved on Oct 23, 2026 (docs/her-plan.txt). A text there is not in
-force until the pull request named above it moves it into its place here,
-with its tests. Until then, the rule it replaces is the one in force. "You"
-is the owner. New rules are numbered from 50, and her answers will be
-sections from 60.
+52.4's buckets; PR 10+11: 40.2, 40.4, 40.5, 40.11 and 50.1 to 50.3). Those
+are all the texts he approved on Oct 23, 2026 (docs/her-plan.txt), so
+section "H. Approved for her setup, not built yet" at the end is empty
+(PR 12, Oct 25, 2026): every rule here is in force. Unchanged for her
+setup: the pay schedule (section 2), sorting rules (4.2, 6.2, 13.2, 13.6,
+13.8) and bank rules (section 2) stay exactly as upstream's; bank rules are
+per account, so they cover both banks without a change. "You" is the
+owner. New rules are numbered from 50, and her answers are sections from
+60.
 
 
 ## 0. Ground rules
@@ -1285,52 +1286,9 @@ f.  Trends' Wishlist parts (40.2, 40.4, 40.5, 40.11) are built in PR 10+11,
 
 ## H. Approved for her setup, not built yet
 
-His OK, Oct 23, 2026 (docs/her-plan.txt, with his answers to its Q1, Q3
-and Q8). None of this is in force yet. Each part names the pull request
-that moves it into its place above, with its tests; until then the rule it
-replaces stands. The texts are indented here only so they are not yet
-counted as rules (test/every-rule-has-a-test.test.ts); in place they are
-written like every other rule. A sentence marked "(waits on HAn)" is the
-recommended reading of an open question in docs/her-questions.txt, and may
-change with the answer.
-
-### PR 3. No mom reserve, no old card
-
-  In place: "Off in this setup" after section 1, section 2, 12.2, 40.2 and
-  40.4.
-
-### PR 4. Ask before splitting a paycheck
-
-  In place: section 2, 3.1, 10.15, 13.2 and section 51.
-
-### PR 5. The second card
-
-  In place: section 1, 1.2, 4.1, 4.8, 5.1, 9.1, 9.3, 9.8, 12.1, 12.6 and
-  14.2.
-
-### PR 6. Two bank connections
-
-  In place: 0.5, 0.7, 1.1, 1.3, section 2's sync line, 10.5, 10.7, 10.13
-  and 12.3.
-
-### PR 7+8. Both cards on Home, set aside, reminders per card, and the statement
-
-  In place: section 52.
-
-### PR 9. The Wishlist bucket
-
-  In place: section 2's split, 3.3, 3.4, 3.8, 4.2, 4.4, 11.3, 12.2, 13.1,
-  13.4, 14.2, 50.4 and 52.4's buckets. 10.1 and 10.2 are unchanged: the low
-  and empty alerts are for needs and wants only.
-
-  Trends' Wishlist parts are built in PR 10+11 (60f, below).
-
-### PR 10+11. Wishlist items, and Trends for her setup (60f)
-
-  In place: 40.2, 40.4, 40.5, 40.11 and 50.1 to 50.3.
-
-### Unchanged for her setup
-
-  The pay schedule (section 2), sorting rules (4.2, 6.2, 13.2, 13.6, 13.8)
-  and bank rules (section 2) stay exactly as they are. Bank rules are per
-  account, so they cover both banks without a change.
+Empty. Every text he approved for her setup (Oct 23, 2026,
+docs/her-plan.txt) is in force in its place above, with its tests; the
+pull requests that moved each one are listed at the top of this rulebook.
+A text he approves later that is not built yet goes here, indented so it
+is not yet counted as a rule (test/every-rule-has-a-test.test.ts), and
+names the pull request that will move it into place.

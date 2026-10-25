@@ -1,0 +1,325 @@
+PR 12 REPORT: THE END CHECK BEFORE HER CONNECTION DAY (Oct 25, 2026)
+
+Testing bar point 8 for PR 12, and the roadmap's Phase 1 finish line: every
+rule and its tests, the test count, the long runs, the break-it results, the
+agent through a full pay period on her screens, and what is not tested and
+why. Branch her-end-check. Every number in this report is made up; nothing
+here comes from her accounts.
+
+
+BOTTOM LINE
+
+Phase 1's finish line is met, waiting on his review:
+- Section H of her rulebook is empty: every text he approved on Oct 23 is
+  in force in its place, with its tests.
+- Every numbered rule (120) has at least one test named after it, and the
+  slow run passes: 4,923 tests passed, none failed.
+- 1,000 of her simulated lives of 5 years (1,825,000 simulated days): every
+  check passed on every day, with zero self-check failures.
+- 20 simulated years through her two bank connections, and 20 through the
+  database with the server stopped and started every simulated day: passed.
+- Break-it on all 350 [her-...] breaks from PRs 3 to 11 and the 7 new ones
+  of this PR: all 357 caught in the end (three after a new test, one
+  judged again alone).
+- An agent that has not seen the code used her screens for a full pay
+  period (16 days, both banks, both cards, Wishlist, paychecks asked
+  first). Every money number it checked matched the rulebook to the cent.
+  It found one mistake in the money desk and four on the screens; each is
+  fixed with a test first and a break. The rest are settled by readings he
+  already has (agent-pay-period-h/settled.txt).
+
+For his check: HB30 (a split with nothing left for the rest; the fix is in
+upstream's shared choices.ts), HB31 (which "last checked" number Home shows
+greyed; not changed, waits on his answer) and HB32 (Status while one bank
+cannot be read), in docs/her-questions.txt.
+
+
+WHAT PR 12 IS MADE OF
+
+- The merge from upstream before it (PR #11, merged): upstream main at
+  46e4a50. Node was already 22.23.4 in the Dockerfile, pinned by digest.
+- Her pay period for the agent: packages/web/test/browser/pay-period-her
+  (days-her.ts: Oct 1 to Oct 16 at two made-up banks; agent-server-her.ts:
+  the real server as npm run serve runs it with BUDGET_SETUP=her), npm run
+  pay-period-agent-her, and agent-pay-period-h/ (instructions, script, the
+  agent's notes and report, and how each point was settled). The same days
+  with the script's answers go through the server's desks in
+  packages/server/test/pay-period-her.test.ts, which checks every bucket at
+  the end of every day against numbers worked out by hand in its comments.
+- Fixes from the agent (each a test first, watched failing, then the fix,
+  then a break tagged [her-end]):
+  1. 4.4: a purchase split across needs and wants only, with nothing left
+     for Wishlist, was refused. packages/server/src/choices.ts, HB30.
+  2. 0.7: the Status page drew neither of her banks' lines. Status.tsx.
+  3. 0.7, 12.3: Status said "The totals match the bank" while the check
+     waited for one bank. status-text.ts, HB32.
+  4. "Off in this setup": the paycheck rule's "what it would do" sheet had a
+     "Mom reserve $0.00" row and no Wishlist row. Settings.tsx.
+  5. 13.5: the change log's split left out Wishlist's share.
+     settings-text.ts.
+- Break-it found three of PR 3's breaks no longer caught: her tests since
+  PR 5 always have the second card on, so the three-account case (old card
+  off, no second card) had no test. One new test (setup-her.test.ts)
+  catches all three.
+- Six of upstream's breaks had gone stale (their text was changed by PR
+  10+11); each now points at today's code with the same mistake, and each
+  is caught. break-it-lists.test.ts is in the slow run only, so CI did not
+  see them.
+- BREAK_IT_BAIL=1 (vitest.config.ts): a test run stops at its first failed
+  test. A break is caught once any test fails, so the verdicts are the same;
+  it made break-it over 357 breaks fit in one night (pass A, 299 breaks with
+  10 workers: 3 h 8 min).
+- Section H of the rulebook emptied, and its intro says so.
+
+
+THE RUNS
+
+1. The slow run (npm run test:slow: type check, every test with the big
+   counts, the long lives, the browser tests in Chromium, and Litestream's
+   heartbeat test with real minutes): 4,935 tests in 279 files: 4,923 passed, 0
+   failed, 12 skipped, in 4 min 25 s. By package: money 2,181, server 1,704,
+   web without a browser 245, web in Chromium 696, repository checks 97.
+   The heartbeat test (A43) passed in 4 min 1 s. Skipped, and why: 9 run
+   only on Linux or macOS (Litestream cannot rebuild a database on Windows;
+   CI's checks job runs them), 2 need a local .env (there is none here, on
+   purpose), and the image test (CI's image job).
+2. The default run (npm test without browsers, as CI's checks job):
+   3,428 tests in 214 files: 3,411 passed, 0
+   failed, 17 skipped (the slow ones), after the type check.
+3. 1,000 of her lives of 5 years (node scripts/simulate.mjs --profile her):
+   seeds 1 to 1,000, 1,825,000 simulated days, 2 h 16 min on 16 cores.
+   "Every check passed on every simulated day." Among them: 130,095
+   paychecks (125,719 waited for her yes, 51,312 said yes late, 19,518 "not
+   a paycheck" first), 3,010,400 purchases (1,155,757 on the second card),
+   136,258 Capital One card payments and 68,035 Amex card payments (100,214
+   and 50,172 in transit), 64,152 Wishlist purchases, 55,887 Wishlist
+   splits, 10,402 Wishlist refunds, 36,905 50.4 moves, 182,920 asks about
+   what is off refused, and no mom or old card payment ever.
+4. 20 years through her two bank connections (SIM_HER_BANK_SEEDS=20,
+   SIM_HER_BANK_YEARS=1, simulated-life-her.test.ts): 20 lives of a year,
+   in Plaid's format at two made-up banks: every day the self-check passed,
+   the money matched the simulator's book, and the account she never picked
+   was never read. 3 min 38 s.
+5. 20 years through the database, the server started again every
+   simulated day (SIM_HER_DB_SEEDS=20, SIM_HER_DB_YEARS=1): every day the
+   history replayed with her switches, the self-check passed, and every
+   bucket was the simulator's. 40 min 18 s.
+6. Upstream's lives were not rerun: no shared money code changed (the one
+   change to shared code, choices.ts, is the server's split desk).
+
+
+BREAK-IT
+
+Every [her-...] break from PRs 3 to 11 (350), and the 7 new ones of this
+PR ([her-end]): 357 breaks, each judged against the slow run's tests
+(TEST_SLOW=1), with BREAK_IT_BAIL=1. In the end every one is caught.
+
+  [her-switches] 92   [her-ask] 35   [her-second-card] 85   [her-cards] 25
+  [her-wishlist] 30   [her-items] 20  [her-trends] 5   [her-connections] 58
+  [her-end] 7
+
+- Pass A, the money and the server (299 breaks, 10 workers, 3 h 8 min):
+  295 caught, 3 survived, 1 hung.
+  - Survived: three PR 3 breaks on the three-account case of 1.2 (old card
+    off, no second card): "1.2 her setup asks for the old card too", "1.2
+    her setup is told to pick four", and "1.2 her app's first start picks
+    the old card". They were caught in PR 3; since PR 5 every her test has
+    the second card on, so nothing held that case. One new test
+    (setup-her.test.ts, "each switch is its own: with the old card off and
+    no second card ...") catches all three.
+  - Hung: "a bank rule can be on the old card" (a screen break run with
+    browsers while 10 workers ran): judged again alone in Chromium, caught
+    (8 min).
+- Pass B, the screens (57 breaks, Chromium, 4 workers, 1 h 47 min): 57
+  caught.
+- The one break in fly.toml ("her app starts upstream"): caught.
+- Six of upstream's breaks were stale (break-it-lists, slow run only):
+  "[trends] 40.2 wants left out", "[keeper] save the answer without what it
+  did to the book", "[b226] the real server leaves the hints out of
+  Review", "[trends] 40.7 old card payments counted against the usual",
+  "[review] 6.1 B52 anything final is sent without asking", and "[review]
+  the question that asks first shows what was said about the last thing".
+  Each re-pointed at today's code with the same mistake: 6 caught.
+
+
+THE AGENT, THROUGH A FULL PAY PERIOD ON HER SCREENS
+
+Her made-up pay period, Thu Oct 1 (setup day) to Fri Oct 16: two banks
+(Capital One's and American Express's stand-ins), checking, savings and
+both cards; a paycheck waiting for her yes a day, then a split four ways;
+the payday questions; a tip, a split purchase, a payment to a person split
+with "not mine", Wishlist purchases for less than and at an item's price,
+50.4's moves from savings to checking, a day the Amex bank wanted a login,
+a new Amex statement, both cards paid (one in two parts), a partial refund,
+money back from a friend, a hand move, other income, a split change, and
+the next paycheck at the new split. It checked Home, both cards, Buckets,
+every bucket's list, Wishlist's list, Review, Payday, Settings, Status, each
+card's statement and Trends.
+
+Its bottom line: every money number matched the rulebook on every day it
+looked, to the cent. Its final books (savings 8,228.97, needs 780.00, wants
+963.55, Wishlist 644.01, held for others 0.00) equal the banks and the
+numbers worked out by hand in pay-period-her.test.ts.
+
+What it found, and how each was settled: agent-pay-period-h/settled.txt.
+Five fixed (above). Five settled by readings he has (HB27, HB22 with HB9,
+B269, B105, and the agent server not starting the alerts, as upstream's).
+Four places it found the rulebook unclear, and four things hard to do on
+the screens, listed there for his eye.
+
+
+EVERY RULE AND ITS TESTS
+
+From the slow run's results (node scripts/rule-table.mjs). A test counts for
+a rule when its name has the rule's number in it. "Off in this setup" rules
+are tested on upstream's switches; her own sections are 50 to 52.
+
+Rule  What it says                                  Tests  One of them
+0.1   All amounts are stored in whole cents.        98     0.1 dollars and cents with commas
+0.2   Every number and rule in this document is a s…105    0.2 split
+0.3   Changing a setting never rewrites a past pay …3      0.3 past paycheck split stays as it was
+0.4   The app is read-only. It never moves money.   19     0.4 the screens have source files to check
+0.5   If the app's totals do not match the banks, i…48     0.5 the day and the time, in the phone's time zone
+0.6   What the bank sent and every answer you give …32     0.6 10.6 the outbox and the history agree: every row has the event that gave it, and ever…
+0.7   Status. Settings has a row "Status" that open…28     0.7 the status page is at /status, on the Settings tab, and goes back to Settings
+0.8   When the app cannot be reached. If the phone …15     0.8 it is for opening a screen of the app only: not its numbers, not the health checks, n…
+1.1   Connecting the banks. This setup has two conn…41     1.1 1.3 her two banks, Capital One then American Express, each logged in to again by name
+1.2   Which account is which. After connecting, bef…24     1.2 picking her four accounts counts four, as upstream does; three would say three
+1.3   Logging in to a bank again. For each connecti…21     1.3 offered only with a connection: before one, it is refused and nothing is asked of the…
+3.1   A deposit that matches the paycheck rule is a…80     3.1 Review calls it a paycheck waiting for her yes, not a deposit
+3.2   The mom reserve comes off first. If the reser…60     3.2 a new paycheck adds to the reserve up to the cap
+3.3   The paycheck is split by the percentages. Nee…60     3.3 3.4 the split, the leftover setting, and a text rule
+3.4   At each payday, unspent needs and unspent wan…81     3.4 the leftover answer: move to savings moves it, roll over keeps it
+3.5   An overspent bucket carries over as a negativ…20     3.5 an overspent bucket shows its negative amount
+3.6   A third paycheck in a month is handled exactl…2      3.6 three January paychecks each split and each start a period
+3.7   A paycheck-looking deposit that arrives less …31     3.7 11.2 days, one and many
+3.8   On payday the app tells you how much should b…48     3.8 shows what should be in the savings account and what is still to move
+4.1   A purchase on the debit card or on either car…33     4.1 money out of checking or a card is a purchase, unless a rule says otherwise
+4.2   The bucket is picked by your rules. No matchi…75     4.2 6.2 7.4 takes adding, changing, and removing a rule
+4.3   Unsorted spending is held back from safe-to-s…34     4.3 a purchase no rule picks waits in review, held back from safe to spend
+4.4   A purchase can be split across buckets. The p…71     4.4 a purchase can be split from the list, with the rest worked out by the money math
+4.5   A refund goes back into the bucket the purcha…178    4.5 A18 a refund put into a bucket can be matched to its purchase, once he says yes
+4.6   A pending charge counts once. When it posts, …99     4.6 a pending charge counts once, and the posted one replaces it, even at a new amount (a…
+4.7   Re-sorting a purchase updates the buckets rig…95     4.7 sorting a purchase from needs to wants is what the book does, and the buckets change …
+4.8   Fees and interest on either card go to review…25     4.8 and 5.5 fees and interest on a card
+4.9   Money leaving savings that is not a transfer …31     4.9 13.6 money out of savings cannot get a rule
+4.10  If the bank takes back a transaction the app …66     4.10 the bank taking back a transaction the app counted: the app takes it back too, logs …
+5.1   Checking or savings to either card: not spend…50     5.1 and 5.2 card payments are read as their two halves
+5.2   Checking to old card: spending. It comes out …57     5.2 a payment to the old card from savings comes out of savings once confirmed
+5.3   Checking to savings, or savings to checking: …18     5.3 a transfer between checking and savings is read as its two halves
+5.4   A new purchase on the old card is flagged and…29     5.4 a flag on the old card is cleared by seeing it, and no money moves
+5.5   Interest or fees on the old card raise the de…14     5.5 interest on the old card raises the debt, and no bucket
+5.6   Review also offers "transfer between my accou…120    5.6 A20 B110 a payment marked as going to the old card is sorted from the list as what th…
+6.1   They always go to review, with four choices:  139    6.1 money that came in can be put somewhere else
+6.2   A rule can make the choice automatic for a kn…35     6.2 7.4 a rule for money in and one for a person
+7.1   A deposit marked "not mine" adds to "held for…9      7.1 it is not income and not split
+7.2   A payment out marked "not mine" lowers "held …7      7.2 it is not spending
+7.3   "Held for others" is shown as its own number …21     7.3 B22 settled, holding money for others, or someone owes you
+7.4   Payments to people go to the daily review unl…55     7.4 and 8.1 a payment to a person comes out of checking
+7.5   A friend paying you back is a payback (6.1).  6      7.5 payback into needs
+7.6   In review, a payment to a person can go to ne…56     7.6 B73 a payment you marked for mom can be sorted to needs, and the reserve gets its mon…
+8.1   Any payment that matches the mom rule comes o…45     8.1 a payment that matches the mom rule comes out of the mom reserve
+8.2   The app shows how much you have sent this cal…34     8.2 7.3 "buckets-busy" holds a roommate's money and has sent mom 2,500.00 this month, wit…
+8.3   If a payment is bigger than the reserve, the …26     8.3 a payment bigger than the reserve counts in full toward the month
+8.4   The reserve carries over between months, up t…13     8.4 January reserve carries into February paychecks
+9.1   Each card: reminders show the statement balan…55     9.1 days before the due date
+9.2   Old card: reminders show the minimum and the …13     9.2 the old card shows its minimum and due date only
+9.3   Each card: reminders continue until the payme…77     9.3 the everyday card stops at the full statement balance, the old card at the minimum; t…
+9.4   If the due date passes and the payments the a…62     9.4 past the due date with less than the minimum paid is overdue, every day
+9.5   Old card payoff countdown: what the old card …46     9.5 off until the promo end date is entered
+9.6   Home shows a card payment as due every day fr…42     9.6 on the days between the reminders too, until it is paid (A17)
+9.7   Card reminders and the overdue alert come at …6      9.7 A34 card reminders and the overdue alert come at the daily review time, with the dail…
+9.8   When the bank does not send a card's statemen…30     9.8 says which card, and why, with what to do when there is something to do
+10.1  Low bucket: needs or wants falls below the al…97     10.1 what is left over what the bucket started the pay period with
+10.2  Empty bucket: needs or wants reaches zero or …58     10.2 zero and below are an empty bar
+10.3  Daily review: sent at the review time, only i…56     10.3 a time today is the time only, on a 12-hour clock, at its edges
+10.4  Totals do not match the bank (section 12): to…35     10.4 A47 not told before 12 hours; told at 12 hours, due then, and once each evening after
+10.5  Bank connection needs you to log in again. To…26     10.5 A37 the bank wanting a new login: told when it starts, then each evening it lasts; f…
+10.6  The bank took back a transaction the app had …29     10.6 take-backs already there when the alerts start get no alert; one after it does
+10.7  The bank has not been read for 24 hours (a se…16     10.7 A38 told once, due the moment the last good read became 24 hours old, saying when th…
+10.8  Quiet hours (section 2): no alert is sent fro…24     10.8 not sent yet because it is quiet hours: when they end, whether it was tried or not
+10.9  Alerts that came due while the app was not ru…40     10.9 A40 never sent: a newer one of its kind went, or it was no longer true; and one wait…
+10.10 On the phone's lock screen an alert shows amo…19     10.10 A39 without amounts every alert is words only: no dollar amount in its title or its…
+10.11 Notifications go to each phone where you turn…5      10.11 A41 alerts keep coming after the login ends; logging in again on that phone moves t…
+10.12 A phone shows each alert once. It keeps the i…4      10.12 A42 after the phone stopped and started the worker again, a repeat of one he swiped…
+10.13 The bank lets the app read your accounts only…19     10.13 told once, at the daily review time, 7 days before the date the bank gave: not the …
+10.14 Payday: when a paycheck is counted, you are t…17     10.14 10.8 a paycheck counted at 11:30 PM is kept then and sent at 7:00 AM, saying when i…
+10.15 A paycheck is waiting for your yes: you are t…6      10.15 told once, when it posts; a tap opens Review; with the lock screen setting off (10.…
+11.1  Safe to spend = wants left, minus unsorted sp…30     11.1 safe to spend is wants left minus unsorted spending
+11.2  It is shown with the number of days until the…51     11.2 days before payday
+11.3  Savings, Wishlist, held for others, and unsor…11     11.3 savings, mom reserve, held for others, and unsorted money in are left out
+11.4  Money still pending into checking or savings …26     11.4 a paycheck says "Paycheck on its way"; other money "Money on its way in"; both say w…
+12.1  Bank side: checking + savings - the Capital O…55     12.1 B231 a posted purchase Bank of America has not taken into "current" yet makes no gap
+12.2  App side: savings + needs + wants + Wishlist …46     12.2 the total is the app side of the self-check, with unsorted money counted
+12.3  The two must be equal. If not, the app shows …63     12.3 one bank read and the other not: a difference is "still catching up", and stays so p…
+12.4  The old card balance is tracked separately as…36     12.4 B44 one to the old card says it is not part of the check
+12.5  Money in transit: a transfer that has left on…113    12.5 each says where it is going
+12.6  Why it does not match. When the totals do not…46     12.6 the second card's balance moving is said like the everyday card's, by its name
+13.1  A change to the split or the mom reserve appl…89     13.1 A9 what a settings change did
+13.2  A new or changed sorting rule applies to new …153    13.2 setting the paycheck rule while asking: what it does to one waiting, and what was do…
+13.3  You can move money between buckets by hand at…50     13.3 wants to needs: it moves, with no question asked
+13.4  Moving money out of savings or Wishlist asks …37     13.4 out of savings: it asks, with the reason, and nothing moves
+13.5  Every change and every manual move is logged …59     13.5 every setting, written for the change log
+13.6  When you correct something and choose "always…81     13.6 13.8 what the rule would do: purchases, payments to people, or deposits, whose descr…
+13.7  An answer about an item that changed since th…24     13.7 A31 through /api/choice too: an answer sent with what the screen showed is refused w…
+13.8  When you sort a purchase, a payment to a pers…47     13.8 the notice says it was sorted the same way before, by the place's name
+14.1  The app reads your current balances.          18     14.1 12.1 B231 setup day on a day the bank has not processed a posted purchase: no gap af…
+14.2  You assign the starting money (checking + sav…74     14.2 B48 a half on its way to the second card on setup day
+14.3  The self-check must pass before tracking star…47     14.3 what still stops tracking from starting
+40.1  Two sources. From setup day on, Trends reads …17     40.1 since when Trends goes back
+40.2  What counts as spending. Spending in needs an…29     40.2 40.4 a bar says every part with its amount, so a screen reader and the colors say th…
+40.3  Pay periods. From setup day on, the books' pa…24     40.3 40.4 pay periods going back by the pay schedule; the one setup day fell in is one pa…
+40.4  Past: spending per pay period. A bar for each…23     40.4 the part is named Wishlist
+40.5  Past: savings over time. What the savings buc…9      40.5 what Wishlist held when tracking started and now, in words; nothing in a setup witho…
+40.6  Past: where it went. The last 90 days of spen…18     40.6 a place by its name; the other two groups by what they are
+40.7  Now: this pay period against your usual. What…13     40.7 known: by today and a whole pay period; not yet: says so
+40.8  Now: Wants left against an even pace. A line …14     40.8 less left, more left, or on an even pace, always with the amount and a word, not onl…
+40.9  When the totals do not match the bank (12.3),…4      40.9 the same check as Buckets; the numbers still come from the books
+40.10 Future and Habits. Trends has four parts: Pas…21     40.10 working Future out changes nothing in the books
+40.11 Future: where Needs and Wants land by payday.…18     40.11 where a bucket lands, the pace it comes from, and what is not counted
+40.12 Future: savings a year out. A range, "Estimat…10     40.12 savings a year out, a range, or not enough yet
+40.13 Future: the old card. What it owes (12.4) whe…17     40.13 the old card's plan
+40.14 Habits: the payday effect. Over the full pay …11     40.14 the payday effect
+40.15 Habits: day of the week. For each day of the …9      40.15 the busiest weekday, named in words
+40.16 Habits: repeat charges. Charges from one plac…10     40.16 a repeat charge: how often, the next one and a year, both marked Estimate
+40.17 Habits: the Wants streak. Of the pay periods …26     40.17 the Wants streak
+50.1  Wishlist items: up to 20, each a name and a p…21     50.1 each change to the list is a dated line in words
+50.2  The Wishlist bucket fills the items in order.…13     50.2 an item with its whole price says Ready, with the amount
+50.3  When you sort a purchase to Wishlist, review …19     50.3 what was bought says the day and what it cost, and the price beside it when they dif…
+50.4  Moving Wishlist money for a purchase. Wishlis…23     50.4 for a debit card purchase: now, since it already left checking
+51.1  A paycheck waiting for your yes is money in w…18     51.1 Home says "Paycheck waiting for your yes" with its amount, before what waits in Revi…
+51.2  Two paychecks waiting: the older one is answe…13     51.2 through the desk: a yes to the newer one is refused while the older one waits, and s…
+51.3  The early paycheck check (3.7) still applies:…5      51.3 a paycheck less than 10 days after the last one waits, and says so: early
+52.1  Home shows each card: its statement balance a…7      52.1 due from the first reminder day, overdue after the due date, paid in full, in words …
+52.2  Set aside. Every purchase on a card already c…22     52.2 all of what a card owes is set aside; a credit has nothing set aside
+52.3  Reminder days, for each card: 7 days and 2 da…1      52.3 each card's due line and overdue line are its own, 7 and 2 days before its own due d…
+52.4  Statement. For each card, its last statement:…37     52.4 each group by its bucket, and by its paycheck
+52.5  Each statement the bank sends is kept, so the…4      52.5 her setup keeps each one, by its statement date; the same one sent again with a chan…
+
+Rules: 120. Rules without a test named after them: none.
+Tests in this run: 4935, passed: 4923, failed: 0, skipped: 12.
+
+
+WHAT IS NOT TESTED, AND WHY
+
+- Her real banks. Plaid's test bank only, until connection day (CLAUDE.md
+  safety rules). Whether Capital One and American Express send what the app
+  needs (transactions, balances, each card's statement balance, minimum,
+  due date and statement date) is checked on connection day (roadmap
+  Phase 3); anything missing becomes a question first.
+- Her iPhone: the home-screen app, Apple's push service, the lock screen.
+  That is roadmap Phase 2, on her phone, with the test alert.
+- Plaid's real Link window for two banks. The rehearsal on the test bank
+  does it (roadmap Phase 2). The agent's server had no login window, so
+  "Log in to the bank again" was not used by the agent; its words and the
+  login flow per bank are tested in two-banks-her (server and browser).
+- The alerts in the agent's pay period: its server, like upstream's, does
+  not start the alert timer. Her alerts are tested on their own (PR 4's
+  10.15, each card's reminders in PR 5 and 7+8, 10.5 and 10.7 per bank in
+  PR 6) and in the alert simulations of the slow run.
+- The restore check and the image's start (Linux and macOS only, and CI's
+  image job): skipped on this Windows computer, run in CI.
+- WebKit locally: CI runs the browser tests in WebKit (her phone's engine);
+  locally the screens touched were run in Chromium, as the testing bar says.
+- HB31 is not changed: upstream's code and reading, waiting on his answer.
+- The twice-typed "CAFECAFE" the agent saw once was not reproduced.

@@ -22,6 +22,7 @@
     "litestream": "node scripts/litestream.mjs",
     "restore-check": "node scripts/restore-check.mjs",
     "pay-period-agent": "node scripts/pay-period-agent.mjs",
+    "pay-period-agent-her": "node scripts/pay-period-agent-her.mjs",
     "rehearsal": "node scripts/rehearsal.mjs",
     "deploy-check": "node scripts/deploy-check.mjs"
   },

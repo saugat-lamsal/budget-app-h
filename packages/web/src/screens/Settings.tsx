@@ -1058,6 +1058,11 @@ function SheetFields({ editing, get, set, view, kind }: { readonly editing: Edit
 // A9: what the paycheck rule or the mom rule would do, from the money math, before the yes.
 function PreviewOf({ preview, view }: { readonly preview: SettingsPreviewView; readonly view: Tracking }) {
   const { potsBefore: before, potsAfter: after } = preview;
+  // Her rulebook, "Off in this setup" and section 2 (PR 12): no mom reserve
+  // where the setup has none, and Wishlist where the split names it.
+  const mom = view.settings.momReservePerPaycheck !== undefined;
+  const wishlist = view.settings.split.wishlist !== undefined;
+  const pots: readonly ('savings' | 'needs' | 'wants' | 'wishlist' | 'momReserve' | 'heldForOthers')[] = ['savings', 'needs', 'wants', ...(wishlist ? (['wishlist'] as const) : []), ...(mom ? (['momReserve'] as const) : []), 'heldForOthers'];
   return (
     <div data-testid="preview" style={{ display: 'grid', gap: 'var(--space-3)' }}>
       <Card title="What it would do">
@@ -1076,7 +1081,12 @@ function PreviewOf({ preview, view }: { readonly preview: SettingsPreviewView; r
                   {item.kind === 'paycheck' && (
                     <>
                       {' '}
-                      Mom reserve <Money cents={item.split.momReserve} />, Savings <Money cents={item.split.savings} />, Needs <Money cents={item.split.needs} />, Wants <Money cents={item.split.wants} />
+                      {mom && (
+                        <>
+                          Mom reserve <Money cents={item.split.momReserve} />,{' '}
+                        </>
+                      )}
+                      Savings <Money cents={item.split.savings} />, Needs <Money cents={item.split.needs} />, Wants <Money cents={item.split.wants} />
                       {item.split.wishlist === undefined ? '' : <>, Wishlist <Money cents={item.split.wishlist} /></>}.
                     </>
                   )}
@@ -1094,10 +1104,10 @@ function PreviewOf({ preview, view }: { readonly preview: SettingsPreviewView; r
           testId="preview-buckets"
           columns={[{ name: 'Now' }, { name: 'After' }]}
           rows={[
-            ...(['savings', 'needs', 'wants', 'momReserve', 'heldForOthers'] as const).map((pot) => ({
+            ...pots.map((pot) => ({
               label: POT_NAMES[pot],
-              first: <Money cents={before[pot]} />,
-              second: <Money cents={after[pot]} testId={`preview-after-${pot}`} />,
+              first: <Money cents={before[pot] ?? 0} />,
+              second: <Money cents={after[pot] ?? 0} testId={`preview-after-${pot}`} />,
               differs: before[pot] !== after[pot],
               testId: `preview-${pot}`,
             })),

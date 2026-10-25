@@ -203,6 +203,37 @@ describe('Off in this setup: setup day and after, through the real server', () =
     db.close();
   });
 
+  // PR 12, break-it: each switch is its own. With the old card off and no
+  // second card (PR 3's setup, before PR 5), three accounts are picked; her
+  // tests since PR 5 always had the second card on, so nothing held this.
+  it('Off in this setup: 1.2 each switch is its own: with the old card off and no second card, three accounts are asked for, said as three, and the first start picks those three only', async () => {
+    const three = { ...HER_SWITCHES, secondCard: 'off' as const, wishlist: 'off' as const };
+    expect(rolesFor(three)).toEqual(['checking', 'savings', 'everyday-card']);
+
+    const fake = new FakePlaid(fourAccounts(POSTED_AT_START));
+    const db = openDatabase(':memory:');
+    const log = memoryLog([], [fake.clientId, fake.secret]);
+    const plaid = new PlaidClient(plaidKeysFromEnv({ PLAID_ENV: 'sandbox', PLAID_CLIENT_ID: fake.clientId, PLAID_SECRET: fake.secret }), { fetch: fake.fetch, log });
+    const keeper = Keeper.open({ db, now: () => noonInNewYork('2026-10-01'), log, start: { settings: HER_SETTINGS, switches: three } });
+    const desk = keeper.bankDesk({ plaid, box: new TokenBox(TOKEN_KEY), log, pageSize: 3 });
+    expect(await desk.link({ mode: 'connect', yes: true })).toMatchObject({ ok: true });
+    expect(await desk.connected({ publicToken: fake.publicToken })).toMatchObject({ ok: true });
+    const refused = desk.roles({ roles: { checking: C, savings: ACCOUNT_IDS.savings }, yes: true });
+    expect(refused).toMatchObject({ ok: false, code: 'not-roles', why: 'Pick each of the three: checking, savings, and the everyday card.' });
+    db.close();
+
+    // The first start's test bank (main.ts): its old card (4444) is not picked.
+    const first = openDatabase(':memory:');
+    await connectLikeHis({ db: first, plaid, box: new TokenBox(TOKEN_KEY), log, today: '2026-10-09', wait: async () => {}, roles: rolesFor(three) });
+    expect(readAccounts(first).map((a) => [a.raw.mask, a.role]).sort()).toEqual([
+      ['1111', 'checking'],
+      ['2222', 'savings'],
+      ['3333', 'everyday-card'],
+      ['4444', null],
+    ]);
+    first.close();
+  });
+
   it('her setup: the real server starts from BUDGET_SETUP, and connects the test bank with its accounts: what main.ts does', () => {
     const main = readFileSync(new URL('../src/serve/main.ts', import.meta.url), 'utf8');
     expect(main).toContain("start: setupStartOf(process.env['BUDGET_SETUP'])");

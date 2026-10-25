@@ -113,6 +113,42 @@ describe.each(ENGINES)('her Wishlist on the screens, in %s', (_name, engine) => 
     });
   });
 
+  // PR 12, found by the agent on her screens (HB30).
+  it('4.4 the split sheet splits a purchase across needs and wants only: Wishlist, which gets the rest, gets nothing, and it is not refused (HB30)', async () => {
+    const life = await herWithAPurchase();
+    const before = life.keeper.book()!.pots();
+    await served(life, async (page, base) => {
+      await open(page, base, '/review');
+      await item(page, 'gadget-1').getByTestId('more').click();
+      const sheet = page.getByTestId('review-sheet');
+      await sheet.waitFor();
+      expect(words(await sheet.getByTestId('split-rest').innerText())).toBe('Wishlist gets the rest.');
+      await sheet.getByTestId('split-needs').fill('30.00');
+      await sheet.getByTestId('split-wants').fill('20.00');
+      await sheet.getByTestId('split-submit').click();
+      await item(page, 'gadget-1').waitFor({ state: 'detached' });
+      const after = life.keeper.book()!.pots();
+      expect([after.needs, after.wants, after.wishlist]).toEqual([before.needs - 3_000, before.wants - 2_000, before.wishlist]);
+    });
+  });
+
+  // PR 12, found by the agent on her screens: the sheet showed "Mom reserve
+  // $0.00" and had no Wishlist row.
+  it('Off in this setup: the paycheck rule\'s "what it would do" sheet lists her buckets with Wishlist, and nothing about a mom reserve', async () => {
+    const life = await herWithAPurchase();
+    await served(life, async (page, base) => {
+      await open(page, base, '/settings');
+      await page.getByTestId('row-paycheck-rule').click();
+      await page.getByTestId('field-paycheck-rule').fill('MADEUP CORP PAYROLL');
+      await page.getByTestId('sheet-save').click();
+      const preview = page.getByTestId('preview');
+      await preview.waitFor();
+      expect(await preview.getByTestId('preview-momReserve').count()).toBe(0);
+      expect(words(await preview.innerText()).toLowerCase()).not.toContain('mom');
+      expect(words(await preview.getByTestId('preview-wishlist').innerText())).toBe('Wishlist $300.00 $300.00');
+    });
+  });
+
   it('50.4 Home says to move the Wishlist purchase from savings to checking, and when', async () => {
     const life = await herWithAPurchase();
     const sorted = choose(life.keeper, { item: 'gadget-1', choice: { to: 'wishlist' } });

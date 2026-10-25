@@ -3957,8 +3957,8 @@
   {
     "section": "40",
     "file": "packages/money/src/book.ts",
-    "find": "    for (const pot of ['needs', 'wants'] as const) {\n      for (const item of foldLines(spending, pot)) {",
-    "replace": "    for (const pot of ['needs'] as const) {\n      for (const item of foldLines(spending, pot)) {",
+    "find": "    return this.#spentIn(['needs', 'wants'], period);",
+    "replace": "    return this.#spentIn(['needs'], period);",
     "why": "[trends] 40.2 wants left out"
   },
   {

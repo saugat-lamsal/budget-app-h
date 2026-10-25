@@ -44,6 +44,9 @@ export function statusLines(view: StatusView): StatusLine[] {
             look: b.lastSync !== null && SYNC_WORDS[b.lastSync.result].look,
           },
         ]);
+  // Her setup (12.3, HB9, HB32): while a bank's last sync failed, the check
+  // waits for it; its own line above already needs a look.
+  const waitingFor = view.banks?.find((b) => b.lastSync !== null && (b.lastSync.result === 'failed' || b.lastSync.result === 'needs-login'));
   return [
     ...banks,
     backupsLine(view, when),
@@ -52,7 +55,7 @@ export function statusLines(view: StatusView): StatusLine[] {
     {
       id: 'difference',
       title: 'Daily check',
-      detail: view.mismatchSince === null ? 'The totals match the bank.' : `The totals have not matched the bank since ${when(view.mismatchSince)}.`,
+      detail: view.mismatchSince !== null ? `The totals have not matched the bank since ${when(view.mismatchSince)}.` : waitingFor === undefined ? 'The totals match the bank.' : `Waiting until ${waitingFor.name} can be read.`,
       look: view.mismatchSince !== null,
     },
     { id: 'alerts', title: 'Alerts', detail: view.alertsWaiting === 0 ? 'None waiting to be sent.' : `${view.alertsWaiting} waiting to be sent.`, look: view.alertsWaiting > 0 },
