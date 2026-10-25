@@ -417,6 +417,7 @@ or "Due" on Wishlist items and cards, never color alone.
   hers): a second swipe test and two [b264] breaks. The code was already
   here. Node was already 22.23.4 in the Dockerfile (af53eee). Her six
   files unchanged by the merge; upstream changed none of them.
+- PR #11, the merge from upstream, merged (Oct 25, 2026).
 - PR 12, the end check (branch her-end-check): docs/her-report.txt has
   the runs, the table of every rule and its tests, and what is not tested.
   Section H of the rulebook is empty. Her pay period for the agent:

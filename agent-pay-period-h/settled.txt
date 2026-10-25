@@ -17,8 +17,8 @@ aside, the Wishlist fill, the 50.4 moves, and Trends' estimates. Its final
 books (savings 8,228.97, needs 780.00, wants 963.55, Wishlist 644.01, held
 for others 0.00) are the ones worked out by hand in pay-period-her.test.ts.
 
-It found four mistakes, now fixed, each with a test first and a break:
-one in the money desk and three on the screens. The rest are things the
+It found five mistakes, now fixed, each with a test first and a break:
+one in the money desk and four on the screens. The rest are things the
 rulebook does not settle in words, each settled below by a reading he
 already has.
 
