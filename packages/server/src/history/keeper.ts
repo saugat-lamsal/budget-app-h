@@ -60,6 +60,9 @@ import { statementScreenView, type StatementScreenView } from '../views/statemen
 import { recorderOf, totalsOf, type Answer, type Recorder, type SavedSetupAnswers } from './history.js';
 import { appendEvent, lastSeqOf, readDecision, readHistory, readLastChecked, readSetupInput, replayHistory, saveDecision, saveLastChecked, sealHistory, type DeskName } from './history-db.js';
 import { timeIn, todayIn } from './today.js';
+import { NO_WISHLIST, boughtWith, itemsForReview, parseWishlistRequest, tryWishlist, wishlistListView } from '../wishlist-items.js';
+import type { WishlistRequest, WishlistResponse } from '../views/choice.js';
+import type { WishlistChange, WishlistList } from '@budget-app/money';
 
 // 0.7: how many events the books' history holds.
 function countEvents(db: Db): number {
@@ -124,6 +127,8 @@ interface State {
   readonly setup: SetupDesk | null;
   // Phase 5: the alerts given so far, from the history.
   readonly alerts: AlertLedger;
+  // Her rulebook, 50.1 to 50.3: her Wishlist list, from the history.
+  readonly wishlist: WishlistList;
 }
 
 // What a sync needs to reach the bank.
@@ -335,7 +340,7 @@ export class Keeper {
         answers: replayed.setupAnswers === null ? NO_ANSWERS : setupAnswersOf(replayed.setupAnswers),
       });
     }
-    this.#state = { recorder, seen: replayed.seen, bankRules, choices: book === null ? null : new ChoiceDesk(book, today), setup, alerts: replayed.alerts };
+    this.#state = { recorder, seen: replayed.seen, bankRules, choices: book === null ? null : new ChoiceDesk(book, today), setup, alerts: replayed.alerts, wishlist: replayed.wishlist };
     this.#lastSeq = history.at(-1)?.seq ?? 0;
   }
 
@@ -525,11 +530,18 @@ export class Keeper {
   review(): ReviewView {
     // B226: pending items the bank labels otherwise than his bank rules read them.
     const labeled = misreadHints(bankLinesOf({ accounts: readAccounts(this.#db), items: readItems(this.#db) }), readBankRules(this.#db));
-    return reviewView({ today: this.today(), book: this.book(), madeUpData: false, labeled });
+    const view = reviewView({ today: this.today(), book: this.book(), madeUpData: false, labeled });
+    // Her rulebook, 50.3: her list, for "which thing on your list was it".
+    return view.state === 'tracking' && this.#switches().wishlist === 'on' ? { ...view, wishlistItems: itemsForReview(this.#state.wishlist) } : view;
   }
 
   activity(pot: AnyPot): ActivityView {
-    return activityView({ today: this.today(), book: this.book(), pot, madeUpData: false });
+    const view = activityView({ today: this.today(), book: this.book(), pot, madeUpData: false });
+    const book = this.book();
+    if (view.state !== 'tracking' || book === null || this.#switches().wishlist !== 'on') return view;
+    // Her rulebook, 50.3: her list, for a purchase sorted again to Wishlist;
+    // 50.2: Wishlist's own list shows how the bucket fills the items too.
+    return { ...view, wishlistItems: itemsForReview(this.#state.wishlist), ...(pot === 'wishlist' ? { list: wishlistListView(book, this.#state.wishlist) } : {}) };
   }
 
   payday(): PaydayView {
@@ -585,7 +597,41 @@ export class Keeper {
   // ----- His answers -----
 
   choice(request: ChoiceRequest): ChoiceResponse {
-    return this.#bookAnswer('choice', request, (desk) => desk.decide(request), 'That one was already dealt with', 'not-waiting');
+    return this.#bookAnswer('choice', request, (desk) => desk.decide(request), 'That one was already dealt with', 'not-waiting', () => this.#boughtWith(request));
+  }
+
+  // Her rulebook, 50.3: a purchase sorted to Wishlist, and which thing on her
+  // list it was, in the same answer. Worked out after the sort, from the book.
+  #boughtWith(request: ChoiceRequest): { readonly ok: true; readonly wishlist?: readonly WishlistChange[]; readonly list?: WishlistList } | { readonly ok: false; readonly code: 'refused' | 'changed'; readonly why: string } {
+    const book = this.book();
+    if (this.#switches().wishlist !== 'on' || book === null) return request.wishlistItem === undefined ? { ok: true } : { ok: false, code: 'refused', why: `${NO_WISHLIST}. Nothing was changed.` };
+    const asked = boughtWith(book, this.#state.wishlist, request.item, request.wishlistItem);
+    if (!asked.ok) return { ok: false, code: asked.code === 'changed' ? 'changed' : 'refused', why: asked.why };
+    if (asked.change === null) return { ok: true };
+    const tried = tryWishlist(this.#state.wishlist, asked.change, this.today());
+    if (!tried.ok) return { ok: false, code: tried.code === 'changed' ? 'changed' : 'refused', why: tried.why };
+    return { ok: true, wishlist: [asked.change], list: tried.list };
+  }
+
+  // Her rulebook, 50.1 and 50.3: a change to her Wishlist list. Kept in the
+  // history as an answer, with its decision number (through the choice desk's
+  // numbers: they arrive the same way). It moves no money.
+  wishlist(request: WishlistRequest): WishlistResponse {
+    const earlier = this.#earlier('choice', request);
+    if (earlier !== null) return earlier as WishlistResponse;
+    if (this.#switches().wishlist !== 'on') return refuse('refused', NO_WISHLIST);
+    if (this.book() === null) return refuse('refused', 'Your list starts on setup day');
+    const edit = request.wishlist;
+    if ('remove' in edit && request.confirmed !== true) {
+      const item = this.#state.wishlist.items.find((i) => i.id === edit.remove.item);
+      if (item !== undefined) return { ok: false, code: 'needs-confirmation', why: `Remove ${item.name} from your list? Nothing is changed until you say yes.` };
+    }
+    const tried = tryWishlist(this.#state.wishlist, edit, this.today());
+    if (!tried.ok) return tried;
+    const response: WishlistResponse = { ok: true, replayed: false };
+    this.#save({ answer: { wishlist: [edit] }, decision: { id: request.id, desk: 'choice', fingerprint: canonical(request), answer: response } });
+    this.#state = { ...this.#state, wishlist: tried.list };
+    return response;
   }
 
   move(request: MoveRequest): MoveResponse {
@@ -1085,6 +1131,10 @@ export class Keeper {
       ruleChange: (_request, change) => this.ruleChange(change),
       setup: (_request, answer) => this.setup(answer),
       bankRule: (_request, change) => this.bankRule(change),
+      wishlist: (_request, sent) => {
+        const change = parseWishlistRequest(sent);
+        return change === null ? null : this.wishlist(change);
+      },
       seen: (_request, what) => this.seen(what),
       syncEvery: (_request, minutes) => this.changeSyncEvery(minutes),
       alerts: () => this.alertsView(),
@@ -1135,7 +1185,16 @@ export class Keeper {
 
   // An answer the book takes, through its desk. What the desk did to the
   // book is written down, and saved with the decision number and the answer.
-  #bookAnswer<R extends { readonly ok: boolean; readonly replayed?: boolean }>(desk: DeskName, request: { readonly id: string }, run: (desk: ChoiceDesk) => R, beforeSetup: string, code: 'not-waiting' | 'refused'): R {
+  // Her rulebook, 50.3: `more` adds to the same answer what the book's change
+  // means for her Wishlist list; if it refuses, the book's change is undone.
+  #bookAnswer<R extends { readonly ok: boolean; readonly replayed?: boolean }>(
+    desk: DeskName,
+    request: { readonly id: string },
+    run: (desk: ChoiceDesk) => R,
+    beforeSetup: string,
+    code: 'not-waiting' | 'refused',
+    more?: () => { readonly ok: true; readonly wishlist?: readonly WishlistChange[]; readonly list?: WishlistList } | { readonly ok: false; readonly code: 'refused' | 'changed'; readonly why: string },
+  ): R {
     const earlier = this.#earlier(desk, request);
     if (earlier !== null) return earlier as R;
     const { choices, recorder } = this.#state;
@@ -1157,7 +1216,13 @@ export class Keeper {
       }
       return response;
     }
-    this.#save({ answer: { book: calls }, decision: { id: request.id, desk, fingerprint: canonical(request), answer: response } });
+    const extra = more?.() ?? { ok: true as const };
+    if (!extra.ok) {
+      this.reload();
+      return extra as unknown as R;
+    }
+    this.#save({ answer: { book: calls, ...(extra.wishlist === undefined ? {} : { wishlist: extra.wishlist }) }, decision: { id: request.id, desk, fingerprint: canonical(request), answer: response } });
+    if (extra.list !== undefined) this.#state = { ...this.#state, wishlist: extra.list };
     return response;
   }
 

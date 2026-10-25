@@ -1768,6 +1768,7 @@ a.tile:active {
 .chart--savings { --tone: var(--chart-savings); }
 .chart--mom { --tone: var(--chart-mom); }
 .chart--pace { --tone: var(--chart-pace); }
+.chart--wishlist { --tone: var(--chart-wishlist); }
 
 /* The bars run to the card's own edge, so a row that scrolls goes under it. */
 .pbars {

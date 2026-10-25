@@ -1,6 +1,7 @@
-import { MoneyError, type BankTransaction, type Book, type Cents, type IsoDate, type SetupInput } from '@budget-app/money';
+import { EMPTY_WISHLIST, MoneyError, type BankTransaction, type Book, type Cents, type IsoDate, type SetupInput, type WishlistList } from '@budget-app/money';
 import { statement, type Db } from '../db/database.js';
 import { NO_ALERTS, applyAlerts, type AlertLedger, type AlertsEvent } from '../alerts/plan.js';
+import { applyWishlist } from '../wishlist-items.js';
 import { ReplayFailed, bookOfSetup, replayCall, sameTotals, totalsOf, type Answer, type HistoryEvent, type SavedSetupAnswers, type Totals } from './history.js';
 
 // The book's history in the database (table book_events), the decision
@@ -100,6 +101,8 @@ export interface Replayed {
   readonly setupAnswers: SavedSetupAnswers | null;
   // Phase 5: the alerts given so far, and the evenings handled.
   readonly alerts: AlertLedger;
+  // Her rulebook, 50.1 to 50.3: her Wishlist list as the answers left it.
+  readonly wishlist: WishlistList;
   // Events saved before their totals were, with the totals they replay to.
   readonly unsealed: readonly { readonly seq: number; readonly totals: Totals | null }[];
 }
@@ -134,6 +137,7 @@ export function describeEvent(e: StoredEvent): string {
         ...(a.seen === undefined ? [] : ['seen']),
         ...(a.bankRules === undefined ? [] : ['a bank rule']),
         ...(a.setup === undefined ? [] : ['a setup day answer']),
+        ...(a.wishlist === undefined ? [] : ['the Wishlist list']),
       ];
       return `his answer: ${parts.join(', ') || 'nothing'}`;
     }
@@ -175,6 +179,7 @@ export function replayEach(
   const seen = new Set<string>();
   let setupAnswers: SavedSetupAnswers | null = null;
   let alerts = NO_ALERTS;
+  let wishlist = EMPTY_WISHLIST;
   for (const stored of events) {
     try {
       // Phase 5: an alert given twice, or an evening out of turn, is a
@@ -186,13 +191,14 @@ export function replayEach(
       book = applyEvent(book, stored.event, seen, (answers) => {
         setupAnswers = answers;
       });
+      if (stored.event.kind === 'answer' && stored.event.answer.wishlist !== undefined) wishlist = applyWishlist(wishlist, stored.event.answer.wishlist, stored.date);
     } catch (error) {
       if (error instanceof ReplayFailed || error instanceof MoneyError) return { ok: false, at: stored, why: error.message };
       throw error;
     }
     after?.(stored, totalsOf(book));
   }
-  return { ok: true, replayed: { book, seen, setupAnswers, alerts } };
+  return { ok: true, replayed: { book, seen, setupAnswers, alerts, wishlist } };
 }
 
 function applyEvent(book: Book | null, event: HistoryEvent, seen: Set<string>, setSetup: (answers: SavedSetupAnswers) => void): Book | null {

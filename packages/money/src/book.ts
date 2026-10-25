@@ -231,7 +231,8 @@ interface Place {
 // 40.2: what one item spent out of needs or wants in a pay period (Book.spentIn).
 export interface SpentItem {
   readonly id: string;
-  readonly pot: SplitBucket;
+  // Her rulebook, 40.2: or Wishlist (Book.wishlistSpentIn).
+  readonly pot: SortBucket;
   // Spent: positive. The day of the purchase (4.1).
   readonly amount: Cents;
   readonly date: IsoDate;
@@ -1264,12 +1265,23 @@ export class Book {
   // spending in periodSummary, to the cent. An item whose lines add up to
   // zero is left out.
   spentIn(period?: number): SpentItem[] {
+    return this.#spentIn(['needs', 'wants'], period);
+  }
+
+  // Her rulebook, 40.2 and 40.4 (PR 10+11): the same for Wishlist, its own
+  // part of each pay period, where the setup has it. A read hook.
+  wishlistSpentIn(period?: number): SpentItem[] {
+    refuseOffWishlist(this.#switches);
+    return this.#spentIn(['wishlist'], period);
+  }
+
+  #spentIn(pots: readonly SortBucket[], period: number | undefined): SpentItem[] {
     const number = this.#payPeriod(period);
     const lines = this.#ledger[number];
     if (lines === undefined) throw new MoneyError('broken-book', `pay period ${number} has no ledger`);
     const spending = lines.filter((line) => line.kind === 'spending');
     const items: SpentItem[] = [];
-    for (const pot of ['needs', 'wants'] as const) {
+    for (const pot of pots) {
       for (const item of foldLines(spending, pot)) {
         if (item.net === 0) continue;
         const entry = this.#entries.get(item.entry) ?? this.#entries.get(item.entry.split(':')[0] ?? item.entry);

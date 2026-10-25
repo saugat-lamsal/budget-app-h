@@ -2,8 +2,10 @@
 # run (npm test), split in two jobs that run at the same time:
 # - checks: the type check, then every test that does not use a browser
 #   (money, server, web, repo), with SKIP_BROWSER_TESTS=1;
-# - webkit: the browser tests in WebKit only (BROWSER_ENGINE=webkit), iPhone
-#   Safari's engine.
+# - webkit 1/2 and webkit 2/2: the browser tests in WebKit only
+#   (BROWSER_ENGINE=webkit), iPhone Safari's engine, split by file in two
+#   shards that run at the same time (vitest --shard), so the browser tests
+#   take about half as long. Main requires both.
 # Together they are exactly npm test: test/ci-workflow.test.ts checks that no
 # test is left out. By hand (Actions, Tests, Run workflow, "Run the slow
 # tests" ticked) the slow run (npm run test:slow, TEST_SLOW=1) instead:
@@ -49,12 +51,17 @@ concurrency:
 
 jobs:
   test:
-    name: ${{ matrix.part }} (${{ matrix.os }})
+    name: ${{ matrix.part }}${{ matrix.part != 'checks' && format(' {0}/2', matrix.shard) || '' }} (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
         os: ${{ fromJSON(github.event_name == 'pull_request' && '["ubuntu-latest"]' || inputs.systems == 'both' && '["ubuntu-latest","windows-latest"]' || inputs.systems == 'linux' && '["ubuntu-latest"]' || '["windows-latest"]') }}
         part: ${{ fromJSON(inputs.slow == true && '["checks","chromium"]' || '["checks","webkit"]') }}
+        # The browser tests in two shards; the checks job is one job.
+        shard: [1, 2]
+        exclude:
+          - part: checks
+            shard: 2
     runs-on: ${{ matrix.os }}
     timeout-minutes: ${{ inputs.slow == true && 150 || 45 }}
     env:
@@ -121,7 +128,7 @@ jobs:
         if: matrix.part != 'checks'
         env:
           BROWSER_ENGINE: ${{ matrix.part }}
-        run: npx vitest run --project web-browser
+        run: npx vitest run --project web-browser --shard=${{ matrix.shard }}/2
 
   image:
     name: image (ubuntu-latest)

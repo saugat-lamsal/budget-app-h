@@ -3673,5 +3673,26 @@
     "find": "        {view.notMatched !== 0 && (",
     "replace": "        {view.notMatched > 0 && (",
     "why": "[her-cards] 52.4 Not matched below zero is hidden"
+  },
+  {
+    "section": "words",
+    "file": "packages/web/src/screens/wishlist-items-text.ts",
+    "find": "  if (item.ready) return `Ready: ${moneyText(item.has)} of ${moneyText(item.price)}`;",
+    "replace": "  if (item.has > 0) return `Ready: ${moneyText(item.has)} of ${moneyText(item.price)}`;",
+    "why": "[her-items] 50.2 an item with anything says Ready"
+  },
+  {
+    "section": "words",
+    "file": "packages/web/src/screens/wishlist-items-text.ts",
+    "find": "  if ('split' in choice) return choice.split.some((part) => part.bucket === 'wishlist');",
+    "replace": "  if ('split' in choice) return choice.split.every((part) => part.bucket === 'wishlist');",
+    "why": "[her-items] 50.3 a split with a Wishlist part does not ask which item"
+  },
+  {
+    "section": "words",
+    "file": "packages/web/src/screens/trends-text.ts",
+    "find": "  const parts = (['needs', 'wants', 'old-card', 'unsorted', 'wishlist'] as const).flatMap((part) => {",
+    "replace": "  const parts = (['needs', 'wants', 'old-card', 'unsorted'] as const).flatMap((part) => {",
+    "why": "[her-trends] 40.4 a bar's words leave out its Wishlist part"
   }
 ]

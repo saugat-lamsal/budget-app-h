@@ -1,4 +1,4 @@
-import { parseDollars, type AccountId, type Cents, type IsoDate, type LikelyPurchase, type PickTo, type ReviewDetail, type ReviewOptions, type RuleOffer, type SortedNow } from '@budget-app/money';
+import { parseDollars, type AccountId, type Cents, type IsoDate, type LikelyPurchase, type PickTo, type ReviewDetail, type ReviewOptions, type RuleOffer, type SortedNow, type WishlistItem } from '@budget-app/money';
 import type { ChoiceOf, ChoicePart, ChoiceRequest, PaycheckSplitShown, ReviewItemShown as KeyedDetail } from '@budget-app/server/views';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { newDecisionId, sendChoice, type Reload } from '../app/api.js';
@@ -7,6 +7,8 @@ import { shortDate } from '../ui/dates.js';
 import { moneyText } from '../ui/money-format.js';
 import { ACCOUNT_NAMES, BUCKET_NAMES, RULE_WHAT, changedWords, doneText, lessSincePaydayWords, markedWords, nowWords, offerText, pickLabel, reasonText, ruleSentenceText, sortedWords, titleOf, transferWords } from './review-text.js';
 import type { ActivityRowShown as ActivityRow } from '@budget-app/server/views';
+import { WhichItem } from './wishlist-items.js';
+import { putsInWishlist } from './wishlist-items-text.js';
 
 // Choosing what happens to an item: the same for an item waiting in Review
 // and for one sorted already, from the list of what went in and out of a
@@ -73,6 +75,8 @@ export interface Pending {
   readonly ask?: ReactNode;
   // What the choice pointed at, for the answer (doneText).
   readonly about?: string;
+  // Her rulebook, 50.3: which thing on her Wishlist list it was, or 'none'.
+  readonly wishlistItem?: string;
 }
 
 // What comes with a choice: a rule, what "are you sure" says, and what it pointed at.
@@ -89,6 +93,8 @@ export type Sheet =
   // notAPaycheck: opened from "Not a paycheck" on a paycheck waiting for her yes (her rulebook, 3.1).
   | { readonly item: string; readonly step: 'choose'; readonly notAPaycheck?: true }
   | { readonly item: string; readonly step: 'confirm'; readonly pending: Pending }
+  // Her rulebook, 50.3: which thing on her Wishlist list it was.
+  | { readonly item: string; readonly step: 'which-item'; readonly pending: Pending }
   // 13.8: making the rule offered after a sort.
   | { readonly item: string; readonly step: 'offer'; readonly offer: Offered };
 
@@ -172,7 +178,9 @@ export const CHANGED_HOLD_MS = 1_000;
 // showed (a sync changed it), the item is marked changed for as long as the
 // screen shows it, and takes no tap for CHANGED_HOLD_MS (A32). An item he
 // answered himself is not marked: its change is his own.
-export function useChoiceFlow(options: { readonly resort: boolean; readonly reload: Reload; readonly onChanged: Reload; readonly keys: ReadonlyMap<string, string>; readonly view: object }) {
+// wishlistItems (her rulebook, 50.3): her Wishlist list, when the setup has
+// one: a choice that puts something in Wishlist first asks which item it was.
+export function useChoiceFlow(options: { readonly resort: boolean; readonly reload: Reload; readonly onChanged: Reload; readonly keys: ReadonlyMap<string, string>; readonly view: object; readonly wishlistItems?: readonly WishlistItem[] | undefined }) {
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const [said, setSaid] = useState<Said | null>(null);
   const [sending, setSending] = useState(false);
@@ -217,6 +225,7 @@ export function useChoiceFlow(options: { readonly resort: boolean; readonly relo
       ...(pending.confirmed === true ? { confirmed: true } : {}),
       ...(options.resort || pending.resort === true ? { resort: true as const } : {}),
       ...(pending.seen === undefined ? {} : { seen: pending.seen }),
+      ...(pending.wishlistItem === undefined ? {} : { wishlistItem: pending.wishlistItem }),
     };
     sendChoice(request).then(
       (answer) => {
@@ -265,13 +274,16 @@ export function useChoiceFlow(options: { readonly resort: boolean; readonly relo
       ...(extra.ask === undefined ? {} : { ask: extra.ask }),
       ...(extra.about === undefined ? {} : { about: extra.about }),
     };
-    if (extra.final === true || extra.always !== undefined) {
+    if ((options.wishlistItems?.length ?? 0) > 0 && putsInWishlist(choice)) {
+      setSaid(null);
+      setSheet({ item: target.id, step: 'which-item', pending });
+    } else if (extra.final === true || extra.always !== undefined) {
       setSaid(null);
       setSheet({ item: target.id, step: 'confirm', pending });
     } else submit(pending);
   };
 
-  return { sheet, said, sending: sending || answeredOn === options.view, setSaid, setSheet, openSheet, openOffer, closeSheet, submit, choose, changed: fresh.changed, holding: fresh.holding };
+  return { sheet, said, sending: sending || answeredOn === options.view, setSaid, setSheet, openSheet, openOffer, closeSheet, submit, choose, changed: fresh.changed, holding: fresh.holding, wishlistItems: options.wishlistItems ?? [] };
 }
 
 // A32: which items changed when the screen last read its numbers, and which
@@ -524,6 +536,7 @@ export function ChoiceSheet({
             {subject !== undefined && likely && (subject.refund || subject.likely.length > 0) && <LikelyPurchases subject={subject} busy={sending} onChoose={choose} />}
           </div>
           {sheet.step === 'confirm' && <Confirm pending={sheet.pending} busy={sending} onYes={() => submit({ ...sheet.pending, confirmed: true })} onBack={() => setSheet({ item: itemId, step: 'choose' })} />}
+          {sheet.step === 'which-item' && <WhichItem items={flow.wishlistItems} busy={sending} onPick={(pick) => submit({ ...sheet.pending, wishlistItem: pick })} onBack={() => setSheet({ item: itemId, step: 'choose' })} />}
         </div>
       )}
     </BottomSheet>

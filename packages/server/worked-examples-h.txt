@@ -153,3 +153,28 @@ Oct 6: she moves 50.00 from savings to checking. Savings holds 4,950.00,
 and nothing is left to move: Home's line goes away. No bucket changes.
 
 Check: wishlist on buckets 250.00 | to move on home 50.00 | savings account after the move 4,950.00 | to move after the move 0.00 | wishlist after the move 250.00
+
+
+========================================================================
+EXAMPLE 5. Trends with Wishlist (40.2, 40.4, 40.5)
+========================================================================
+
+Setup day as in example 4: Wishlist 300.00, wants 200.00. Oct 3: a lamp of
+45.00 on the Capital One card, sorted to Wishlist; a cafe of 12.50, sorted
+to wants. Oct 4: a big box purchase of 90.00, split 70.00 needs and 20.00
+Wishlist.
+
+This pay period's bar on Trends (40.4), each part with its amount:
+        Needs:    70.00
+        Wants:    12.50
+        Wishlist: 45.00 + 20.00 = 65.00
+        Spent in all: 70.00 + 12.50 + 65.00 = 147.50
+No "Old card payment" part ("Off in this setup").
+
+Beside savings (40.5), Wishlist on its own: 300.00 when tracking started,
+300.00 - 65.00 = 235.00 now.
+
+"Against your usual" (40.7) stays on needs and wants (HB27): spent so far
+70.00 + 12.50 = 82.50.
+
+Check: needs part 70.00 | wants part 12.50 | wishlist part 65.00 | spent in all 147.50 | wishlist at the start 300.00 | wishlist now 235.00 | spent so far against your usual 82.50

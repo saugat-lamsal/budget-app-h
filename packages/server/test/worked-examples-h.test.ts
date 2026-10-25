@@ -209,6 +209,56 @@ examples[4] = async () => {
   }
 };
 
+// PR 10+11: Trends with Wishlist (40.2, 40.4, 40.5, 40.7).
+examples[5] = async () => {
+  const life = await herLife();
+  try {
+    const k = life.keeper;
+    for (const setup of [
+      { lastPaycheck: '2026-09-25' },
+      { assign: { pot: 'savings' as const, amount: parseDollars('4,000.00') } },
+      { assign: { pot: 'wishlist' as const, amount: parseDollars('300.00') } },
+      { assign: { pot: 'wants' as const, amount: parseDollars('200.00') } },
+      { assign: { pot: 'needs' as const, rest: true as const } },
+    ]) {
+      const answer = k.setup({ id: decision(), setup });
+      if (!answer.ok) throw new Error(answer.why);
+    }
+    const view = k.setupView();
+    if (view.state !== 'not-set-up' || !view.ready) throw new Error('setup day is not ready');
+    const started = k.setup({ id: decision(), setup: { start: true }, confirmed: true, seen: view.key });
+    if (!started.ok) throw new Error(started.why);
+    life.h.fake.addPosted({ id: 'lamp', account: ACCOUNT_IDS.everyday, amount: parseDollars('45.00'), date: '2026-10-03', description: 'MADE UP LAMPS' });
+    life.h.fake.addPosted({ id: 'cafe', account: ACCOUNT_IDS.everyday, amount: parseDollars('12.50'), date: '2026-10-03', description: 'MADE UP COFFEE' });
+    life.h.fake.addPosted({ id: 'big-box', account: ACCOUNT_IDS.everyday, amount: parseDollars('90.00'), date: '2026-10-04', description: 'MADE UP BIG BOX' });
+    life.now = noonInNewYork('2026-10-04');
+    await life.sync();
+    for (const [item, choice] of [
+      ['lamp', { to: 'wishlist' }],
+      ['cafe', { to: 'wants' }],
+      ['big-box', { split: [{ bucket: 'needs', amount: parseDollars('70.00') }, { bucket: 'wishlist', amount: 'rest' }] }],
+    ] as const) {
+      const sorted = choose(k, { item, choice });
+      if (!sorted.ok) throw new Error(sorted.why);
+    }
+    const trends = k.trends();
+    if (trends.state !== 'tracking') throw new Error('not tracking');
+    const here = trends.periods[trends.periods.length - 1];
+    if (here === undefined || here.spent['old-card'] !== 0) throw new Error('no pay period, or an old card payment');
+    return {
+      'needs part': here.spent.needs,
+      'wants part': here.spent.wants,
+      'wishlist part': here.spent.wishlist ?? -1,
+      'spent in all': here.total,
+      'wishlist at the start': trends.savings[0]?.wishlist ?? -1,
+      'wishlist now': trends.savings[trends.savings.length - 1]?.wishlist ?? -1,
+      'spent so far against your usual': trends.now.spentSoFar,
+    };
+  } finally {
+    life.done();
+  }
+};
+
 // The self-check against each bank's latest good read, as saved (12.3).
 function bankStatusOf(life: Life): { readonly bankSide: Cents; readonly difference: Cents } {
   const check = bankStatus(life.h.db).selfCheck;

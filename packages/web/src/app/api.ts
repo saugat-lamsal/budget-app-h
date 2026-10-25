@@ -31,6 +31,8 @@ import type {
   SetupResponse,
   SetupShown as SetupView,
   StatementScreenView,
+  WishlistRequest,
+  WishlistResponse,
 } from '@budget-app/server/views';
 import type { StatementCard } from './routes.js';
 // "Off in this setup" (her rulebook): the views as the phone gets them,
@@ -121,9 +123,11 @@ export async function sendChoice(request: SettingsRequest): Promise<SettingsResp
 export async function sendChoice(request: RuleRequest): Promise<RuleResponse>;
 export async function sendChoice(request: SetupRequest): Promise<SetupResponse>;
 export async function sendChoice(request: BankRuleRequest): Promise<BankRuleResponse>;
+// Her rulebook, 50.1 and 50.3: a change to her Wishlist list.
+export async function sendChoice(request: WishlistRequest): Promise<WishlistResponse>;
 export async function sendChoice(
-  request: ChoiceRequest | MoveRequest | SettingsRequest | RuleRequest | SetupRequest | BankRuleRequest,
-): Promise<ChoiceResponse | MoveResponse | SettingsResponse | RuleResponse | SetupResponse | BankRuleResponse> {
+  request: ChoiceRequest | MoveRequest | SettingsRequest | RuleRequest | SetupRequest | BankRuleRequest | WishlistRequest,
+): Promise<ChoiceResponse | MoveResponse | SettingsResponse | RuleResponse | SetupResponse | BankRuleResponse | WishlistResponse> {
   const response = await fetch('/api/choice', {
     method: 'POST',
     cache: 'no-store',
@@ -132,7 +136,7 @@ export async function sendChoice(
   });
   toLogin(response);
   if (response.status !== 200 && response.status !== 422) throw new Error(`sending the choice answered ${response.status}`);
-  const answer = (await response.json()) as ChoiceResponse | MoveResponse | SettingsResponse | RuleResponse | SetupResponse | BankRuleResponse;
+  const answer = (await response.json()) as ChoiceResponse | MoveResponse | SettingsResponse | RuleResponse | SetupResponse | BankRuleResponse | WishlistResponse;
   if (typeof answer !== 'object' || answer === null || typeof answer.ok !== 'boolean') throw new Error('the choice was answered with something unexpected');
   return answer;
 }

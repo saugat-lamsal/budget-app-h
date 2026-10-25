@@ -9,7 +9,8 @@ import type { BankCheck } from './buckets.js';
 // 40.2: the parts of what was spent. A payment to the old card is its own
 // part of needs; "unsorted" is spending still waiting in review (or, before
 // setup day, what no rule sorts).
-export type TrendsPart = 'needs' | 'wants' | 'old-card' | 'unsorted';
+// Her rulebook, 40.2 and 40.4 (PR 10+11): Wishlist is its own part where the setup has it.
+export type TrendsPart = 'needs' | 'wants' | 'old-card' | 'unsorted' | 'wishlist';
 export const TRENDS_PARTS: readonly TrendsPart[] = Object.freeze(['needs', 'wants', 'old-card', 'unsorted'] as const);
 
 export interface TrendsItem {
@@ -39,7 +40,7 @@ export interface TrendsPeriod {
   // 40.1: all of it from the bank history, part of it (the pay period setup
   // day fell in), or none of it.
   readonly beforeSetup: 'all' | 'part' | 'none';
-  readonly spent: Readonly<Record<TrendsPart, Cents>>;
+  readonly spent: Readonly<Record<Exclude<TrendsPart, 'wishlist'>, Cents>> & { readonly wishlist?: Cents };
   readonly total: Cents;
   // Newest first. They add up to spent, part by part.
   readonly items: readonly TrendsItem[];
@@ -52,6 +53,8 @@ export interface SavingsPoint {
   readonly at: 'start' | 'end' | 'now';
   readonly savings: Cents;
   readonly momReserve: Cents;
+  // Her rulebook, 40.5: Wishlist beside savings, its own amount, where the setup has it.
+  readonly wishlist?: Cents;
 }
 
 // 40.6: one place, the old card payments, or everything else.

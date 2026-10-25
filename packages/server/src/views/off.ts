@@ -154,7 +154,7 @@ export function shownSettings(view: SettingsView, switches: Switches): SettingsS
 
 export type SavingsPointShown = Maybe<SavingsPoint, 'momReserve'>;
 export type TrendsFutureShown = Maybe<TrendsFuture, 'oldCard'>;
-export type TrendsPeriodShown = Omit<TrendsPeriod, 'spent'> & { readonly spent: Readonly<Maybe<Record<TrendsPart, Cents>, 'old-card'>> };
+export type TrendsPeriodShown = Omit<TrendsPeriod, 'spent'> & { readonly spent: Readonly<Maybe<Record<TrendsPart, Cents>, 'old-card' | 'wishlist'>> };
 type TrendsTracking = Tracking<TrendsView>;
 export type TrendsShown =
   | NotTracking<TrendsView>

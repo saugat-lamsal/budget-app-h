@@ -7088,5 +7088,75 @@
     "find": "const wishlist = switches.wishlist === 'on' ? { withWishlist: true as const } : {};",
     "replace": "const wishlist = {};",
     "why": "[her-wishlist] 3.8 Payday calls what should be in savings the savings bucket alone"
+  },
+  {
+    "section": "trends",
+    "file": "packages/server/src/trends.ts",
+    "find": "  const planned = (i: TrendsItem): boolean => i.part !== 'old-card' && i.part !== 'wishlist';",
+    "replace": "  const planned = (i: TrendsItem): boolean => i.part !== 'old-card';",
+    "why": "[her-trends] 40.7 against your usual counts Wishlist purchases (HB27)"
+  },
+  {
+    "section": "trends",
+    "file": "packages/server/src/trends.ts",
+    "find": "    const spent = wishlist ? [...book.spentIn(n), ...book.wishlistSpentIn(n)] : book.spentIn(n);",
+    "replace": "    const spent = book.spentIn(n);",
+    "why": "[her-trends] 40.2 Wishlist spending left out of the bars"
+  },
+  {
+    "section": "trends",
+    "file": "packages/server/src/trends.ts",
+    "find": "  points.push({ date: today, at: 'now', savings: pots.savings, momReserve: pots.momReserve, ...wishlist(pots) });",
+    "replace": "  points.push({ date: today, at: 'now', savings: pots.savings, momReserve: pots.momReserve, ...wishlist(first.opening) });",
+    "why": "[her-trends] 40.5 Wishlist now is what it held when tracking started"
+  },
+  {
+    "section": "review",
+    "file": "packages/server/src/wishlist-items.ts",
+    "find": "    if (asks && pick === undefined) return { ok: false, code: 'refused', why: 'Which thing on your list was it? Pick one, or None of them.' };\n",
+    "replace": "",
+    "why": "[her-items] 50.3 review does not ask which item"
+  },
+  {
+    "section": "review",
+    "file": "packages/server/src/wishlist-items.ts",
+    "find": "  return { ok: true, change: { bought: { item: pick, purchase: purchaseId, day: purchase.date, paid: purchase.amount } } };",
+    "replace": "  return { ok: true, change: { bought: { item: pick, purchase: purchaseId, day: purchase.date, paid: book.pots().wishlist ?? 0 } } };",
+    "why": "[her-items] 50.3 what was paid is not what the purchase took from Wishlist"
+  },
+  {
+    "section": "review",
+    "file": "packages/server/src/wishlist-items.ts",
+    "find": "  if (purchase === undefined) return { ok: false, code: 'refused', why: 'Only a purchase sorted to Wishlist can be one of the things on your list. Nothing was changed.' };",
+    "replace": "  if (purchase === undefined) return { ok: true, change: null };",
+    "why": "[her-items] 50.3 an item named for a sort to needs is silently dropped"
+  },
+  {
+    "section": "review",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "    if ('remove' in edit && request.confirmed !== true) {",
+    "replace": "    if ('remove' in edit && request.confirmed === false) {",
+    "why": "[her-items] 50.1 removing an item does not ask first"
+  },
+  {
+    "section": "review",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "    if (!extra.ok) {\n      this.reload();\n",
+    "replace": "    if (!extra.ok) {\n",
+    "why": "[her-items] 50.3 a refused item leaves the sort done in memory"
+  },
+  {
+    "section": "review",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "    if (extra.list !== undefined) this.#state = { ...this.#state, wishlist: extra.list };\n",
+    "replace": "",
+    "why": "[her-items] 50.3 the item marked bought stays on the list until a restart"
+  },
+  {
+    "section": "review",
+    "file": "packages/server/src/history/history-db.ts",
+    "find": "      if (stored.event.kind === 'answer' && stored.event.answer.wishlist !== undefined) wishlist = applyWishlist(wishlist, stored.event.answer.wishlist, stored.date);\n",
+    "replace": "",
+    "why": "[her-items] 50.1 the list is not replayed: lost on a restart"
   }
 ]

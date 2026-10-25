@@ -88,8 +88,8 @@ const MAX_TEXT_LENGTH = 200;
 // The request, if it is exactly the right shape, otherwise null. Nothing is
 // guessed or repaired.
 export function parseChoiceRequest(value: unknown): ChoiceRequest | null {
-  if (!isRecord(value) || !onlyKeys(value, ['id', 'item', 'choice', 'always', 'confirmed', 'resort', 'seen'])) return null;
-  const { id, item, choice, always, confirmed, resort, seen } = value;
+  if (!isRecord(value) || !onlyKeys(value, ['id', 'item', 'choice', 'always', 'confirmed', 'resort', 'seen', 'wishlistItem'])) return null;
+  const { id, item, choice, always, confirmed, resort, seen, wishlistItem } = value;
   if (typeof id !== 'string' || !ID_FORMAT.test(id)) return null;
   if (typeof item !== 'string' || item === '' || item.length > MAX_ITEM_LENGTH) return null;
   const parsed = parseChoice(choice);
@@ -104,6 +104,7 @@ export function parseChoiceRequest(value: unknown): ChoiceRequest | null {
   if (confirmed !== undefined && typeof confirmed !== 'boolean') return null;
   if (resort !== undefined && resort !== true) return null;
   if (seen !== undefined && (typeof seen !== 'string' || !KEY_FORMAT.test(seen))) return null;
+  if (wishlistItem !== undefined && (typeof wishlistItem !== 'string' || !/^(none|item-[1-9][0-9]{0,8})$/.test(wishlistItem))) return null;
   return {
     id,
     item,
@@ -112,6 +113,7 @@ export function parseChoiceRequest(value: unknown): ChoiceRequest | null {
     ...(confirmed === undefined ? {} : { confirmed }),
     ...(resort === undefined ? {} : { resort: true as const }),
     ...(seen === undefined ? {} : { seen }),
+    ...(wishlistItem === undefined ? {} : { wishlistItem }),
   };
 }
 

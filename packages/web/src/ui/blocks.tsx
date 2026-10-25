@@ -210,7 +210,7 @@ export function LinkButton({ children, href, variant = 'primary', wide = false, 
 
 // ----- Status label: a word and an icon, so color is never the only signal -----
 
-export type Status = 'low' | 'empty' | 'overdue' | 'pending' | 'under-target' | 'in-target' | 'over-target' | 'changes' | 'changed' | 'estimate';
+export type Status = 'low' | 'empty' | 'overdue' | 'pending' | 'under-target' | 'in-target' | 'over-target' | 'changes' | 'changed' | 'estimate' | 'ready';
 
 const STATUS: Readonly<Record<Status, { readonly word: string; readonly icon: IconName; readonly tone: Tone }>> = {
   low: { word: 'Low', icon: 'low', tone: 'warning' },
@@ -225,6 +225,8 @@ const STATUS: Readonly<Record<Status, { readonly word: string; readonly icon: Ic
   changed: { word: 'Changed', icon: 'alert', tone: 'warning' },
   // 40.10: anything about the future is an estimate, never a promise.
   estimate: { word: 'Estimate', icon: 'clock', tone: 'info' },
+  // Her rulebook, 50.2: a Wishlist item that has its whole price.
+  ready: { word: 'Ready', icon: 'check', tone: 'info' },
 };
 
 export function StatusLabel({ status, testId }: { readonly status: Status; readonly testId?: string | undefined }) {
@@ -705,7 +707,8 @@ export function TextField({
   readonly money?: boolean;
   // A whole number (the phone shows the digits), or a date or a time (the
   // phone's own picker). Plain text otherwise.
-  readonly kind?: 'text' | 'whole' | 'date' | 'time';
+  // Her rulebook, 50.1: 'name', a Wishlist item's name, typed as words.
+  readonly kind?: 'text' | 'whole' | 'date' | 'time' | 'name';
   readonly testId?: string | undefined;
 }) {
   const id = useId();
@@ -721,7 +724,7 @@ export function TextField({
         type={picker ? kind : 'text'}
         inputMode={picker ? undefined : money ? 'decimal' : kind === 'whole' ? 'numeric' : 'text'}
         autoComplete="off"
-        autoCapitalize={money || kind !== 'text' ? 'off' : 'characters'}
+        autoCapitalize={kind === 'name' ? 'sentences' : money || kind !== 'text' ? 'off' : 'characters'}
         spellCheck={false}
         value={value}
         onChange={(event) => onChange(event.currentTarget.value)}

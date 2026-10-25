@@ -483,3 +483,24 @@ describe('52.4 the statement, with Wishlist', () => {
     expect(view.carriedIn.amount + view.charges + view.notMatched).toBe(view.statementBalance);
   });
 });
+
+describe('40.2 Trends reads what each item spent out of Wishlist (PR 10+11)', () => {
+  it("40.2 wishlistSpentIn: each item's Wishlist part, less refunds, in the pay period it was counted in; needs and wants are spentIn's, as before", () => {
+    const book = herBook();
+    book.receive(purchase('w1', '2026-10-03', 4_500, 'MADE UP LAMPS'));
+    book.sort('w1', { to: 'wishlist' }, '2026-10-03');
+    book.receive(purchase('s1', '2026-10-04', 9_000, 'MADE UP BIG BOX'));
+    book.sort('s1', { split: [{ bucket: 'needs', amount: 7_000 }, { bucket: 'wishlist', amount: 2_000 }] }, '2026-10-04');
+    book.receive(refund('w1-back', '2026-10-05', 500, 'w1'));
+    expect(book.wishlistSpentIn().map((s) => [s.id, s.pot, s.amount])).toEqual([
+      ['w1', 'wishlist', 4_000],
+      ['s1', 'wishlist', 2_000],
+    ]);
+    expect(book.spentIn().map((s) => [s.id, s.pot, s.amount])).toEqual([['s1', 'needs', 7_000]]);
+  });
+
+  it("40.2 upstream's setup has no Wishlist part: wishlistSpentIn is refused", () => {
+    const book = openBook({ date: START_DATE, lastPaycheckDate: LAST_PAYCHECK, oldCardDebt: 0, pots: { savings: 0, needs: 0, wants: 0, momReserve: 0, heldForOthers: 0 }, settings: DEFAULT_SETTINGS });
+    expect(codeOf(() => book.wishlistSpentIn())).toBe('off-in-this-setup');
+  });
+});

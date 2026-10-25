@@ -13,7 +13,7 @@ import type { StatusView } from '../views/status.js';
 import type { TrendsView } from '../views/trends.js';
 import type { BucketsView } from '../views/buckets.js';
 import type { BankRuleRequest, BankRuleResponse } from '../views/bank-rules.js';
-import type { ChoiceRequest, ChoiceResponse, MoveRequest, MoveResponse, RuleRequest, RuleResponse, SettingsRequest, SettingsResponse, SetupRequest, SetupResponse } from '../views/choice.js';
+import type { ChoiceRequest, ChoiceResponse, MoveRequest, MoveResponse, RuleRequest, RuleResponse, SettingsRequest, SettingsResponse, SetupRequest, SetupResponse, WishlistResponse } from '../views/choice.js';
 import type { HomeView } from '../views/home.js';
 import type { PaydayView } from '../views/payday.js';
 import type { PushAnswer, PushOnRequest } from '../views/push.js';
@@ -180,6 +180,8 @@ export interface AppServerOptions {
   // His change to the bank rules (section 2, 24c), on Setup day or Settings.
   // It asks first, with what the rule would match. Without it, none can be sent.
   readonly bankRule?: BankRuleHandler;
+  // Her rulebook, 50.1 and 50.3: a change to her Wishlist list. Without it, none can be sent.
+  readonly wishlist?: WishlistHandler;
   // The real server's login (Step 2). Without it, no login: the demo.
   readonly gate?: Gate;
   // Step 3: how often the real server syncs with the bank, in minutes (section
@@ -244,6 +246,8 @@ export type SettingsHandler = (request: IncomingMessage, change: SettingsRequest
 export type RuleHandler = (request: IncomingMessage, change: RuleRequest) => RuleResponse | Promise<RuleResponse>;
 export type SetupHandler = (request: IncomingMessage, answer: SetupRequest) => SetupResponse | Promise<SetupResponse>;
 export type BankRuleHandler = (request: IncomingMessage, change: BankRuleRequest) => BankRuleResponse | Promise<BankRuleResponse>;
+// Her rulebook, 50.1: it reads what was sent itself; null when it is not a list change.
+export type WishlistHandler = (request: IncomingMessage, sent: unknown) => WishlistResponse | null | Promise<WishlistResponse | null>;
 
 // What handles each kind of request sent to /api/choice.
 interface ChoiceHandlers {
@@ -253,6 +257,7 @@ interface ChoiceHandlers {
   readonly ruleChange: RuleHandler | undefined;
   readonly setup: SetupHandler | undefined;
   readonly bankRule: BankRuleHandler | undefined;
+  readonly wishlist: WishlistHandler | undefined;
 }
 
 // The most a "seen" request may carry; the real one is under 100 bytes.
@@ -358,6 +363,13 @@ async function markSeen(request: IncomingMessage, response: ServerResponse, seen
 async function takeChoice(request: IncomingMessage, response: ServerResponse, handlers: ChoiceHandlers): Promise<void> {
   const sent = await readOwnJson(request, response, CHOICE_LIMIT);
   if (response.writableEnded || response.headersSent) return;
+  // Her rulebook, 50.1: a change to her Wishlist list, read by its own handler.
+  if (handlers.wishlist !== undefined && typeof sent === 'object' && sent !== null && 'wishlist' in sent) {
+    const said = await handlers.wishlist(request, sent);
+    if (said === null) send(response, 400, 'text/plain; charset=utf-8', 'Not a choice that can be made.', 'no-store');
+    else send(response, said.ok ? 200 : 422, 'application/json; charset=utf-8', JSON.stringify(said), 'no-store');
+    return;
+  }
   const parsed = parseRequest(sent);
   if (parsed === null) {
     send(response, 400, 'text/plain; charset=utf-8', 'Not a choice that can be made.', 'no-store');
@@ -573,7 +585,7 @@ export function createAppServer(options: AppServerOptions): Server {
     }
     // His choices, moves, and changes to the settings: they change the app's
     // books, never the bank (0.4).
-    const handlers: ChoiceHandlers = { choice: options.choice, move: options.move, settingsChange: options.settingsChange, ruleChange: options.ruleChange, setup: options.setup, bankRule: options.bankRule };
+    const handlers: ChoiceHandlers = { choice: options.choice, move: options.move, settingsChange: options.settingsChange, ruleChange: options.ruleChange, setup: options.setup, bankRule: options.bankRule, wishlist: options.wishlist };
     if (path === '/api/choice' && Object.values(handlers).some((handler) => handler !== undefined)) {
       if (request.method !== 'POST') {
         response.setHeader('Allow', 'POST');

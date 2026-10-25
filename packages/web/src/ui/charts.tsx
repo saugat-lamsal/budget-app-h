@@ -13,7 +13,7 @@ import { useId, useLayoutEffect, useRef, type CSSProperties, type ReactNode } fr
 // the stylesheet's: a line draws in, its area wipes in from the left, and its
 // end gets one soft ping. Nothing repeats, so a screen comes to rest.
 
-export type ChartTone = 'needs' | 'wants' | 'old-card' | 'unsorted' | 'savings' | 'mom' | 'pace';
+export type ChartTone = 'needs' | 'wants' | 'old-card' | 'unsorted' | 'savings' | 'mom' | 'pace' | 'wishlist';
 
 export interface BarPart {
   readonly tone: ChartTone;

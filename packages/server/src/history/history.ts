@@ -1,4 +1,4 @@
-import { MoneyError, startTracking, type BankTransaction, type Book, type Cents, type IsoDate, type SetupInput } from '@budget-app/money';
+import { MoneyError, startTracking, type BankTransaction, type Book, type Cents, type IsoDate, type SetupInput, type WishlistChange } from '@budget-app/money';
 import type { AlertsEvent } from '../alerts/plan.js';
 import type { BankRuleLogLine } from '../views/bank-rules.js';
 
@@ -45,6 +45,8 @@ export interface Answer {
   readonly bankRules?: readonly BankRuleLogLine[];
   // Setup day, before tracking starts: his answers as they stand after it.
   readonly setup?: SavedSetupAnswers;
+  // Her rulebook, 50.1 to 50.3: changes to her Wishlist list (wishlist-items.ts).
+  readonly wishlist?: readonly WishlistChange[];
 }
 
 export type HistoryEvent =

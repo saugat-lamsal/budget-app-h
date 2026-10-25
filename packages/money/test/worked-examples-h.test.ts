@@ -3,7 +3,7 @@
 // in worked-examples.test.ts, so the file checked by hand and the test can
 // never drift apart.
 import { describe, expect, it } from 'vitest';
-import { HER_SETTINGS, HER_SWITCHES, bankSide, cardNotices, cardOwes, cardStatementView, changeSettings, owedAtSetup, setAside, daysBetween, openBook, parseDollars, startTracking, wishlistMove, withPendingCharges, type Book, type CardStatement, type Cents, type IsoDate } from '../src/index.js';
+import { EMPTY_WISHLIST, HER_SETTINGS, HER_SWITCHES, bankSide, changeWishlist, fillWishlist, cardNotices, cardOwes, cardStatementView, changeSettings, owedAtSetup, setAside, daysBetween, openBook, parseDollars, startTracking, wishlistMove, withPendingCharges, type Book, type CardStatement, type Cents, type IsoDate } from '../src/index.js';
 import text from '../worked-examples-h.txt?raw';
 import { LAST_PAYCHECK, PAYROLL, START_DATE, ZERO_POTS, arrived, deposit, paycheck, posted, purchase, refund, sent, transfer } from './helpers.js';
 
@@ -239,6 +239,27 @@ const examples: Record<number, () => Record<string, Cents>> = {
     if (asked.moved) throw new Error('a move out of Wishlist did not ask first');
     book.moveMoney({ from: 'wishlist', to: 'wants', amount: parseDollars('50.00'), confirmed: true }, '2026-10-03');
     return { 'app side': before, 'wishlist after the move': book.pots().wishlist ?? -1, 'wants after the move': book.pots().wants, 'app side after the move': book.appSide(), 'safe to spend': book.safeToSpend('2026-10-03').amount };
+  },
+  18: () => {
+    const book = herBook({ wishlist: parseDollars('300.00') });
+    let list = EMPTY_WISHLIST;
+    for (const [name, price] of [['Rain jacket', '250.00'], ['Desk lamp', '45.00'], ['Bike', '400.00']] as const) list = changeWishlist(list, { add: { name, price: parseDollars(price) } }, '2026-10-05');
+    const before = fillWishlist(book.pots().wishlist ?? -1, list.items);
+    book.receive(purchase('lamp', '2026-10-07', parseDollars('43.12'), 'MADE UP LAMPS', { account: 'everyday-card' }));
+    book.sort('lamp', { to: 'wishlist' }, '2026-10-07');
+    const paid = book.wishlistFlows().purchases.find((p) => p.id === 'lamp')?.amount ?? -1;
+    list = changeWishlist(list, { bought: { item: 'item-2', purchase: 'lamp', day: '2026-10-07', paid } }, '2026-10-07');
+    const after = fillWishlist(book.pots().wishlist ?? -1, list.items);
+    if (before.items[1]?.ready !== true || before.items[2]?.percent !== 1) throw new Error('the lamp is not Ready, or the bike is not 1% of the way');
+    return {
+      'jacket has': before.items[0]?.has ?? -1,
+      'lamp has': before.items[1]?.has ?? -1,
+      'bike has': before.items[2]?.has ?? -1,
+      'more than the list needs': before.more,
+      'paid for the lamp': list.bought[0]?.paid ?? -1,
+      'wishlist after the lamp': book.pots().wishlist ?? -1,
+      'bike has after': after.items.find((i) => i.name === 'Bike')?.has ?? -1,
+    };
   },
 };
 

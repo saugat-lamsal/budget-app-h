@@ -143,14 +143,16 @@ interface Building {
   items: TrendsItem[];
 }
 
-const PARTS: readonly TrendsPart[] = ['needs', 'wants', 'old-card', 'unsorted'];
+const PARTS: readonly TrendsPart[] = ['needs', 'wants', 'old-card', 'unsorted', 'wishlist'];
+// Her rulebook, 40.2 and 40.4: Wishlist's part only where the setup has it.
+const partsIn = (wishlist: boolean): readonly TrendsPart[] => (wishlist ? PARTS : PARTS.filter((part) => part !== 'wishlist'));
 
 function newest(a: TrendsItem, b: TrendsItem): number {
   return daysBetween(a.date, b.date) || (a.id < b.id ? 1 : a.id > b.id ? -1 : 0) || PARTS.indexOf(a.part) - PARTS.indexOf(b.part);
 }
 
-function finish(p: Building): TrendsPeriod {
-  const spent = Object.fromEntries(PARTS.map((part) => [part, addCents(0, ...p.items.filter((i) => i.part === part).map((i) => i.amount))])) as Record<TrendsPart, Cents>;
+function finish(p: Building, parts: readonly TrendsPart[]): TrendsPeriod {
+  const spent = Object.fromEntries(parts.map((part) => [part, addCents(0, ...p.items.filter((i) => i.part === part).map((i) => i.amount))])) as Record<TrendsPart, Cents>;
   return Object.freeze({
     startDate: p.startDate,
     lastDay: p.lastDay,
@@ -159,7 +161,7 @@ function finish(p: Building): TrendsPeriod {
     full: !p.current && !p.cutOff,
     beforeSetup: p.hasBefore && p.hasBooks ? 'part' : p.hasBefore ? 'all' : 'none',
     spent: Object.freeze(spent),
-    total: addCents(0, ...PARTS.map((part) => spent[part])),
+    total: addCents(0, ...parts.map((part) => spent[part])),
     items: Object.freeze([...p.items].sort(newest)),
   });
 }
@@ -189,6 +191,7 @@ export function trendsView(input: TrendsInput): TrendsView {
   const current = book.period();
   const next = book.safeToSpend(today).nextPayday;
   const setupDay = book.periodSummary(0).startDate;
+  const wishlist = book.switches().wishlist === 'on';
 
   // ----- The books' pay periods -----
   const books: Building[] = [];
@@ -196,7 +199,9 @@ export function trendsView(input: TrendsInput): TrendsView {
     const summary = book.periodSummary(n);
     const isCurrent = n === current.number;
     const lastDay = summary.endDate === null ? (daysBetween(today, next) > 0 ? addDays(next, -1) : today) : addDays(summary.endDate, -1);
-    const items: TrendsItem[] = book.spentIn(n).map((s) => ({
+    // Her rulebook, 40.2: and what each item spent out of Wishlist, its own part.
+    const spent = wishlist ? [...book.spentIn(n), ...book.wishlistSpentIn(n)] : book.spentIn(n);
+    const items: TrendsItem[] = spent.map((s) => ({
       id: s.id,
       date: s.date,
       description: s.description,
@@ -247,7 +252,7 @@ export function trendsView(input: TrendsInput): TrendsView {
       period.items.push({ id: line.id, date: line.date, description: line.description, account: line.account, part: read.part, amount: read.amount, beforeSetup: true });
     }
   }
-  const periods = all.map(finish);
+  const periods = all.map((p) => finish(p, partsIn(wishlist)));
 
   // ----- 40.4: the last 90 days, and the current one -----
   const from = addDays(today, -(TRENDS_DAYS - 1));
@@ -284,13 +289,15 @@ function placeKindOf(line: HistoryLine, rules: { readonly bankRules: readonly Ba
 function savingsOf(book: Book, today: IsoDate): readonly SavingsPoint[] {
   const points: SavingsPoint[] = [];
   const first = book.periodSummary(0);
-  points.push({ date: first.startDate, at: 'start', savings: first.opening.savings, momReserve: first.opening.momReserve });
+  // Her rulebook, 40.5: Wishlist beside savings, its own amount, where the setup has it.
+  const wishlist = (pots: { readonly wishlist?: Cents }): { readonly wishlist?: Cents } => (pots.wishlist === undefined ? {} : { wishlist: pots.wishlist });
+  points.push({ date: first.startDate, at: 'start', savings: first.opening.savings, momReserve: first.opening.momReserve, ...wishlist(first.opening) });
   for (let n = 0; n < book.period().number; n += 1) {
     const s = book.periodSummary(n);
-    if (s.endDate !== null) points.push({ date: addDays(s.endDate, -1), at: 'end', savings: s.closing.savings, momReserve: s.closing.momReserve });
+    if (s.endDate !== null) points.push({ date: addDays(s.endDate, -1), at: 'end', savings: s.closing.savings, momReserve: s.closing.momReserve, ...wishlist(s.closing) });
   }
   const pots = book.pots();
-  points.push({ date: today, at: 'now', savings: pots.savings, momReserve: pots.momReserve });
+  points.push({ date: today, at: 'now', savings: pots.savings, momReserve: pots.momReserve, ...wishlist(pots) });
   return Object.freeze(points.map((p) => Object.freeze(p)));
 }
 
@@ -345,7 +352,8 @@ function nameBefore(item: TrendsItem, kinds: ReadonlyMap<string, { readonly kind
 function nowOf(book: Book, periods: readonly TrendsPeriod[], today: IsoDate, next: IsoDate): TrendsNow {
   const here = periods[periods.length - 1] as TrendsPeriod;
   const day = dayIn(here.startDate, today);
-  const planned = (i: TrendsItem): boolean => i.part !== 'old-card';
+  // Her rulebook (HB27): Wishlist is not in it either; 40.7 stays on needs and wants.
+  const planned = (i: TrendsItem): boolean => i.part !== 'old-card' && i.part !== 'wishlist';
   const spentSoFar = addCents(0, ...here.items.filter(planned).map((i) => i.amount));
   const full = periods.filter((p) => p.full).slice(-USUAL_PERIODS);
   const usual: Usual =

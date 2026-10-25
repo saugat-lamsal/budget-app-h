@@ -4919,5 +4919,89 @@
     "find": "} else if ((entry.kind === 'transfer' || entry.kind === 'leg') && !this.#gone(entry) && !this.#setupLegs.has(entry.id)) {",
     "replace": "} else if ((entry.kind === 'transfer' || entry.kind === 'leg') && !this.#setupLegs.has(entry.id)) {",
     "why": "[her-wishlist] 50.4 a move the bank took back still counted"
+  },
+  {
+    "section": "50",
+    "file": "packages/money/src/wishlist-items.ts",
+    "find": "    if (items.length >= WISHLIST_MAX_ITEMS) refuse(`The list has ${WISHLIST_MAX_ITEMS} things already. Remove one to add another.`);",
+    "replace": "    if (items.length > WISHLIST_MAX_ITEMS) refuse(`The list has ${WISHLIST_MAX_ITEMS} things already. Remove one to add another.`);",
+    "why": "[her-items] 50.1 a 21st item is taken"
+  },
+  {
+    "section": "50",
+    "file": "packages/money/src/wishlist-items.ts",
+    "find": "  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0;",
+    "replace": "  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;",
+    "why": "[her-items] 50.1 a price of $0.00 is taken"
+  },
+  {
+    "section": "50",
+    "file": "packages/money/src/wishlist-items.ts",
+    "find": "    if (item.name === was.name && item.price === was.price) refuse('That is what it is already. Nothing was changed.');",
+    "replace": "",
+    "why": "[her-items] 50.1 a change to the same name and price is taken"
+  },
+  {
+    "section": "50",
+    "file": "packages/money/src/wishlist-items.ts",
+    "find": "    const to = up ? at - 1 : at + 1;",
+    "replace": "    const to = up ? at + 1 : at - 1;",
+    "why": "[her-items] 50.1 up moves an item down"
+  },
+  {
+    "section": "50",
+    "file": "packages/money/src/wishlist-items.ts",
+    "find": "    const has = left < price ? left : price;",
+    "replace": "    const has = price;",
+    "why": "[her-items] 50.2 every item has its whole price"
+  },
+  {
+    "section": "50",
+    "file": "packages/money/src/wishlist-items.ts",
+    "find": "    left -= has;\n",
+    "replace": "",
+    "why": "[her-items] 50.2 each item gets the whole bucket, not what is left after the ones above"
+  },
+  {
+    "section": "50",
+    "file": "packages/money/src/wishlist-items.ts",
+    "find": "  let left = BigInt(Math.max(0, bucket));",
+    "replace": "  let left = BigInt(Math.abs(bucket));",
+    "why": "[her-items] 50.2 a negative bucket fills the items"
+  },
+  {
+    "section": "50",
+    "file": "packages/money/src/wishlist-items.ts",
+    "find": "    return { ...item, has: Number(has), ready: has === price, percent: Number((has * 100n) / price) };",
+    "replace": "    return { ...item, has: Number(has), ready: has > 0n, percent: Number((has * 100n) / price) };",
+    "why": "[her-items] 50.2 an item with anything is Ready"
+  },
+  {
+    "section": "50",
+    "file": "packages/money/src/wishlist-items.ts",
+    "find": "    return { ...item, has: Number(has), ready: has === price, percent: Number((has * 100n) / price) };",
+    "replace": "    return { ...item, has: Number(has), ready: has === price, percent: Number((has * 100n + price - 1n) / price) };",
+    "why": "[her-items] 50.2 how far along is rounded up, 100% one cent short"
+  },
+  {
+    "section": "50",
+    "file": "packages/money/src/wishlist-items.ts",
+    "find": "    return freeze(items, [...list.bought, { ...item, purchase, day, paid, place: at }], line('bought', item, { purchase, paid }), list.nextId);",
+    "replace": "    return freeze(items, [...list.bought, { ...item, purchase, day, paid: item.price, place: at }], line('bought', item, { purchase, paid }), list.nextId);",
+    "why": "[her-items] 50.3 what was paid is the item's price, not what the purchase cost"
+  },
+  {
+    "section": "50",
+    "file": "packages/money/src/wishlist-items.ts",
+    "find": "  items.splice(Math.min(was.place, items.length), 0, item);",
+    "replace": "  items.push(item);",
+    "why": "[her-items] 50.3 changed back, the item comes back last, not to its place"
+  },
+  {
+    "section": "40",
+    "file": "packages/money/src/book.ts",
+    "find": "    return this.#spentIn(['wishlist'], period);",
+    "replace": "    return this.#spentIn(['needs', 'wishlist'], period);",
+    "why": "[her-trends] 40.2 Wishlist's part also holds needs"
   }
 ]
