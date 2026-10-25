@@ -336,3 +336,13 @@ HB31 (PR 12, 0.5, B82, B86). Which "last checked" safe to spend. Found while
     could be. Not changed: it is upstream's code and reading. Recommended:
     save it after each sync that matched as well, in upstream first, then
     merged here. Waiting on his answer.
+
+HB32 (PR 12, 0.7, 12.3, HB9). Status while one bank cannot be read. Found
+    by the agent on her screens: the daily check line said "The totals
+    match the bank" while the second bank's last sync had failed and the
+    check waited (HB9), as Buckets said. Now, while either bank's last sync
+    failed or wants a login, it says "Waiting until <bank> can be read."
+    It is not marked as needing a look itself: that bank's own sync line
+    already is, so "needs a look" counts it once. A difference that began
+    before still says since when (10.4). Upstream's one-bank words are as
+    they were.

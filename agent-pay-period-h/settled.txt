@@ -1,0 +1,124 @@
+HOW EACH OF THE AGENT'S POINTS WAS SETTLED (PR 12, Oct 25, 2026)
+
+The agent (PR 12's end check) used her setup's screens on the real server
+with two made-up banks for the whole pay period, Thu Oct 1 to Fri Oct 16,
+without seeing the code. Its instructions, the script it was given, its
+notes and its report are in this folder. npm run pay-period-agent-her starts
+the same server for it again. The same days, with the script's answers, go
+through the server's desks in packages/server/test/pay-period-her.test.ts,
+which checks every bucket at the end of every day against numbers worked out
+by hand.
+
+Bottom line: every money number it checked matched the rulebook to the cent,
+every day: every bucket, safe to spend, the self-check (and its waiting on
+Oct 7, when the second bank wanted a login), both paycheck splits, the
+payday questions, move to savings, both cards' statements, paid and set
+aside, the Wishlist fill, the 50.4 moves, and Trends' estimates. Its final
+books (savings 8,228.97, needs 780.00, wants 963.55, Wishlist 644.01, held
+for others 0.00) are the ones worked out by hand in pay-period-her.test.ts.
+
+It found four mistakes, now fixed, each with a test first and a break:
+one in the money desk and three on the screens. The rest are things the
+rulebook does not settle in words, each settled below by a reading he
+already has.
+
+
+FIXED (a test first, watched failing, then the fix; breaks "[her-end]")
+
+1. Oct 4, Review: a purchase could not be split across needs and wants only
+   (4.4). The split sheet gives Wishlist "the rest", and a rest of $0.00
+   was refused (upstream's B95). Now two or more typed parts that add up to
+   the whole are the split. One typed part that is the whole is still
+   refused, as B95 says. docs/her-questions.txt HB30, for his check (the fix
+   is in upstream's shared code, and upstream has the same gap for a
+   payment to a person split three ways, 7.6). Tests: wishlist-her.test.ts
+   (server, two; browser, one). Because of it the agent put the hardware
+   all in needs; from the Oct 10 refund on, its buckets are the script's.
+
+2. Every day, Status (0.7): "The bank" card was empty. The server sends each
+   bank's last read and last sync, by name, but the screen put her lines in
+   no card, so on Oct 7 it said "1 thing needs a look" and showed nothing to
+   look at. A PR 6 mistake: its test checked the words, not the page. Now
+   both banks' lines are in "The bank" card. Test: status-her.test.ts
+   (browser).
+
+3. Oct 7, Status: "Daily check: The totals match the bank" while the check
+   waited for the second bank (12.3, HB9). Now it says "Waiting until
+   Made-up Second Bank can be read." HB32. Test: two-banks-her.test.ts
+   (web).
+
+4. Oct 1, Settings, the paycheck rule's "what it would do" sheet: a "Mom
+   reserve $0.00" row ("Off in this setup": nothing about mom anywhere), and
+   no Wishlist row. Now it lists her buckets with Wishlist and no mom
+   reserve, and a paycheck's line names no mom reserve. Upstream's sheet is
+   as it was. Test: wishlist-her.test.ts (browser). PR 3's text sweep of
+   every screen did not open this sheet.
+
+5. Oct 1 and Oct 9, Settings' change log (13.5, wording): the split's
+   entries left out Wishlist's share. Now "50 / 30 / 20, Wishlist 0 ->
+   40 / 30 / 20, Wishlist 10". Upstream's words are as they were. Test:
+   wishlist-her.test.ts (web).
+
+
+SETTLED BY A READING HE ALREADY HAS (no change)
+
+6. Every day, the Alerts list said "No alerts yet" (10.3, 10.5, 10.14, 10.15,
+   9.7). The agent's server does not start the alert timer, as upstream's
+   agent server did not ("the alerts are not looked at in the pay
+   period"). Her alerts are tested on their own: PR 4 (10.15), PR 5 and 7+8
+   (each card's reminders), PR 6 (10.5 and 10.7 per bank), and the alert
+   simulations in the slow run.
+
+7. Oct 5 to Oct 13, Trends' "Spent this pay period" left Wishlist out (40.2).
+   That number is 40.7's "so far", which HB27 keeps on needs and wants
+   (Wishlist purchases are planned, as old card payments are). The bar under
+   it, 40.4, has Wishlist's part, as the agent found. HB27's reading is not
+   in the rulebook's words; it could be, with his OK.
+
+8. Oct 7, Home and Payday, while the second bank could not be read: Home
+   did not say what to move for Wishlist (50.4) or how much of the
+   set-aside money is in savings (52.2), and Payday said it cannot check
+   the savings account now (3.8), though the first bank (with savings) was
+   read. HB22 says nothing about 50.4 is said while the check waits for one
+   bank (HB9), and Payday and Home's "in savings" part follow the same
+   rule as the check: no number that both banks do not back up. It comes
+   back once both banks are read (it did on Oct 8).
+
+9. Oct 8 to Oct 16, Trends' payday effect (40.3, 40.14) counted the Jul 10
+   to Jul 23 pay period as full. B269 (upstream's, as built): the full pay
+   periods are the ones 40.4 shows for the last 90 days, so the oldest can
+   begin a little before the 90 days. The agent said the same reading would
+   make the screen right.
+
+10. Oct 3 and Oct 16, Payday's "The pay period that just ended" ends on the
+    day the new paycheck came (Oct 2, Oct 16), not the day before. B105
+    (upstream's): it runs "to the day the last paycheck was counted".
+
+
+UNCLEAR IN THE RULEBOOK, AS THE AGENT SAW IT (no change; for his eye)
+
+- 4.5, 13.8, 40.6: on an account with few purchases, a store's name can be
+  on "most of your purchases" there, so it is not a name, and its items go
+  to "Everything else". As built (upstream's A33, B88).
+- 3.1, 3.4, 40.1: a purchase made on the day a paycheck arrived, while the
+  paycheck waits for her yes, counts in the pay period that was open when it
+  came in (B53, B97, B258).
+- 40.8: the books' first pay period is "day 1 of 1" on its own line and
+  "day 14" in 40.7's count. Words only.
+- 52.2 and 3.8: the agent's reading of "set aside in savings" with money on
+  its way to savings agreed with the app.
+
+
+HARD TO DO ON THE SCREENS (for his eye)
+
+- The split sheet asks "Which thing on your list was it?" even when
+  Wishlist's part comes to $0.00 (HB30: the screen cannot know until the
+  server works it out; "None of them" is the answer).
+- Once, typing just after a sheet opened doubled the text ("CAFECAFE"). Not
+  seen again; it may be the agent's browser tool typing twice. Upstream's
+  B194 (no tap for half a second after a sheet closes) is the nearest
+  known case. Not changed.
+- Savings over time (40.5) shows the middle amounts only as a line, not in
+  words.
+- Pages were slow at times (the test machine was running the 1,000-life
+  simulation and break-it at the same time).
