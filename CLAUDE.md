@@ -411,3 +411,9 @@ or "Due" on Wishlist items and cards, never color alone.
   Readings HB26 to HB29. CI: the WebKit job in two shards, webkit 1/2 and
   webkit 2/2, both required on main (checks, webkit 1/2, webkit 2/2,
   image).
+- PR 10+11 merged (Oct 24, 2026).
+- Merge from upstream (branch merge-upstream-2026-10-25): upstream main
+  at 46e4a50, one new commit since the copy (bec1c9f, B264, ported from
+  hers): a second swipe test and two [b264] breaks. The code was already
+  here. Node was already 22.23.4 in the Dockerfile (af53eee). Her six
+  files unchanged by the merge; upstream changed none of them.
