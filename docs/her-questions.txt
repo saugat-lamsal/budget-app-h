@@ -308,3 +308,31 @@ HB29 (PR 10+11, 50.3). Which item. "What was paid" is what the purchase
     the list it is refused. Like a refund (60a), sorting the purchase out of
     Wishlist later, or the bank taking it back (4.10), leaves the item
     bought: it does not come back by itself, and she can change it back.
+
+HB30 (PR 12, 4.4, B95). A split with nothing left for the rest. Found by
+    the agent on her screens: Review's split sheet always sends Wishlist as
+    "the rest", so a purchase split across needs and wants only came to a
+    rest of $0.00, which B95 refuses. 4.4 allows that split, so it was a
+    mistake. Now two or more typed parts that add up to the whole are the
+    split, and the rest is left out. One typed part that is the whole
+    purchase is still refused, as B95 says (it is not a split; pick the
+    bucket instead). The sheet still asks "Which thing on your list was
+    it?" first, since it cannot know the rest is $0.00 until the server
+    works it out; "None of them" is the answer, and picking an item is
+    refused with nothing changed. The fix is in upstream's shared code
+    (packages/server/src/choices.ts, resolveSplit), and upstream has the
+    same gap for a payment to a person split three ways (7.6: needs and
+    wants with nothing left for "not mine"), so it is worth sending
+    upstream too, with his OK.
+
+HB31 (PR 12, 0.5, B82, B86). Which "last checked" safe to spend. Found while
+    building her pay period: the number Home shows greyed while a bank
+    cannot be read is the one Home last showed, saved when Home is opened
+    (upstream's keeper.home()). B86 says it is remembered each time the bank
+    is read and the totals match. So a good read that nobody looked at on
+    Home is not the one shown: Home can say "As of Mon 7:00 AM" when Tue
+    7:00 AM's read also matched. The time it shows is true for the number
+    it shows, so nothing is wrong about her money, only older than it
+    could be. Not changed: it is upstream's code and reading. Recommended:
+    save it after each sync that matched as well, in upstream first, then
+    merged here. Waiting on his answer.

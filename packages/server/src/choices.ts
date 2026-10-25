@@ -864,6 +864,11 @@ function resolveSplit(parts: readonly ChoicePart[], net: Cents): readonly Choice
   }
   const left = subtractCents(net, known);
   const word = BUCKET_WORDS[rest.bucket] ?? rest.bucket;
+  // Her setup (HB30): with a third bucket, two typed parts can be the whole
+  // split (needs and wants, with nothing for Wishlist), as 4.4 allows; the rest
+  // is then left out. One typed part with nothing left is still refused (B95).
+  const typed = parts.filter((p) => p.amount !== 'rest');
+  if (left === 0 && typed.length >= 2) return typed;
   if (left <= 0) {
     return left === 0
       ? `Nothing is left for ${word}: the other parts already add up to ${formatDollars(net)}`

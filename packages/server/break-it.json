@@ -7158,5 +7158,19 @@
     "find": "      if (stored.event.kind === 'answer' && stored.event.answer.wishlist !== undefined) wishlist = applyWishlist(wishlist, stored.event.answer.wishlist, stored.date);\n",
     "replace": "",
     "why": "[her-items] 50.1 the list is not replayed: lost on a restart"
+  },
+  {
+    "section": "review",
+    "file": "packages/server/src/choices.ts",
+    "find": "  if (left === 0 && typed.length >= 2) return typed;\n",
+    "replace": "",
+    "why": "[her-end] HB30 4.4 a needs and wants split with nothing left for Wishlist is refused again"
+  },
+  {
+    "section": "review",
+    "file": "packages/server/src/choices.ts",
+    "find": "  if (left === 0 && typed.length >= 2) return typed;",
+    "replace": "  if (left === 0 && typed.length >= 1) return typed;",
+    "why": "[her-end] HB30 B95 one typed part that is the whole purchase is taken, not refused"
   }
 ]

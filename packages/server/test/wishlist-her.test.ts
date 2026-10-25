@@ -113,6 +113,37 @@ describe('PR 9 the Wishlist bucket on the server', () => {
     life.done();
   });
 
+  // PR 12, found by the agent on her screens (HB30): the split sheet always
+  // sends Wishlist as the rest, so a purchase split across needs and wants
+  // only came to a rest of $0.00 and was refused, though 4.4 allows it.
+  it('4.4 a purchase split across needs and wants only, with nothing left for the rest: two typed parts that add up to it are the split (HB30)', async () => {
+    const life = await herWithWishlist();
+    await day(life, '2026-10-03', () => life.h.fake.addPosted({ id: 'store-1', account: E, amount: 6_490, date: '2026-10-03', description: 'MADE UP HARDWARE' }));
+    const k = life.keeper;
+    const before = k.book()?.pots();
+    // As the sheet sends it, with "None of them" for the list's question.
+    const answer = choose(k, { item: 'store-1', choice: { split: [{ bucket: 'needs', amount: 4_000 }, { bucket: 'wants', amount: 2_490 }, { bucket: 'wishlist', amount: 'rest' }] }, wishlistItem: 'none' });
+    expect(answer.ok && answer.done.choice).toEqual({ split: [{ bucket: 'needs', amount: 4_000 }, { bucket: 'wants', amount: 2_490 }] });
+    const after = k.book()?.pots();
+    expect([after?.needs, after?.wants, after?.wishlist]).toEqual([(before?.needs ?? 0) - 4_000, (before?.wants ?? 0) - 2_490, before?.wishlist]);
+    life.done();
+  });
+
+  it('4.4 one typed part that is the whole purchase is still refused with nothing left for the rest (B95), and one cent short leaves a cent for the rest (HB30)', async () => {
+    const life = await herWithWishlist();
+    await day(life, '2026-10-03', () => life.h.fake.addPosted({ id: 'store-1', account: E, amount: 6_490, date: '2026-10-03', description: 'MADE UP HARDWARE' }));
+    const k = life.keeper;
+    const before = k.book()?.pots();
+    const one = choose(k, { item: 'store-1', choice: { split: [{ bucket: 'needs', amount: 6_490 }, { bucket: 'wishlist', amount: 'rest' }] }, wishlistItem: 'none' });
+    expect(one).toMatchObject({ ok: false, code: 'refused', why: 'Nothing is left for Wishlist: the other parts already add up to $64.90. Nothing was changed.' });
+    const over = choose(k, { item: 'store-1', choice: { split: [{ bucket: 'needs', amount: 4_000 }, { bucket: 'wants', amount: 2_491 }, { bucket: 'wishlist', amount: 'rest' }] }, wishlistItem: 'none' });
+    expect(over).toMatchObject({ ok: false, code: 'refused' });
+    expect(k.book()?.pots()).toEqual(before);
+    const cent = choose(k, { item: 'store-1', choice: { split: [{ bucket: 'needs', amount: 4_000 }, { bucket: 'wants', amount: 2_489 }, { bucket: 'wishlist', amount: 'rest' }] }, wishlistItem: 'none' });
+    expect(cent.ok && cent.done.choice).toEqual({ split: [{ bucket: 'needs', amount: 4_000 }, { bucket: 'wants', amount: 2_489 }, { bucket: 'wishlist', amount: 1 }] });
+    life.done();
+  });
+
   it("3.8 Payday says what should be in the savings account is savings plus Wishlist; upstream's Payday is as it was", async () => {
     const life = await herWithWishlist();
     const view = life.keeper.payday();

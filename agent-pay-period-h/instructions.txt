@@ -1,0 +1,67 @@
+INSTRUCTIONS FOR THE AGENT (her setup, PR 12's end check)
+
+You are checking a personal budget app by using it the way its one user
+would, for one full pay period. You have not seen its code, and you must not
+look at it.
+
+What you may read
+- budget-app-rulebook.md: how the app must treat every kind of money
+  movement. It is the only authority on what each number should be. This
+  app is set up for one person ("her setup"): read the section "Off in this
+  setup" first. Rules listed there never apply, and nothing about them
+  (a mom reserve, an old card) should be shown anywhere.
+- agent-pay-period-h/script.txt: what happens at the banks each day, and
+  what you decide.
+- These instructions, and your own notes.
+Do not open, read, search or list any other file in this folder or anywhere
+else: no code, no tests, no other documents, and not the folder
+agent-pay-period/ (that is another setup's). Do not use the Read, Grep or
+Glob tools on anything but the three files above and your own notes. If you
+need to know how something works, use the app and the rulebook.
+
+What you use
+- The app, in the built-in browser (the tools named mcp__Claude_Browser__*):
+  http://localhost:5390/home
+- The control page: http://localhost:5391/ ("Log this browser in" once at
+  the start; "Bring in the next day" each day). Or from the command line:
+  curl -s -X POST http://localhost:5391/next-day
+- Do not stop, restart, or change the server. Do not use any other address
+  or any other page of the control server.
+- Everything is made up: no real bank, no real money.
+- The browser may be set to a phone's size (375 x 812) to use the app as
+  she would; that is fine either way.
+
+Each day
+1. Bring in the day (the script says what the banks show).
+2. Do what "You decide" says, in the app, like a person: tap, choose, type.
+   If the app asks you to confirm, say yes unless the script says otherwise.
+3. Then look at the screens. Every day: Home (with each card on it),
+   Buckets, Review, and the Wishlist list. On Oct 1, Oct 3, Oct 5, Oct 7,
+   Oct 8, Oct 10, Oct 13 and Oct 16 also every other screen: the list of
+   each bucket (Needs, Wants, Savings, Wishlist, Held for others), Payday,
+   Settings and its Status page, each card's statement (tap the card on
+   Home), and Trends.
+4. For every number on every screen you look at, write down what the
+   rulebook says it should be, worked out by you from the rulebook, the
+   script, and your own running record of the buckets (keep it in your
+   notes), and what the screen shows. Work out the rulebook number first,
+   then look. Show your working for anything that is not obvious (a split,
+   a rounding, a card's statement, what is set aside, a Wishlist item's
+   share, the move from savings to checking).
+5. Mark each difference clearly: DIFFERENT, with both numbers.
+6. Also check, on every screen you look at, that nothing mentions a mom
+   reserve, a payment for mom, or an old card, and that Wishlist items and
+   cards say their state in words ("Ready", "Due"), not only by color.
+
+Your notes and report (plain text, in plain language)
+- agent-pay-period-h/notes.txt: one section per day, written as you go (add
+  to it after each day; do not wait until the end). For each screen: each
+  number, "rulebook X, screen Y", and same or DIFFERENT. Also anything the
+  app said in words that matters (a refusal, a warning, a question).
+- agent-pay-period-h/report.txt, at the end: the bottom line first (did
+  every number match the rulebook?), then every difference: the day, the
+  screen, what the rulebook says and why (the rule number), and what the
+  screen showed. Then anything in the rulebook you found unclear or that did
+  not settle what a number should be, with the rule number. Then anything
+  that was hard to do on the screens.
+- Write only these two files. Change nothing else.

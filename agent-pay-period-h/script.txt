@@ -1,0 +1,248 @@
+THE PAY PERIOD: WHAT HAPPENS AT THE BANKS, AND WHAT YOU DECIDE
+
+For 16 days, Thu Oct 1 to Fri Oct 16, 2026, you are the person the budget
+app is for. Everything here is made up: the banks are made-up banks, and no
+real money is involved. The app is the one described in the rulebook
+(budget-app-rulebook.md), set up as the rulebook's "her setup". Use it in
+the browser the way a person would.
+
+Her banks and accounts, as the app names them
+- The rulebook's Capital One is "Made-up First Bank" here. It has checking
+  ("Made-up Checking", with a debit card), savings ("Made-up Savings"), and
+  the rulebook's Capital One card ("Made-up Everyday Card").
+- The rulebook's American Express is "Made-up Second Bank" here. It has the
+  rulebook's Amex card ("Made-up Second Card").
+- Both banks are already connected, and the four accounts are already
+  picked (1.1, 1.2). Do not connect a bank and do not log in to a bank: in
+  this test there is no bank login window.
+
+How the days work
+- The app shows today's date in its own world, which starts on Thu Oct 1
+  (setup day). Real time does not matter.
+- The control page (its address is in your instructions) has two buttons:
+  "Log this browser in" (use it once, at the start, in the browser you use
+  for the app) and "Bring in the next day". Each press moves the app to 7:00
+  AM of the next day and puts that day's activity at the banks; the app
+  reads the banks by itself right after. You can also press it from the
+  command line: curl -s -X POST http://localhost:5391/next-day
+- Each day: bring in the day, then do what "You decide" says, then look at
+  the screens and write your notes for that day.
+
+What the banks show
+- Amounts are what the bank shows on that account. On a card, a purchase is
+  money you owe; "back" or "in" means money that came back to you.
+- "Pending" is a charge the bank holds and has not posted yet. When it posts
+  later, the bank shows the final amount.
+- A transfer between your own accounts shows as two separate items: one
+  when the money leaves an account, and one when it arrives at the other. A
+  payment to a card shows as "payment to CRD ..." leaving checking, and
+  "PAYMENT - THANK YOU" when it reaches the card.
+- Each card's statement (its balance, minimum, due date and closing day)
+  comes from its bank, when the bank sends a new one.
+
+
+SETUP DAY, Thu Oct 1
+
+Already at the banks when you start (the app has read them):
+- Balances the banks show as posted: checking $1,840.25, savings $4,300.00,
+  Made-up Everyday Card $312.40 owed, Made-up Second Card $186.75 owed.
+- Sep 30, checking: "payment to CRD 5555", $100.00 left checking for the
+  Made-up Second Card. It has not reached the card yet (it gets there
+  Oct 2).
+- Sep 30, Made-up Everyday Card: MADE UP GROCER, $42.18, pending.
+- The Made-up Everyday Card's last statement closed Sep 28: balance
+  $312.40, minimum $25.00, due Fri Oct 23.
+- The Made-up Second Card's last statement closed Sep 6: balance $100.00,
+  minimum $25.00, due Thu Oct 1 (the $100.00 on its way pays it).
+- Earlier history the banks sent (the last 90 days) is just history.
+
+You decide:
+- Log in from the control page, then start setup day in the app.
+- The bank rules that came with the connections stay as they are.
+- The $100.00 payment to the Made-up Second Card is on its way.
+- Your last paycheck before setup day came on Fri, Sep 18, 2026.
+- Starting money: savings $3,000.00, Wishlist $150.00, wants $250.00,
+  nothing held for others, everything else in needs.
+- Start tracking.
+- Then, the same day, on Settings:
+  - The split: savings 40%, needs 30%, wants 20%, Wishlist 10%.
+  - The paycheck rule is "MADEUP CORP PAYROLL".
+  - Two sorting rules for purchases, in this order: "GROCER" goes to
+    needs, "CAFE" goes to wants.
+  - Leave "Ask before splitting a paycheck" as it is.
+- And on the Wishlist list, three things, in this order: "Made-up
+  headphones" $120.00, "Made-up jacket" $90.00, "Made-up lamp" $45.00.
+
+
+Fri Oct 2
+
+At the banks:
+- Made-up Everyday Card: the MADE UP GROCER charge of $42.18 posts, same
+  amount.
+- Made-up Second Card: "PAYMENT - THANK YOU", $100.00 arrives (the payment
+  that left checking on Sep 30).
+- Checking: "MADEUP CORP PAYROLL", $2,600.00 in.
+- Made-up Everyday Card: MADE UP CAFE, $5.60, pending.
+You decide: nothing to answer today. Leave the paycheck waiting until
+tomorrow.
+
+
+Sat Oct 3
+
+At the banks:
+- Made-up Everyday Card: the MADE UP CAFE charge posts at $6.60 (it was
+  $5.60 pending; you added a tip).
+- Made-up Second Card: MADE UP BOOKSHOP, $23.45, posted.
+- That evening you moved money to savings at the bank: "transfer to SAV
+  2222", $1,200.00 left checking (it arrives Oct 5). It shows today.
+You decide:
+- Yes, the $2,600.00 is your paycheck: split it.
+- Then the payday questions: keep the needs leftover where it is (roll it
+  over), and move the wants leftover to savings.
+- The bookshop: wants.
+
+
+Sun Oct 4
+
+At the banks:
+- Made-up Everyday Card: MADE UP HARDWARE, $64.90, posted.
+- Checking (debit card): MADE UP PHARMACY, $18.35, posted.
+You decide:
+- Split the hardware purchase: $40.00 needs, the rest ($24.90) wants.
+- The pharmacy: needs.
+
+
+Mon Oct 5
+
+At the banks:
+- Savings: "transfer from CHK 1111", $1,200.00 arrives (the money that left
+  checking on Oct 3).
+- Made-up Second Card: MADE UP AUDIO, $114.99, posted. These are the
+  headphones on your Wishlist list.
+- Checking: "Zelle payment to MADE UP FRIEND", $30.00 out. $10.00 of it was
+  a friend's share of something; the rest was yours.
+You decide:
+- The audio purchase: Wishlist, and it was the "Made-up headphones".
+- The payment to your friend: split it, $20.00 wants and the rest ($10.00)
+  not mine.
+- Look at what Home says about moving money from savings to checking. Do
+  not move it yet.
+
+
+Tue Oct 6
+
+At the banks:
+- Checking (debit card): MADE UP GAS, $38.00, pending.
+You decide: the gas: needs (sort it while it is still pending, if the app
+lets you).
+
+
+Wed Oct 7
+
+At the banks:
+- Checking (debit card): the MADE UP GAS charge posts, same amount, $38.00.
+- Made-up Second Card: MADE UP CINEMA, $16.00, posted.
+- Made-up Second Bank wants you to log in again today: the app cannot read
+  it until you do.
+You decide: do not log in again (there is no login window in this test).
+Look at what Home, Buckets and Settings say. Tomorrow the bank lets the app
+read it again by itself.
+
+
+Thu Oct 8
+
+At the banks:
+- Made-up Second Bank can be read again (the cinema charge from Oct 7 is
+  there).
+- Made-up Second Card: its new statement. It closed Tue Oct 6: balance
+  $225.19, minimum $35.00, due Tue Oct 20.
+- Savings: "transfer to CHK 1111", $114.99 left savings; checking:
+  "transfer from SAV 2222", $114.99 arrived. That is you moving the
+  headphones' money from savings to checking at the bank, early this
+  morning.
+You decide:
+- The cinema: wants.
+- Check what Home says about moving money from savings to checking now.
+
+
+Fri Oct 9
+
+At the banks:
+- Checking: "payment to CRD 3333", $312.40 left checking for the Made-up
+  Everyday Card (it gets there Oct 10). That is its whole Sep 28 statement.
+You decide:
+- On Settings: a new split for the next paycheck: savings 35%, needs 30%,
+  wants 20%, Wishlist 15%.
+- On the Wishlist list: add "Made-up rug", $60.00, and move it up one place
+  (it goes in at the bottom; one place up puts it above the lamp).
+
+
+Sat Oct 10
+
+At the banks:
+- Made-up Everyday Card: "PAYMENT - THANK YOU", $312.40 arrives.
+- Made-up Everyday Card: MADE UP HARDWARE, $24.90 back (you returned the
+  part of the Oct 4 purchase that was wants).
+You decide:
+- The $24.90 back is a refund for the hardware purchase of Oct 4: match it
+  to that purchase.
+- If the app then asks you to sort the hardware purchase again, put all of
+  what is left of it in needs.
+
+
+Sun Oct 11
+
+At the banks:
+- Checking: "MADE UP FRIEND PAID BACK", $10.00 in (the friend's share from
+  Oct 5).
+You decide: the $10.00: not mine.
+
+
+Mon Oct 12
+
+At the banks:
+- Made-up Second Card: MADE UP LAMP SHOP, $45.00, posted. This is the lamp
+  on your Wishlist list.
+You decide:
+- The lamp purchase: Wishlist, and it was the "Made-up lamp".
+- Move $25.00 from wants to needs by hand.
+
+
+Tue Oct 13
+
+At the banks:
+- Checking: "payment to CRD 5555", $100.00 left checking for the Made-up
+  Second Card (it gets there Oct 14). Part of its Oct 6 statement.
+You decide: nothing to answer. Look at what each card says on Home.
+
+
+Wed Oct 14
+
+At the banks:
+- Made-up Second Card: "PAYMENT - THANK YOU", $100.00 arrives.
+- Checking: "MADE UP MARKETPLACE SALE", $40.00 in (you sold something
+  online).
+You decide: the $40.00: other income.
+
+
+Thu Oct 15
+
+At the banks:
+- Checking: "payment to CRD 5555", $125.19 left checking for the Made-up
+  Second Card (it gets there Oct 16). The rest of its Oct 6 statement.
+- Savings: "transfer to CHK 1111", $45.00 left savings; checking:
+  "transfer from SAV 2222", $45.00 arrived. That is you moving the lamp's
+  money from savings to checking.
+You decide: nothing to answer.
+
+
+Fri Oct 16 (the last day)
+
+At the banks:
+- Made-up Second Card: "PAYMENT - THANK YOU", $125.19 arrives.
+- Checking: "MADEUP CORP PAYROLL", $2,600.00 in.
+You decide:
+- Yes, the $2,600.00 is your paycheck: split it, today.
+- The payday questions: move the needs leftover to savings, and keep the
+  wants leftover where it is (roll it over).
+- Then look at every screen one last time, and write your report.

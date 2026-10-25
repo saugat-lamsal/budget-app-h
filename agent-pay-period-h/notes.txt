@@ -1,0 +1,777 @@
+NOTES: ONE PAY PERIOD IN THE APP, HER SETUP (PR 12 END CHECK)
+
+How I read the screens: get_page_text / read_page in the built-in browser.
+For each number: "rulebook X, screen Y", same or DIFFERENT. Rulebook
+numbers are worked out first from the rulebook, the script and my running
+record below.
+
+Running record (my own books) is at the end of each day's section.
+
+======================================================================
+DAY 1, Thu Oct 1 (setup day)
+======================================================================
+
+Did: logged in from the control page; Setup day steps 1 to 6; bank rules
+left as they came; the $100.00 "payment to CRD 5555" marked "On its way";
+last paycheck Sep 18, 2026; starting money handed out (savings 3,000.00,
+Wishlist 150.00, wants 250.00, held 0.00, "Put what is left here" on needs);
+Start tracking, confirmed. Settings: split 40/30/20/10, paycheck rule
+"MADEUP CORP PAYROLL" (it asked "Are you sure?", yes), sorting rules
+GROCER -> needs, CAFE -> wants. (My first typing of CAFE was doubled by the
+browser into "CAFECAFE"; I changed the rule to "CAFE". Both changes are in
+the change log, which is right under 13.5.) Wishlist list: headphones
+$120.00, jacket $90.00, lamp $45.00.
+
+Setup day, step 1 "What the bank shows" (14.1, 14.2, 12.1)
+- Checking: rulebook 1,840.25, screen 1,840.25. same
+- Savings: rulebook 4,300.00, screen 4,300.00. same
+- Everyday Card owes, pending included: 312.40 + 42.18 = 354.58,
+  screen 354.58. same
+- Second Card owes: rulebook 186.75, screen 186.75. same
+- Starting money before transfers: 1,840.25 + 4,300.00 - 354.58 - 186.75
+  = 5,598.92, screen 5,598.92. same
+- Pending charge listed: MADE UP GROCER Sep 30 $42.18. same
+Step 2 bank rules: 13 rules came with the connections; nothing to suggest.
+Step 3 transfers on their way (14.2, 10 days): one, "payment to CRD 5555"
+  $100.00 Sep 30. After "On its way": starting money 5,598.92 + 100.00 =
+  5,698.92, screen 5,698.92. same
+Step 4 last paycheck Sep 18: next payday Sep 18 + 14 = Fri Oct 2,
+  screen Fri Oct 2, "1 day to payday". same
+Step 5 hand out: needs = 5,698.92 - 3,000.00 - 150.00 - 250.00 - 0.00 =
+  2,298.92, screen 2,298.92. Left to assign 0.00. same
+Step 6 last look: self-check bank 5,598.92, on its way 100.00, buckets
+  5,698.92, difference 0.00 (12.3, 12.5, 14.3). screen same. same
+
+Settings confirm sheet for the paycheck rule ("Are you sure?"):
+- DIFFERENT (Off in this setup): the sheet's table "Your buckets" has a
+  row "Mom reserve  $0.00 / $0.00". Nothing about a mom reserve should
+  be shown anywhere in this setup. The same table has no Wishlist row
+  (it lists Savings, Needs, Wants, Mom reserve, Held for others, Waiting
+  in Review).
+Settings change log: "Split 50 / 30 / 20 -> 40 / 30 / 20 · Thu, Oct 1 ·
+  from the next paycheck". It leaves out Wishlist's share (0% -> 10%),
+  so the log does not say what changed in full (13.5). DIFFERENT in words
+  (no number is wrong, but the Wishlist part of the change is missing).
+Settings split table: this pay period 50/30/20/0 (section 2's starting
+  values), from next paycheck 40/30/20/10 (13.1). same
+
+Home
+- Safe to spend (11.1): wants 250.00 - unsorted 0.00 = 250.00, screen
+  250.00. same
+- Days to payday (11.2): Oct 2, 1 day. screen "1 day to payday · Fri,
+  Oct 2". same
+- Wants 250.00 left of 250.00; Needs 2,298.92 left of 2,298.92. same
+- To sort: 0. same
+- Everyday Card (52.1): statement 312.40, due Fri Oct 23, paid toward it
+  0.00, owes now 312.40 + 42.18 = 354.58, set aside all of it 354.58
+  (52.2). Screen: "Statement $312.40, due Fri, Oct 23; $0.00 paid toward
+  it. Owes $354.58 now, all of it set aside." same. Not due yet (first
+  reminder day Oct 16). Header "Due Fri, Oct 23" is the due date, fine.
+- Second Card: statement 100.00 due Thu Oct 1; the $100.00 left checking
+  Sep 30, after the Sep 6 statement, counts from the day it left even
+  while on its way (9.3, B47): paid 100.00, paid in full. Owes now 186.75
+  (the payment has not reached the card, 52.2 counts only payments that
+  reached it), set aside 186.75. Screen: "Paid in full ... $100.00 paid
+  toward it. Owes $186.75 now, all of it set aside." same
+- Set aside in savings (52.2, 3.8): savings account 4,300.00, buckets that
+  live there savings 3,000.00 + Wishlist 150.00 = 3,150.00, extra
+  1,150.00. Set aside in all 354.58 + 186.75 = 541.33, less than the
+  extra, so all 541.33 of it is in savings. Screen "$541.33 of the money
+  set aside for your cards is in your savings account, not checking."
+  same (my reading: the smaller of the extra and the set-aside total).
+- 50.4 line: extra 1,150.00 vs sorted to Wishlist 0.00 -> $X = 0.00, no
+  line. Screen: no line. same
+- No mom or old card anywhere on Home. Card states in words ("Paid in
+  full"). same
+
+Buckets
+- In your buckets: 3,000.00 + 2,298.92 + 250.00 + 150.00 + 0.00 =
+  5,698.92, "Matches your bank, to the cent". same
+- Needs 2,298.92, Wants 250.00, Savings 3,000.00, Wishlist 150.00, Held
+  0.00. same
+- On its way: Payment to Second Card $100.00, left checking Sep 30. same
+
+Review: 0 waiting. Rulebook 0 (the pending grocer is part of the
+  starting money, 14.2). same
+
+Bucket lists (Needs, Wants, Savings, Wishlist, Held for others): carried
+  in = now = the setup amounts, nothing in or out. same for all five.
+
+Wishlist list (50.2): bucket 150.00. Headphones gets min(120.00, 150.00) =
+  120.00 "Ready"; jacket min(90.00, 30.00) = 30.00, 30/90 = 33%; lamp
+  0.00 "Nothing yet". More than the list needs: 150.00 - 255.00 < 0, so
+  none. Screen: "Ready: $120.00 of $120.00", "$30.00 of $90.00, 33% of
+  the way", "Nothing yet of $45.00", and no "more than" line. same.
+  Before the items were added: "More than the list needs: $150.00".
+  same. Changes to the list logged with the date (50.1). same
+
+Payday (3.8): no paycheck since setup day; savings plus Wishlist
+  3,000.00 + 150.00 = 3,150.00; in the account 4,300.00; still to move
+  0.00; extra 1,150.00. Screen same. same
+
+Statement, Everyday Card (52.4): Aug 29 to Sep 28, due Oct 23, balance
+  312.40. First statement the app sees, so "From before the app saw this
+  card" instead of carried in. Before-setup-day purchases on it: GROCER
+  Sep 12 55.20, CAFE Sep 20 4.75 = 59.95. 312.40 - 59.95 = 252.45 from
+  before. Screen: 252.45 + 59.95 = 312.40. same. The Sep 30 grocer is
+  after the closing day, rightly not on it.
+Statement, Second Card: Aug 7 to Sep 6, due Oct 1, balance 100.00. No
+  purchase in the 90 days of history falls in Aug 7 to Sep 6 on this card
+  (Trends lists none), so all of it is "From before the app saw this
+  card" 100.00. Screen 100.00 + 0.00 = 100.00. same
+
+Settings: statement closing days "Not entered" for both cards; the banks
+  send the statement dates here, so reminders are on (9.8). Nothing says
+  "reminders are off". same
+Status page (0.7): "All working", daily check "The totals match the
+  bank", 15 events kept, no alerts waiting, no amounts. same. The bank
+  section shows no per-bank lines at all ("THE BANK" heading with nothing
+  under it). DIFFERENT in content: 0.7 says each bank's last read and last
+  sync, by name, with two connections. Nothing is listed.
+
+Trends (40.x), today Oct 1, 90 days = Jul 4 to Oct 1
+- History items (before setup day, read by today's rules): GROCER Sep 12
+  55.20 (needs by the GROCER rule), BOOKSHOP Sep 15 18.00 (unsorted),
+  CAFE Sep 20 4.75 (wants), PHARMACY Sep 22 68.75 (unsorted), GROCER
+  Sep 30 42.18 pending on setup day (needs, at setup day's amount).
+- Pay periods back from Sep 18 every 14 days (40.3): Sep 18-Oct 1, Sep
+  4-17, Aug 21-Sep 3, Aug 7-20, Jul 24-Aug 6, Jul 10-23, Jun 26-Jul 9
+  (part of a pay period). Screen same, Jun 26 marked "Part of a pay
+  period". same
+- Sep 18-Oct 1: needs 42.18, wants 4.75, unsorted 68.75, Wishlist 0.00,
+  total 115.68. screen same. Sep 4-17: needs 55.20, unsorted 18.00, total
+  73.20. screen same. Others 0.00. same
+- Savings over time (40.5): savings 3,000.00 then and now; Wishlist
+  150.00 then and now. same
+- Where it went (40.6): total 188.88 (sum of the five). screen 188.88.
+  same. Places: PHARMACY 68.75, CAFE 4.75, "Everything else" 115.38
+  (both GROCER items and BOOKSHOP). UNCLEAR, see report: GROCER (97.38,
+  the biggest) is not named as a place. The app seems to count the item
+  itself when it looks for "a word on most of your items on that
+  account", so a place that is most of a quiet account's items loses its
+  name. 13.8 says "in the 90 days before", which reads as not counting
+  the item itself; then GROCER would be a place. Not marked DIFFERENT
+  because the rule does not settle it.
+- Header "Since Jul 3" while the 90 days are "Jul 4 - Oct 1". Words only.
+- Now, Wants against an even pace (40.8): wants started 250.00, now 250.00;
+  even pace at the end of the last day = 250.00 x 0 / D = 0.00; "$250.00
+  more left than an even pace". same. The screen says "Day 1 of 1" (the
+  books' part, from setup day) while "against your usual" says "day 14".
+  The number is 0.00 either way.
+- Against your usual (40.7): 5 full pay periods (Jul 10 to Sep 17); by day
+  14 they spent 0, 0, 0, 0, 73.20 -> middle one 0.00; whole 0.00; so far
+  115.68. screen same. same
+- Future (40.11): day 1 of the books' first pay period, before day 3 ->
+  "too early" for needs and wants. same. Savings a year out (40.12): 0 pay
+  periods -> "Not enough pay periods yet to estimate". same
+- Habits, payday effect (40.14): 5 full periods; days 1-3: 0.00 over 15
+  days = 0.00 a day; rest: 55.20 + 18.00 = 73.20 over 55 days = 1.3309 ->
+  1.33. screen 0.00 and 1.33. same
+- Day of the week (40.15): Jul 4 is a Saturday; 90 days = 12 weeks + 6
+  days, so 13 of each weekday except Friday (12). Tue 86.75/13 = 6.67;
+  Wed 42.18/13 = 3.24; Sat 55.20/13 = 4.24; Sun 4.75/13 = 0.36; rest 0.
+  Most on Tuesdays $6.67. screen same; tapping Tuesday shows "In all,
+  over 13 Tuesdays $86.75". same
+- Repeat charges: none (no place with 3 charges). same
+- Wants streak: "No pay period has ended in the books yet." same
+- No old card part anywhere on Trends. same
+
+My running record at the end of Oct 1:
+  Savings 3,000.00 | Needs 2,298.92 | Wants 250.00 | Wishlist 150.00 |
+  Held 0.00 | total 5,698.92
+  In transit: +100.00 (checking -> Second Card)
+  Bank: checking 1,840.25, savings 4,300.00, Everyday owes 354.58
+  (42.18 pending), Second owes 186.75
+  Wishlist sorted since tracking 0.00, refunds 0.00, moves savings ->
+  checking 0.00
+
+======================================================================
+DAY 2, Fri Oct 2
+======================================================================
+
+Banks: Everyday GROCER 42.18 posts (same amount); Second Card PAYMENT -
+THANK YOU 100.00 arrives; checking MADEUP CORP PAYROLL 2,600.00; Everyday
+CAFE 5.60 pending.
+Did: nothing (paycheck left waiting).
+
+Worked out first:
+- GROCER posts at the pending amount: nothing changes (4.6).
+- The $100.00 lands: in transit 0.00 (12.5); Second Card owes 186.75 -
+  100.00 = 86.75.
+- Paycheck: "Ask before splitting" is on, so it waits in review (3.1, 51.1);
+  counts in the self-check as unsorted money in, not in safe to spend.
+  Parts with the next paycheck's split 40/30/20/10 (3.3, 13.1): needs
+  30% = 780.00, wants 20% = 520.00, Wishlist 10% = 260.00 (each rounded
+  down, all exact), savings the rest 2,600.00 - 1,560.00 = 1,040.00.
+- CAFE 5.60 pending: the CAFE rule sorts it to wants on the day of the
+  purchase (4.1, 4.2, 4.6): wants 250.00 - 5.60 = 244.40.
+- Safe to spend (11.1): 244.40 - 0.00 unsorted spending = 244.40.
+- Self-check: bank side = checking 1,840.25 + 2,600.00 = 4,440.25 +
+  savings 4,300.00 - Everyday (312.40 + 42.18 + 5.60 = 360.18) - Second
+  86.75 = 8,293.32. App side = 3,000.00 + 2,298.92 + 244.40 + 150.00 + 0.00
+  + 2,600.00 (money in waiting) = 8,293.32. Match.
+- Cards: Everyday statement 312.40, paid 0.00, owes 360.18, set aside
+  360.18. Second: statement 100.00 paid 100.00 (paid in full), owes 86.75,
+  set aside 86.75. In savings: extra 1,150.00 >= 446.93, so 446.93.
+
+Home
+- Safe to spend: rulebook 244.40, screen 244.40. same
+- Days: "Payday is today · Fri, Oct 2" (scheduled payday Oct 2, paycheck
+  not yet said yes to). same
+- Needs attention: "Paycheck waiting for your yes $2,600.00 came in Fri,
+  Oct 2" (51.1). same
+- Wants 244.40 left of 250.00; Needs 2,298.92 of 2,298.92. same
+- To sort 1. same
+- Everyday: owes 360.18, set aside 360.18, paid 0.00. same
+- Second: Paid in full, paid 100.00, owes 86.75, set aside 86.75. same
+- In savings: rulebook 446.93, screen 446.93. same
+Buckets
+- In your buckets 8,293.32 (counts the 2,600.00 waiting, "1 waiting in
+  review, $2,600.00 coming in"), "Matches your bank". rulebook 8,293.32.
+  same
+- Needs 2,298.92, Wants 244.40, Savings 3,000.00, Wishlist 150.00, Held
+  0.00. same. Nothing on its way now. same
+Review
+- 1 waiting: MADEUP CORP PAYROLL 2,600.00, "Paycheck waiting for your yes".
+  Parts: savings rulebook 1,040.00 screen 1,040.00; needs 780.00 / 780.00;
+  wants 520.00 / 520.00; Wishlist 260.00 / 260.00. same.
+  "Nothing is held back from safe to spend." (money in is not spending.)
+  same
+Wishlist list: bucket 150.00, headphones 120.00 Ready, jacket 30.00 of
+  90.00 (33%), lamp nothing yet. same
+
+Running record end of Oct 2:
+  Savings 3,000.00 | Needs 2,298.92 | Wants 244.40 | Wishlist 150.00 |
+  Held 0.00 | money in waiting 2,600.00 | total 8,293.32
+  In transit 0.00
+  Bank: checking 4,440.25, savings 4,300.00, Everyday owes 360.18 (5.60
+  pending), Second owes 86.75
+
+======================================================================
+DAY 3, Sat Oct 3 (full look)
+======================================================================
+
+Banks: Everyday CAFE posts at 6.60 (was 5.60 pending); Second Card
+BOOKSHOP 23.45 posted; checking "transfer to SAV 2222" 1,200.00 out.
+Did: Review: "Yes, split it" -> sheet "Start a new pay period? This starts
+a new pay period on Fri, Oct 2, the day it arrived" -> "Yes, this is my
+paycheck". Payday questions: Needs leftover $2,298.92 -> Roll over (asked
+"Answer for good?", yes); Wants leftover $243.40 -> Move to savings
+(asked, yes). Bookshop -> Wants. No "always do this" offer (first time
+from this place, 13.8: right).
+
+Worked out first:
+- CAFE posts at 6.60: the final charge replaces the pending one in the same
+  bucket (4.6): wants 244.40 - 1.00 = 243.40.
+- Bookshop 23.45: no rule -> review, held back from safe to spend (4.3).
+- Transfer to savings 1,200.00: a transfer between my accounts, no bucket
+  changes (5.3); in transit 1,200.00 (12.5).
+- Yes to the paycheck: new pay period from Fri Oct 2 (3.1, B53). Parts as
+  yesterday: savings 1,040.00, needs 780.00, wants 520.00, Wishlist 260.00.
+- Leftovers at payday (3.4): needs 2,298.92 (rolled over); wants 243.40
+  (the CAFE of Oct 2 came out of wants before the yes) -> moved to
+  savings. Wishlist is never asked about (3.4). Right: only two questions.
+- After: savings 3,000.00 + 1,040.00 + 243.40 = 4,283.40; needs 2,298.92 +
+  780.00 = 3,078.92; wants 0.00 + 520.00 - 23.45 = 496.55; Wishlist 150.00 +
+  260.00 = 410.00; held 0.00. Total 8,268.87.
+- Self-check: checking 4,440.25 - 1,200.00 = 3,240.25; savings 4,300.00;
+  Everyday owes 312.40 + 42.18 + 6.60 = 361.18; Second owes 86.75 + 23.45 =
+  110.20. Bank side 3,240.25 + 4,300.00 - 361.18 - 110.20 = 7,068.87;
+  + in transit 1,200.00 = 8,268.87 = app side. Match.
+- Safe to spend 496.55 - 0.00 = 496.55. Next payday Oct 2 + 14 = Fri Oct
+  16, 13 days.
+- 3.8: savings + Wishlist = 4,283.40 + 410.00 = 4,693.40; account 4,300.00
+  with 1,200.00 on its way = 5,500.00; to move 0.00, extra 806.60 (I count
+  the 1,200.00 already sent as moved; 3.8 says "how much you still need to
+  move").
+- Cards: Everyday owes 361.18 set aside 361.18, paid 0.00; Second owes
+  110.20 set aside 110.20, paid 100.00 (paid in full). Set aside 471.38,
+  extra 806.60, so all 471.38 in savings.
+- Wishlist fill (50.2): 410.00 -> headphones 120.00 Ready, jacket 90.00
+  Ready, lamp 45.00 Ready, more than the list needs 410.00 - 255.00 =
+  155.00.
+
+Review (while answering)
+- Before: 2 waiting, "$23.45 held back from safe to spend until sorted"
+  (4.3). same. Payday questions: Needs leftover rulebook 2,298.92 screen
+  2,298.92; Wants leftover rulebook 243.40 screen 243.40. same
+- After: 0 waiting. same
+Home
+- Safe to spend 496.55 / 496.55. same. "13 days to payday · Fri, Oct 16".
+  same
+- Wants 496.55 left of 520.00 (520.00 = what wants started the pay period
+  with after the leftover moved out, 10.1). same. Needs 3,078.92 left of
+  3,078.92. same. To sort 0. same
+- Everyday: statement 312.40 due Oct 23, paid 0.00, owes 361.18, all set
+  aside. same. Second: paid in full, 100.00 paid, owes 110.20, all set
+  aside. same. "$471.38 ... in your savings account" same.
+- Nothing needs attention. same
+Buckets
+- In your buckets 8,268.87 "Matches your bank". same. Needs 3,078.92,
+  Wants 496.55, Savings 4,283.40, Wishlist 410.00, Held 0.00. same
+- On its way: To savings 1,200.00, left checking Oct 3. same
+Needs list: carried in 2,298.92 + 780.00 paycheck = 3,078.92. same
+Wants list: carried in 243.40 + 520.00 - (23.45 + 243.40 = 266.85) =
+  496.55. same
+Savings list: carried in 3,000.00 + 243.40 + 1,040.00 = 4,283.40. same
+Wishlist list: carried in 150.00 + 260.00 = 410.00; all three "Ready";
+  "More than the list needs: $155.00". same
+Held for others: 0.00, nothing in or out. same
+Payday
+- Last paycheck 2,600.00, Fri Oct 2, 13 days to payday. same
+- Split 40/30/20/10: 1,040.00 / 780.00 / 520.00 / 260.00. same
+- Move to savings: savings plus Wishlist 4,693.40 / 4,693.40; in the
+  account 4,300.00; on its way 1,200.00; still to move 0.00; extra 806.60.
+  same
+- Leftover: needs kept 2,298.92, wants 243.40 moved to savings. same
+- "The pay period that just ended: Thu, Oct 1 to Fri, Oct 2", spent from
+  wants -6.60 (the CAFE), left in wants 243.40. The numbers are right; the
+  dates say the old pay period ran "to Fri, Oct 2", while 3.1 says the new
+  one started Oct 2. UNCLEAR (a purchase on payday itself, before the
+  yes): see report.
+Statements: Everyday 252.45 + 59.95 = 312.40; Second 100.00 + 0.00 =
+  100.00. Unchanged, same.
+Settings: split this pay period (since Fri Oct 2) 40/30/20/10, next
+  paycheck Fri Oct 16 40/30/20/10. same. Next payday Fri Oct 16. same
+Alerts sent (Settings > Alerts sent): "No alerts yet".
+  DIFFERENT: 10.15 says the paycheck waiting for my yes is told once, when
+  it posts (Oct 2), and 10.14 says the payday alert comes at my yes
+  (Oct 3). Neither is listed. (The server has no push keys; Settings says
+  it "writes each alert in its own window instead", and the list says
+  "Each alert ... the app sends is listed here".) Status says "Alerts:
+  None waiting to be sent." I will keep watching this.
+Status: "All working", "The totals match the bank", 26 events, no alerts
+  waiting. The bank section is still empty (DIFFERENT, 0.7, as Oct 1).
+Trends (90 days Jul 6 - Oct 3)
+- Spent this pay period (Oct 2 - Oct 15): wants 23.45 (bookshop) = 23.45.
+  same
+- Sep 18 - Oct 1 bar: needs 42.18, wants 4.75 + 6.60 (the Oct 2 CAFE that
+  the books counted before the paycheck, B97) = 11.35, unsorted 68.75,
+  total 122.28. screen 122.28. same
+- Savings 3,000.00 at Oct 1 -> 4,283.40 now; Wishlist 150.00 -> 410.00.
+  same
+- Where it went: 188.88 + 6.60 + 23.45 = 218.93. screen 218.93 ("Jul 6 -
+  Oct 3"). same. CAFE 4.75 + 6.60 = 11.35 same; PHARMACY 68.75 same;
+  Everything else 115.38 + 23.45 = 138.83 same (BOOKSHOP not named, see
+  Oct 1).
+- Wants even pace (40.8): D = 14 (Oct 2 - Oct 15), today day 2: 520.00 x
+  12 / 14 = 445.714 -> 445.71. Wants now 496.55, 50.84 more. screen
+  "Day 2 of 14", 445.71, "$50.84 more left than an even pace". same
+- Usual (40.7): last 5 full pay periods Sep 18, Sep 4, Aug 21, Aug 7, Jul
+  24: by day 2 all 0.00 -> 0.00; whole 122.28, 73.20, 0, 0, 0 -> middle
+  0.00. So far 23.45. same
+- Future: days so far 2 -> too early. same. Savings a year out: not enough.
+  same
+- Payday effect (40.14): 6 full pay periods (Jul 10 to Oct 1). Days 1-3
+  (18 days): CAFE Sep 20 4.75 -> 0.2638 -> 0.26. Rest (66 days): 55.20 +
+  18.00 + 68.75 + 42.18 = 184.13 -> 2.7898 -> 2.78 (the Oct 2 CAFE is
+  dated outside Sep 18 - Oct 1). screen 0.26 / 2.78, "$2.52 a day less".
+  same
+- Day of the week: Jul 6 is a Monday; 13 of Mon-Sat, 12 Sundays. Tue
+  86.75/13 = 6.67; Wed 42.18/13 = 3.24; Fri 6.60/13 = 0.50; Sat (55.20 +
+  23.45)/13 = 6.05; Sun 4.75/12 = 0.39. screen same. same
+- Wants streak: the books' first pay period ended with wants 243.40 >= 0:
+  1 in a row, best 1. screen same. same
+
+Running record end of Oct 3:
+  Savings 4,283.40 | Needs 3,078.92 | Wants 496.55 | Wishlist 410.00 |
+  Held 0.00 | total 8,268.87
+  In transit +1,200.00 (checking -> savings)
+  Bank: checking 3,240.25, savings 4,300.00, Everyday owes 361.18,
+  Second owes 110.20
+  Wants started this pay period with 520.00; needs 3,078.92
+
+======================================================================
+DAY 4, Sun Oct 4
+======================================================================
+
+Banks: Everyday HARDWARE 64.90 posted; checking (debit) PHARMACY 18.35.
+Script: split the hardware $40.00 needs, $24.90 wants; pharmacy needs.
+
+What happened (DIFFERENT, 4.4):
+- Review, hardware, "More choices" -> "Split it" with Needs 40.00 and
+  Wants 24.90 ("Wishlist gets the rest", so 0.00). The app first asked
+  "Which thing on your list was it?" (though nothing goes to Wishlist);
+  I picked "None of them"; then it refused: "Nothing is left for Wishlist:
+  the other parts already add up to $64.90. Nothing was changed." Tried
+  twice, same. The same form on Needs' list (re-sorting, 4.7) refuses the
+  same way. 4.4 says a purchase can be split across buckets and the parts
+  must add up to the total; a needs + wants split adding up to 64.90 is
+  allowed by the rulebook, and the screen has no way to make it. (The
+  form always sends a Wishlist part, the rest, and a zero rest is
+  refused.)
+- So I could not follow the script: I put all of the hardware in Needs
+  (the "Needs" button). The pharmacy -> Needs. From here my record follows
+  what is really in the app: hardware 64.90 all in needs. (On Oct 10 the
+  24.90 refund of this purchase should then go back to needs, 4.5, and the
+  end result for the buckets is the same as the script's: 40.00 net out of
+  needs, nothing out of wants.)
+
+Worked out first (with the hardware all in needs):
+- Needs 3,078.92 - 64.90 - 18.35 = 2,995.67; wants 496.55 (unchanged).
+- Before sorting: held back from safe to spend 64.90 + 18.35 = 83.25
+  (4.3). Review screen "$83.25 held back". same
+- Safe to spend 496.55; 12 days to Fri Oct 16.
+- Self-check: checking 3,240.25 - 18.35 = 3,221.90; savings 4,300.00;
+  Everyday 361.18 + 64.90 = 426.08; Second 110.20. Bank side 6,985.62 +
+  in transit 1,200.00 = 8,185.62. App side 4,283.40 + 2,995.67 + 496.55 +
+  410.00 + 0.00 = 8,185.62. Match.
+- Cards: Everyday owes 426.08, Second 110.20; set aside 536.28; extra in
+  savings 806.60 -> all 536.28 in savings.
+
+Home: safe to spend 496.55 / 496.55 same; 12 days to payday same; Wants
+  496.55 left of 520.00 same; Needs 2,995.67 left of 3,078.92 same; to sort
+  0 same; Everyday owes 426.08, paid 0.00, all set aside, same; Second
+  owes 110.20, paid in full, same; "$536.28 ... in your savings account"
+  same.
+Buckets: in your buckets 8,185.62, matches the bank, same; Needs 2,995.67,
+  Wants 496.55, Savings 4,283.40, Wishlist 410.00, Held 0.00, same; to
+  savings 1,200.00 on its way, same.
+Review: 0 after sorting. same
+Wishlist list: 410.00, all three Ready, more than the list needs 155.00.
+  same
+Needs list: 2,298.92 + 780.00 - 83.25 = 2,995.67 (hardware 64.90,
+  pharmacy 18.35). same
+
+Running record end of Oct 4:
+  Savings 4,283.40 | Needs 2,995.67 | Wants 496.55 | Wishlist 410.00 |
+  Held 0.00 | total 8,185.62
+  In transit +1,200.00
+  Bank: checking 3,221.90, savings 4,300.00, Everyday owes 426.08,
+  Second owes 110.20
+
+======================================================================
+DAY 5, Mon Oct 5 (full look)
+======================================================================
+
+Banks: savings "transfer from CHK 1111" 1,200.00 arrives; Second Card
+AUDIO 114.99; checking "Zelle payment to MADE UP FRIEND" 30.00.
+Did: audio -> More choices -> Wishlist -> "Which thing on your list was
+it?" -> Made-up headphones. Zelle -> More choices -> Split: Needs blank,
+Wants 20.00, "Not mine gets the rest" (10.00) -> "split: Wants $20.00, Not
+mine $10.00". (The Zelle card offers needs, wants, not mine and transfers;
+no "for mom": right, 7.6 is off in this setup.)
+Note: here a split with a blank part worked; on Oct 4 the split whose
+"rest" was 0.00 was refused. That pins the Oct 4 problem to a zero
+Wishlist "rest".
+
+Worked out first:
+- 1,200.00 lands in savings: in transit 0.00; savings account 5,500.00.
+- Before sorting: held back 114.99 + 30.00 = 144.99. Review "$144.99 held
+  back". same
+- Audio to Wishlist (4.2, 50.3): Wishlist 410.00 - 114.99 = 295.01; the
+  headphones marked bought Oct 5 for 114.99 (price 120.00), leave the list.
+- Zelle: wants 496.55 - 20.00 = 476.55; held for others 0.00 - 10.00 =
+  -10.00, "someone owes you" (7.2, 7.3).
+- Totals: savings 4,283.40 + needs 2,995.67 + wants 476.55 + Wishlist
+  295.01 + held -10.00 = 8,040.63.
+- Bank: checking 3,221.90 - 30.00 = 3,191.90; savings 5,500.00; Everyday
+  426.08; Second 110.20 + 114.99 = 225.19. Bank side 3,191.90 + 5,500.00 -
+  426.08 - 225.19 = 8,040.63; in transit 0. Match.
+- Safe to spend 476.55; 11 days.
+- 3.8: savings + Wishlist = 4,283.40 + 295.01 = 4,578.41; account 5,500.00;
+  to move 0.00; extra 921.59.
+- 50.4: $X = smaller of extra 921.59 and (sorted to Wishlist 114.99 - refunds
+  0 - moves savings->checking 0 = 114.99) = 114.99. On the Second Card, on a
+  statement not yet closed (last closed Sep 6) -> "before the Second Card's
+  next due date".
+- Wishlist list (50.2): jacket min(90.00, 295.01) = 90.00 Ready; lamp
+  45.00 Ready; more than the list needs 295.01 - 135.00 = 160.01. Bought:
+  headphones Oct 5, 114.99, price 120.00.
+- Cards: Everyday owes 426.08; Second owes 225.19 (statement 100.00 still
+  paid in full). Set aside 651.27 < extra 921.59 -> all 651.27 in savings.
+
+Home
+- Safe to spend 476.55 / 476.55 same; 11 days to payday same
+- Wants 476.55 left of 520.00 same; Needs 2,995.67 left of 3,078.92 same;
+  to sort 0 same
+- Wishlist: "Move $114.99 from savings to checking ... Before the Made-up
+  Second Card's next due date." rulebook 114.99 and that "when". same
+- Everyday owes 426.08, paid 0.00, all set aside, same. Second: Paid in
+  full, owes 225.19, all set aside, same. "$651.27 ... in your savings
+  account" same.
+Buckets: 8,040.63 matches the bank; Needs 2,995.67, Wants 476.55, Savings
+  4,283.40, Wishlist 295.01, Held -10.00 "Someone owes you". same. Nothing
+  on its way. same
+Review: 0 after. same
+Needs list: unchanged 2,995.67. same
+Wants list: 243.40 + 520.00 - (20.00 + 23.45 + 243.40 = 286.85) = 476.55.
+  Zelle row "Part of a split" -20.00. same
+Savings list: 4,283.40 (nothing new: a transfer between my accounts does
+  not change a bucket, 5.3). same
+Wishlist list: 150.00 + 260.00 - 114.99 = 295.01; jacket Ready 90.00,
+  lamp Ready 45.00, "More than the list needs: $160.01"; Bought:
+  "Made-up headphones, Bought Mon, Oct 5 for $114.99. Its price was
+  $120.00." with "Not bought"; change logged "marked Made-up headphones
+  bought, for $114.99". same
+Held for others list: -10.00 (Zelle, part of a split). same
+Payday: savings plus Wishlist 4,578.41 / 4,578.41; in the account
+  5,500.00; to move 0.00; extra 921.59. same. Rest as Oct 3. same
+Statements: unchanged (Everyday 252.45 + 59.95 = 312.40; Second 100.00).
+  same
+Settings: split 40/30/20/10 both columns; nothing about mom (searched the
+  page for "mom": none). same
+Status: as before; bank section still empty (DIFFERENT, 0.7, see Oct 1).
+Alerts list: still "No alerts yet". Also the daily review (10.3) was due
+  at 8:00 PM Oct 2 with the paycheck still waiting; it should have gone
+  at 7:00 AM Oct 3 saying "Was due ..." (10.8). DIFFERENT, as Oct 3.
+Trends (90 days Jul 8 - Oct 5)
+- Oct 2 - Oct 15 bar: needs 64.90 + 18.35 = 83.25; wants 23.45 + 20.00 =
+  43.45; unsorted 0.00; Wishlist 114.99; total 241.69. screen bar 241.69
+  with those parts. same
+- DIFFERENT: the headline "SPENT THIS PAY PERIOD $126.70, Oct 2 - Oct 15,
+  so far" leaves out Wishlist's 114.99. 40.2 says, in this setup, spending
+  in Wishlist is spending too; the bar for the same pay period says
+  241.69. Rulebook 241.69, screen 126.70. (126.70 is needs + wants, 40.7's
+  "so far", which by HB27 stays on needs and wants; but the headline is
+  labelled "Spent this pay period".)
+- Savings 3,000.00 -> 4,283.40, Wishlist 150.00 -> 295.01. same
+- Where it went: 218.93 + 83.25 + 20.00 + 114.99 = 437.17 ("Jul 8 - Oct
+  5"). same. AUDIO 114.99, PHARMACY 68.75, HARDWARE 64.90, CAFE 11.35,
+  Everything else 177.18 (grocers 97.38 + bookshops 41.45 + the Oct 4
+  pharmacy 18.35 + Zelle 20.00 = 177.18). Adds up, same. UNCLEAR: the Oct 4
+  MADE UP PHARMACY is not in PHARMACY (40.6: "the same name on any account
+  is one place"); the app finds no name for it (see report).
+- Even pace: day 4 of 14; 520.00 x 10/14 = 371.428 -> 371.42; wants 476.55;
+  105.13 more. screen same. same
+- Usual: so far (needs + wants) 126.70; usual by day 4 0.00; whole 0.00.
+  same
+- By payday (40.11): needs 83.25 / 4 x 10 = 208.125 -> up 208.13; 2,995.67 -
+  208.13 = 2,787.54. screen 2,787.54 same. Wants 43.45 / 4 x 10 = 108.625
+  -> 108.63; 476.55 - 108.63 = 367.92. screen 367.92 same. No Wishlist
+  estimate. same
+- Savings a year out: not enough. same
+- Payday effect: unchanged 0.26 / 2.78. same
+- Day of the week: Jul 8 is a Wednesday; 13 of Wed-Mon, 12 Tuesdays. Mon
+  (114.99 + 20.00)/13 = 10.38; Tue 86.75/12 = 7.22; Wed 3.24; Fri 0.50; Sat
+  6.05; Sun (4.75 + 64.90 + 18.35)/13 = 6.76. "Most on Mondays: $10.38".
+  screen same. same
+- Wants streak 1, best 1. same
+
+Running record end of Oct 5:
+  Savings 4,283.40 | Needs 2,995.67 | Wants 476.55 | Wishlist 295.01 |
+  Held -10.00 | total 8,040.63
+  In transit 0.00
+  Bank: checking 3,191.90, savings 5,500.00, Everyday owes 426.08,
+  Second owes 225.19
+  Wishlist sorted since tracking 114.99; refunds 0; moves savings ->
+  checking 0
+
+======================================================================
+DAY 6, Tue Oct 6
+======================================================================
+
+Banks: checking (debit) GAS 38.00 pending.
+Did: Review showed it "Pending · No rule matched", $38.00 held back
+(4.3, same); sorted it to Needs while pending (the app lets me).
+
+Worked out first:
+- Needs 2,995.67 - 38.00 = 2,957.67 (4.1, 4.6: a pending charge counts
+  once, now). Wants 476.55. Safe to spend 476.55; 10 days to Oct 16.
+- Self-check: checking available 3,191.90 - 38.00 = 3,153.90 (the pending
+  charge is counted now, so it is not put back, 12.1); savings 5,500.00;
+  Everyday 426.08; Second 225.19. Bank side 8,002.63. App side 4,283.40 +
+  2,957.67 + 476.55 + 295.01 - 10.00 = 8,002.63. Match.
+- 50.4 unchanged: $114.99, before the Second Card's next due date (its
+  Oct 6 statement closes today, but the bank has not sent it yet).
+- Cards unchanged: Everyday 426.08, Second 225.19, 651.27 in savings
+  (extra still 921.59).
+
+Home: safe to spend 476.55 same; 10 days same; wants 476.55 of 520.00
+  same; needs 2,957.67 of 3,078.92 same; to sort 0 same; Wishlist move
+  $114.99 same; Everyday 426.08 same; Second 225.19, paid in full, same;
+  $651.27 in savings same.
+Buckets: 8,002.63 matches the bank; Needs 2,957.67, Wants 476.55, Savings
+  4,283.40, Wishlist 295.01, Held -10.00. same
+Review: 0. same
+Wishlist list: 295.01; jacket Ready, lamp Ready, more than the list needs
+  160.01; headphones bought. same
+
+Running record end of Oct 6:
+  Savings 4,283.40 | Needs 2,957.67 | Wants 476.55 | Wishlist 295.01 |
+  Held -10.00 | total 8,002.63
+  Bank: checking 3,191.90 posted (3,153.90 available, gas 38.00 pending),
+  savings 5,500.00, Everyday 426.08, Second 225.19
+
+======================================================================
+DAY 7, Wed Oct 7 (full look)
+======================================================================
+
+Banks: checking GAS posts at 38.00 (same); Second Card CINEMA 16.00 (the
+app cannot see it: Made-up Second Bank wants a new login today).
+Did: nothing (no login window in this test).
+
+Worked out first:
+- Gas posts at the same amount: nothing changes (4.6).
+- Second Bank cannot be read: Home shows the last safe to spend both banks
+  backed up, greyed, with the day and time it was checked, and names the
+  bank (0.5); the check waits (12.3); "Log in to Made-up Second Bank
+  again" is offered (1.3, 10.5). The cinema is not in the app yet.
+- Books unchanged: savings 4,283.40, needs 2,957.67, wants 476.55, Wishlist
+  295.01, held -10.00. Safe to spend 476.55; 9 days to Oct 16.
+- The savings account is at Made-up First Bank, which was read: 5,500.00.
+  So 3.8 (to move 0.00, extra 921.59) and 50.4 ($X = min(921.59, 114.99) =
+  114.99) can still be worked out from what was read.
+
+Home
+- Safe to spend 476.55 "As of Tue, Oct 6, 8:00 AM. Can't reach Made-up
+  Second Bank to check it now." (0.5) same. 9 days to payday. same
+- Needs attention: "Log in to Made-up Second Bank again". same (10.5)
+- Wants 476.55 of 520.00, needs 2,957.67 of 3,078.92, to sort 0. same
+- Cards: Everyday owes 426.08 (read today), same. Second shows the last
+  read: owes 225.19, paid in full. (Nothing on the card says it could not
+  be read; the line above does.)
+- DIFFERENT (50.4): the "Move $114.99 from savings to checking" line is
+  gone. Rulebook: it goes away only once $X is 0.00; $X is still 114.99
+  (the savings account was read today). Screen: no line.
+- DIFFERENT (52.2): the "... of the money set aside for your cards is in
+  your savings account" line is gone too. Rulebook: 651.27 (extra 921.59
+  in the account that was read).
+  (Both may be the app holding back numbers while any bank cannot be read,
+  0.5; but 0.5 is about safe to spend and the totals, and the savings
+  account's own bank was read. See report.)
+Buckets: in your buckets 8,002.63, "Can't reach the bank to check this
+  now" (12.3: the check waits). same. Needs 2,957.67, Wants 476.55,
+  Savings 4,283.40, Wishlist 295.01, Held -10.00. same
+Review: 0. same
+Needs list: 2,298.92 + 780.00 - (38.00 + 64.90 + 18.35 = 121.25) =
+  2,957.67. same. Wants list 476.55 same. Savings list 4,283.40 same.
+  Held -10.00 same. Wishlist list 295.01, jacket and lamp Ready, more than
+  the list needs 160.01, headphones bought. same
+Payday: the paycheck part same as Oct 5. Move to savings: "Can't reach the
+  bank to check the savings account now". DIFFERENT (3.8): the savings
+  account (First Bank) was read; rulebook savings plus Wishlist 4,578.41,
+  account 5,500.00, to move 0.00, extra 921.59.
+Settings: split and rules unchanged. Settings > Bank connection: "Made-up
+  Second Bank wants you to log in again. Until you do, nothing new is read
+  from it." with "Log in to Made-up First Bank again" and "Log in to
+  Made-up Second Bank again" (1.3). same. Accounts shown with ••1111 etc.
+  (made-up digits).
+Status: "1 thing needs a look". DIFFERENT (0.7, 12.3): the bank section is
+  still empty (no bank named, no last read, no "wants a new login"), and
+  "Daily check: The totals match the bank." while 12.3 says the check
+  waits when one bank could not be read (Buckets says so correctly).
+Alerts list: "No alerts yet". 10.5 (log in again) is told the same way as
+  10.4 (after 12 hours), so not yet due at 7-8 AM. OK for today.
+Statements: unchanged (Everyday 312.40, Second 100.00; the Second Card's
+  Oct 6 statement is not in yet). same
+Trends (90 days Jul 10 - Oct 7)
+- Bar Oct 2 - Oct 15: needs 121.25, wants 43.45, Wishlist 114.99, total
+  279.69. same. Headline "Spent this pay period" 164.70: DIFFERENT, as Oct 5
+  (rulebook 279.69 with Wishlist, 40.2).
+- Jun 26 bar gone (the 90 days now start Jul 10, a pay period's first
+  day). right
+- Where it went: 437.17 + 38.00 = 475.17. same. GAS 38.00 now a place.
+  Everything else 177.18 unchanged (the Oct 4 pharmacy still not in
+  PHARMACY: UNCLEAR, as Oct 5).
+- Even pace day 6 of 14: 520.00 x 8/14 = 297.142 -> 297.14; 476.55 - 297.14
+  = 179.41 more. same
+- Usual by day 6: 0.00; so far 164.70 (needs + wants). same
+- By payday: needs 121.25/6 x 8 = 161.67 (up); 2,957.67 - 161.67 = 2,796.00.
+  same. Wants 43.45/6 x 8 = 57.94; 476.55 - 57.94 = 418.61. same
+- Payday effect 0.26 / 2.78 (6 full pay periods). same
+- Day of week (Jul 10 is a Friday; 13 of Fri-Wed, 12 Thursdays): Tue
+  (86.75 + 38.00)/13 = 9.59; Mon 10.38 the most. same
+- No banner on Trends while a bank cannot be read; 40.9 asks for one only
+  when the totals do not match. ok
+
+Running record end of Oct 7:
+  Savings 4,283.40 | Needs 2,957.67 | Wants 476.55 | Wishlist 295.01 |
+  Held -10.00 | total 8,002.63
+  Bank (as read): checking 3,153.90, savings 5,500.00, Everyday 426.08;
+  Second Bank not read (CINEMA 16.00 posted there, unseen)
+
+======================================================================
+DAY 8, Thu Oct 8 (full look)
+======================================================================
+
+Banks: Second Bank readable again (CINEMA Oct 7 16.00); Second Card's new
+statement: closed Tue Oct 6, balance 225.19, minimum 35.00, due Tue Oct
+20; savings "transfer to CHK 1111" 114.99 out and checking "transfer from
+SAV 2222" 114.99 in (my headphones money).
+Did: cinema -> Wants.
+
+Worked out first:
+- Cinema: wants 476.55 - 16.00 = 460.55. Before sorting, 16.00 held back
+  (Review "$16.00 held back", same).
+- The 114.99 move: both halves show the same day, a transfer between my
+  accounts, no bucket changes (5.3), nothing in transit.
+- 50.4: moves savings -> checking since tracking 114.99; sorted to Wishlist
+  114.99 - refunds 0 - 114.99 = 0.00 -> $X = 0.00 -> the line goes away.
+- Self-check: checking 3,153.90 + 114.99 = 3,268.89; savings 5,500.00 -
+  114.99 = 5,385.01; Everyday 426.08; Second 225.19 + 16.00 = 241.19. Bank
+  side 3,268.89 + 5,385.01 - 426.08 - 241.19 = 7,986.63. App side 4,283.40 +
+  2,957.67 + 460.55 + 295.01 - 10.00 = 7,986.63. Match.
+- Safe to spend 460.55; 8 days.
+- 3.8: savings + Wishlist 4,578.41; account 5,385.01; to move 0.00; extra
+  806.60.
+- Second Card's Oct 6 statement check: 86.75 (after the Oct 2 payment) +
+  23.45 + 114.99 = 225.19 = the bank's balance. Good.
+- Home, Second Card (52.1): statement 225.19 due Tue Oct 20; payments since
+  Oct 6: 0.00; owes now 225.19 + 16.00 = 241.19; all set aside. First
+  reminder day Oct 13 (7 days before), so not "due" yet. Everyday
+  unchanged 426.08. Set aside 667.27 < extra 806.60 -> 667.27 in savings.
+- Statement Second Card (52.4): Sep 7 to Oct 6. Carried in: the statement
+  before 100.00 less the 100.00 that reached the card on Oct 2 = 0.00.
+  Before setup day on it: the card owed 186.75 on setup day = 100.00 +
+  86.75 of purchases from Sep 7 to Sep 30, which are BOOKSHOP Sep 15 18.00
+  and PHARMACY Sep 22 68.75 (both on this card) = 86.75. Since setup day:
+  BOOKSHOP Oct 3 23.45 (wants), AUDIO Oct 5 114.99 (Wishlist). Lines:
+  0.00 + 86.75 + 23.45 + 114.99 = 225.19, nothing not matched. By paycheck:
+  before setup day 86.75, paycheck of Oct 2: 138.44.
+
+Home
+- Safe to spend 460.55 / 460.55, no longer greyed. same. 8 days. same
+- Needs attention: nothing. same (the bank is read again)
+- Wants 460.55 of 520.00; needs 2,957.67 of 3,078.92; to sort 0. same
+- No Wishlist move line (X = 0.00). same
+- Everyday: owes 426.08, paid 0.00, all set aside. same
+- Second: "Due Tue, Oct 20" header (the due date), "Statement $225.19,
+  due Tue, Oct 20; $0.00 paid toward it. Owes $241.19 now, all of it set
+  aside." same
+- "$667.27 ... in your savings account". same
+Buckets: 7,986.63 "Matches your bank". Needs 2,957.67, Wants 460.55,
+  Savings 4,283.40, Wishlist 295.01, Held -10.00. same
+Review: 0. same
+Lists: Needs 2,957.67 same; Wants 243.40 + 520.00 - 302.85 = 460.55 (cinema
+  -16.00 on Oct 7) same; Savings 4,283.40 same; Wishlist 295.01, jacket and
+  lamp Ready, more than the list needs 160.01, headphones bought, same;
+  Held -10.00 same.
+Payday: savings plus Wishlist 4,578.41, account 5,385.01, to move 0.00,
+  extra 806.60. same. (Back now that both banks are read.)
+Statement Second Card: "Mon, Sep 7 to Tue, Oct 6 · due Tue, Oct 20",
+  carried in "$100.00 on the statement before, less $100.00 paid and
+  credited since" 0.00; purchases 225.19; balance 225.19; by bucket: Wants
+  23.45, Wishlist 114.99, Before setup day 86.75 (2 items); by paycheck:
+  Before setup day 86.75, Paycheck of Fri, Oct 2 138.44. All same.
+Statement Everyday: unchanged 252.45 + 59.95 = 312.40. same
+Settings: unchanged. same
+Status: "All working", 42 events, totals match. Bank section still empty
+  (DIFFERENT, 0.7, see Oct 1).
+Alerts list: "No alerts yet". DIFFERENT (10.5): the Second Bank login
+  problem lasted from Oct 7 7:00 AM; told once it lasted 12 hours (Oct 7
+  7:00 PM, or at the 8:00 PM review time). Nothing listed. (Same pattern
+  as Oct 3: no alert of any kind has been listed so far.)
+Trends (90 days Jul 11 - Oct 8)
+- Bar Oct 2 - Oct 15: needs 121.25, wants 43.45 + 16.00 = 59.45, Wishlist
+  114.99, total 295.69. same. Headline 180.70 DIFFERENT (rulebook 295.69,
+  Wishlist left out), as Oct 5.
+- Where it went: 475.17 + 16.00 = 491.17 ("Jul 11 - Oct 8"). same. Five
+  biggest: AUDIO 114.99, PHARMACY 68.75, HARDWARE 64.90, GAS 38.00, CINEMA
+  16.00; Everything else 491.17 - 302.64 = 188.53. same
+- Even pace day 7 of 14: 520.00 x 7/14 = 260.00; 460.55 - 260.00 = 200.55
+  more. same
+- Usual: so far 180.70, usual 0.00. same
+- By payday: needs 121.25/7 x 7 = 121.25 -> 2,957.67 - 121.25 = 2,836.42;
+  wants 59.45 -> 460.55 - 59.45 = 401.10. same
+- Payday effect 0.26 / 2.78. same
+- Day of week (Jul 11 is a Saturday; 13 of Sat-Thu, 12 Fridays): Wed
+  (42.18 + 16.00)/13 = 4.47; Fri 6.60/12 = 0.55; Mon 10.38 the most. same
+- Streak 1, best 1. same
+
+Running record end of Oct 8:
+  Savings 4,283.40 | Needs 2,957.67 | Wants 460.55 | Wishlist 295.01 |
+  Held -10.00 | total 7,986.63
+  Bank: checking 3,268.89, savings 5,385.01, Everyday 426.08, Second 241.19
+  Wishlist sorted 114.99, refunds 0, moves savings -> checking 114.99
+  Second Card statement Oct 6: 225.19, min 35.00, due Oct 20, paid 0.00
