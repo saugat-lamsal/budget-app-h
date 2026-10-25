@@ -583,8 +583,8 @@
   {
     "section": "home",
     "file": "packages/web/src/screens/choose.tsx",
-    "find": "    if (extra.final === true || extra.always !== undefined) {\n      setSaid(null);\n      setSheet({ item: target.id, step: 'confirm', pending });\n    } else submit(pending);\n",
-    "replace": "    submit(pending);\n",
+    "find": "    } else if (extra.final === true || extra.always !== undefined) {\n      setSaid(null);\n      setSheet({ item: target.id, step: 'confirm', pending });\n    } else submit(pending);\n",
+    "replace": "    } else submit(pending);\n",
     "why": "[review] 6.1 B52 anything final is sent without asking"
   },
   {
@@ -856,8 +856,8 @@
   {
     "section": "home",
     "file": "packages/web/src/screens/choose.tsx",
-    "find": "    if (extra.final === true || extra.always !== undefined) {\n      setSaid(null);\n",
-    "replace": "    if (extra.final === true || extra.always !== undefined) {\n",
+    "find": "    } else if (extra.final === true || extra.always !== undefined) {\n      setSaid(null);\n",
+    "replace": "    } else if (extra.final === true || extra.always !== undefined) {\n",
     "why": "[review] the question that asks first shows what was said about the last thing"
   },
   {
@@ -3708,5 +3708,40 @@
     "find": "  const parts = (['needs', 'wants', 'old-card', 'unsorted', 'wishlist'] as const).flatMap((part) => {",
     "replace": "  const parts = (['needs', 'wants', 'old-card', 'unsorted'] as const).flatMap((part) => {",
     "why": "[her-trends] 40.4 a bar's words leave out its Wishlist part"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Status.tsx",
+    "find": "ids: ['last-read', 'last-sync', 'last-read-1', 'last-sync-1', 'last-read-2', 'last-sync-2'], testId: 'status-card-bank'",
+    "replace": "ids: ['last-read', 'last-sync'], testId: 'status-card-bank'",
+    "why": "[her-end] 0.7 her banks' lines are in no card on the status page"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/status-text.ts",
+    "find": "b.lastSync.result === 'failed' || b.lastSync.result === 'needs-login'",
+    "replace": "b.lastSync.result === 'needs-login'",
+    "why": "[her-end] HB32 12.3 a failed sync of one bank says the totals match"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Settings.tsx",
+    "find": "  const mom = view.settings.momReservePerPaycheck !== undefined;",
+    "replace": "  const mom = true;",
+    "why": "[her-end] Off in this setup: the paycheck rule's sheet shows a mom reserve row"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Settings.tsx",
+    "find": "  const wishlist = view.settings.split.wishlist !== undefined;",
+    "replace": "  const wishlist = false;",
+    "why": "[her-end] section 2: the paycheck rule's sheet has no Wishlist row"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/settings-text.ts",
+    "find": "${split.wishlist === undefined ? '' : `, Wishlist ${split.wishlist}`}",
+    "replace": "",
+    "why": "[her-end] 13.5 the change log leaves Wishlist out of the split"
   }
 ]

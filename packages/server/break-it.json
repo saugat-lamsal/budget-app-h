@@ -1640,8 +1640,8 @@
   {
     "section": "history",
     "file": "packages/server/src/history/keeper.ts",
-    "find": "this.#save({ answer: { book: calls }, decision:",
-    "replace": "this.#save({ answer: { book: calls.slice(1) }, decision:",
+    "find": "this.#save({ answer: { book: calls, ...(extra",
+    "replace": "this.#save({ answer: { book: calls.slice(1), ...(extra",
     "why": "[keeper] save the answer without what it did to the book"
   },
   {
@@ -4846,8 +4846,8 @@
   {
     "section": "bank-rules",
     "file": "packages/server/src/history/keeper.ts",
-    "find": "    return reviewView({ today: this.today(), book: this.book(), madeUpData: false, labeled });",
-    "replace": "    return reviewView({ today: this.today(), book: this.book(), madeUpData: false });",
+    "find": "    const view = reviewView({ today: this.today(), book: this.book(), madeUpData: false, labeled });",
+    "replace": "    const view = reviewView({ today: this.today(), book: this.book(), madeUpData: false });",
     "why": "[b226] the real server leaves the hints out of Review"
   },
   {
@@ -5735,8 +5735,8 @@
   {
     "section": "trends",
     "file": "packages/server/src/trends.ts",
-    "find": "const planned = (i: TrendsItem): boolean => i.part !== 'old-card';",
-    "replace": "const planned = (i: TrendsItem): boolean => i.part !== undefined;",
+    "find": "const planned = (i: TrendsItem): boolean => i.part !== 'old-card' && i.part !== 'wishlist';",
+    "replace": "const planned = (i: TrendsItem): boolean => i.part !== 'wishlist';",
     "why": "[trends] 40.7 old card payments counted against the usual"
   },
   {

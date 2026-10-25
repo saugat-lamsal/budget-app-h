@@ -3,6 +3,7 @@ import { HER_BUCKET_PATHS, SCREEN_PATHS } from '../../server/src/http/server.js'
 import { HER_POT_SLUGS as SERVER_HER_SLUGS } from '../../server/src/views/activity.js';
 import { HER_BUCKET_ROUTES, HER_POT_SLUGS, POT_SLUGS, SCREEN_ROUTES, activityPath, pathOfRoute, routeOf } from '../src/app/routes.js';
 import { bucketTitle, wishlistMoveText } from '../src/screens/cards-text.js';
+import { splitText } from '../src/screens/settings-text.js';
 import { POT_NAMES } from '../src/ui/names.js';
 
 // Her rulebook, PR 9: the Wishlist bucket on the phone: its name, its list's
@@ -19,6 +20,14 @@ describe('Section 2 the Wishlist bucket on the phone', () => {
     expect(HER_BUCKET_ROUTES.map(pathOfRoute)).toEqual([...HER_BUCKET_PATHS]);
     expect(SCREEN_ROUTES.map(pathOfRoute)).not.toContain('/buckets/wishlist');
     expect(SCREEN_PATHS).not.toContain('/buckets/wishlist');
+  });
+
+  // PR 12, found by the agent on her screens: the change log said "50 / 30 /
+  // 20 -> 40 / 30 / 20" for a change that also gave Wishlist 10%.
+  it("13.5 the change log says the split with Wishlist's share where the split names it; upstream's split as it was", () => {
+    expect(splitText({ savings: 40, needs: 30, wants: 20, wishlist: 10 })).toBe('40 / 30 / 20, Wishlist 10');
+    expect(splitText({ savings: 50, needs: 30, wants: 20, wishlist: 0 })).toBe('50 / 30 / 20, Wishlist 0');
+    expect(splitText({ savings: 50, needs: 30, wants: 20 })).toBe('50 / 30 / 20');
   });
 
   it('52.4 a card statement lists Wishlist purchases under Wishlist', () => {

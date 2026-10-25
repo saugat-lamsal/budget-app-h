@@ -58,7 +58,8 @@ function StatusLoading() {
 }
 
 const GROUPS: readonly { readonly title: string; readonly ids: readonly StatusLine['id'][]; readonly testId: string }[] = [
-  { title: 'The bank', ids: ['last-read', 'last-sync'], testId: 'status-card-bank' },
+  // Her setup (0.7, PR 6): each bank's own lines, in the same card (PR 12).
+  { title: 'The bank', ids: ['last-read', 'last-sync', 'last-read-1', 'last-sync-1', 'last-read-2', 'last-sync-2'], testId: 'status-card-bank' },
   { title: 'Backups', ids: ['backups'], testId: 'status-card-backups' },
   { title: 'The server', ids: ['started', 'history'], testId: 'status-card-server' },
   { title: 'Checks', ids: ['difference', 'alerts'], testId: 'status-card-checks' },

@@ -132,6 +132,23 @@ describe.each(ENGINES)('her Wishlist on the screens, in %s', (_name, engine) => 
     });
   });
 
+  // PR 12, found by the agent on her screens: the sheet showed "Mom reserve
+  // $0.00" and had no Wishlist row.
+  it('Off in this setup: the paycheck rule\'s "what it would do" sheet lists her buckets with Wishlist, and nothing about a mom reserve', async () => {
+    const life = await herWithAPurchase();
+    await served(life, async (page, base) => {
+      await open(page, base, '/settings');
+      await page.getByTestId('row-paycheck-rule').click();
+      await page.getByTestId('field-paycheck-rule').fill('MADEUP CORP PAYROLL');
+      await page.getByTestId('sheet-save').click();
+      const preview = page.getByTestId('preview');
+      await preview.waitFor();
+      expect(await preview.getByTestId('preview-momReserve').count()).toBe(0);
+      expect(words(await preview.innerText()).toLowerCase()).not.toContain('mom');
+      expect(words(await preview.getByTestId('preview-wishlist').innerText())).toBe('Wishlist $300.00 $300.00');
+    });
+  });
+
   it('50.4 Home says to move the Wishlist purchase from savings to checking, and when', async () => {
     const life = await herWithAPurchase();
     const sorted = choose(life.keeper, { item: 'gadget-1', choice: { to: 'wishlist' } });

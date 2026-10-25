@@ -52,8 +52,14 @@ const browserTests = process.env['SKIP_BROWSER_TESTS'] === '1'
       },
     ];
 
+// BREAK_IT_BAIL=1 (PR 12, for break-it over hundreds of breaks): a run stops
+// at its first failed test. A break is caught once any test fails, so the
+// verdicts are the same; a break that survives still runs every test.
+const bail = process.env['BREAK_IT_BAIL'] === '1' ? { bail: 1 } : {};
+
 export default defineConfig({
   test: {
+    ...bail,
     projects: [
       { test: { name: 'money', root: './packages/money', exclude: [...configDefaults.exclude, ...left(SLOW_FILES.money)] } },
       { test: { name: 'server', root: './packages/server', include: ['test/**/*.test.ts'], exclude: [...configDefaults.exclude, ...left(SLOW_FILES.server)] } },

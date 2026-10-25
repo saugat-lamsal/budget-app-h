@@ -99,7 +99,8 @@ export function zoneText(zone: string): string {
 }
 
 export function splitText(split: Settings['split']): string {
-  return `${split.savings} / ${split.needs} / ${split.wants}`;
+  // Her rulebook, section 2 (PR 12): Wishlist's share too, where the split names it.
+  return `${split.savings} / ${split.needs} / ${split.wants}${split.wishlist === undefined ? '' : `, Wishlist ${split.wishlist}`}`;
 }
 
 // "8:00 PM" for "20:00".
