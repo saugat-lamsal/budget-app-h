@@ -256,6 +256,28 @@ describe.each(ENGINES)('Swipe to sort in %s', (_name, engine) => {
     await page.context().close();
   });
 
+  it('PR 3 B264 a refused swipe’s card is back at rest in the very commit that adds the refusal, before any passive effect', async () => {
+    const { book } = life('review-busy');
+    const id = idOf(book, 'LATE FEE');
+    const page = await open('review-busy', MOVING);
+    await page.route('**/api/choice', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: false, code: 'refused', why: 'Made up: refused.' }) }));
+    // A mutation observer runs right after the commit that added the notice
+    // (layout effects included) and before any passive effect or frame.
+    await page.evaluate(() => {
+      const w = window as unknown as { __cardsWhenNoticeCame?: string[] };
+      new MutationObserver(() => {
+        if (w.__cardsWhenNoticeCame !== undefined || document.querySelector('[data-testid="notice"]') === null) return;
+        w.__cardsWhenNoticeCame = [...document.querySelectorAll<HTMLElement>('[data-testid="swipe-card"]')].map((e) => e.style.transform);
+      }).observe(document.body, { childList: true, subtree: true });
+    });
+    await drag(page, id, 200);
+    await page.getByTestId('notice').waitFor();
+    const cards = await page.evaluate(() => (window as unknown as { __cardsWhenNoticeCame?: string[] }).__cardsWhenNoticeCame);
+    expect(cards).toBeDefined();
+    expect(cards!.filter((t) => t !== '')).toEqual([]);
+    await page.context().close();
+  });
+
   it('PR 3 with nothing left waiting, Review says "All sorted"', async () => {
     const page = await open('all-clear');
     expect(await textAt(page, 'review-empty')).toContain('All sorted');
