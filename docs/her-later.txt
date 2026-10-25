@@ -81,3 +81,16 @@ FROM PR 7+8 (Oct 24)
 13. LATER, design. Home's attention list and the card rows both say when a
     card is due (9.6 and 52.1). If it reads as said twice on her phone, the
     attention row could go in her setup, with his OK.
+
+FROM PR 12 (Oct 25)
+
+14. WAITING, upstream (his OK, Oct 25). HB30, the split with nothing left
+    for the rest, goes upstream; he opens that pull request himself. It is
+    already here (packages/server/src/choices.ts, resolveSplit). When the
+    next merge from upstream brings it, keep one copy of the change and
+    both sets of tests (docs/her-merging.txt, step 6).
+
+15. WAITING, upstream (his answer, Oct 25). HB31: Home's greyed "last
+    checked" safe to spend is to be remembered after every sync whose
+    totals match, not only when Home is opened (B86). Fixed in upstream
+    first, then merged here; not built here on its own.

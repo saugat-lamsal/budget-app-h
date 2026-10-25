@@ -430,3 +430,6 @@ or "Due" on Wishlist items and cards, never color alone.
   the change log; the rest settled in agent-pay-period-h/settled.txt.
   HB31 waits on his answer. BREAK_IT_BAIL=1 makes a test run stop at its
   first failure (break-it over hundreds of breaks; same verdicts).
+- PR 12 merged by him (Oct 25, 2026). His answers: HB30 agreed, and to go
+  upstream (he opens that pull request); HB31 fixed in upstream first, then
+  merged here (docs/her-later.txt 14 and 15); HB32 agreed.
