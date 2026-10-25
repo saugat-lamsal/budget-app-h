@@ -60,6 +60,8 @@
   --chart-savings: #4cc3a5;
   --chart-mom: #a8b0f2;
   --chart-pace: rgb(255 255 255 / 0.4);
+  /* Her rulebook, 40.4 and 40.5: Wishlist's part and line. */
+  --chart-wishlist: #d9a0e0;
 
   --backdrop: rgb(0 0 0 / 0.6);
   /* Border highlight, a soft shadow, the 1px top edge, and a sheen: white fading out downward from the top (an inset shadow, not a gradient, so the contrast check can read the card). Kept small: big blurs are slow to draw where there is no graphics chip. */

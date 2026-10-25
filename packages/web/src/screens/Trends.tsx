@@ -27,6 +27,7 @@ import {
   usualLines,
   waitingWords,
   weekdayName,
+  wishlistOverTimeWords,
 } from './trends-text.js';
 
 // The Trends tab (rulebook section 40, QUESTIONS.md A58, A59): Past, what was
@@ -39,7 +40,8 @@ import {
 // It only reads and never sends anything. The one main number is what was
 // spent so far this pay period.
 
-const PARTS: readonly TrendsPart[] = ['needs', 'wants', 'old-card', 'unsorted'];
+// Her rulebook, 40.4: Wishlist's part, where the setup has it.
+const PARTS: readonly TrendsPart[] = ['needs', 'wants', 'old-card', 'unsorted', 'wishlist'];
 
 // "Off in this setup": with no old card there is no old card part (40.2, 40.4),
 // and nothing is said about leaving its payments out.
@@ -257,25 +259,30 @@ function Savings({ view }: { readonly view: Tracking }) {
   const first = view.savings[0] ?? now;
   // "Off in this setup": with no mom reserve, savings alone (40.5).
   const reserveNow = now.momReserve;
+  const wishlistNow = now.wishlist;
   return (
     <Card title="Savings" padded testId="trends-savings">
       <div className="list">
         <ListRow title="Savings" trailing={<Money cents={now.savings} testId="savings-now" />} />
         {reserveNow !== undefined && <ListRow title="Mom reserve" trailing={<Money cents={reserveNow} testId="mom-now" />} />}
+        {/* Her rulebook, 40.5: Wishlist beside savings, its own amount. */}
+        {wishlistNow !== undefined && <ListRow title="Wishlist" trailing={<Money cents={wishlistNow} testId="wishlist-now" />} />}
       </div>
       <LineChart
         testId="savings-chart"
         length={view.savings.length}
-        label={`Savings from ${moneyWords(first.savings)} on ${monthDay(first.date)} to ${moneyWords(now.savings)} now${reserveNow === undefined ? '' : `; the mom reserve from ${moneyWords(first.momReserve ?? 0)} to ${moneyWords(reserveNow)}`}.`}
+        label={`Savings from ${moneyWords(first.savings)} on ${monthDay(first.date)} to ${moneyWords(now.savings)} now${reserveNow === undefined ? '' : `; the mom reserve from ${moneyWords(first.momReserve ?? 0)} to ${moneyWords(reserveNow)}`}${wishlistOverTimeWords(first, now)}.`}
         lines={[
           { key: 'savings', tone: 'savings', values: view.savings.map((p) => p.savings), area: true },
           ...(reserveNow === undefined ? [] : [{ key: 'mom', tone: 'mom' as const, values: view.savings.map((p) => p.momReserve ?? 0), dashed: true }]),
+          ...(wishlistNow === undefined ? [] : [{ key: 'wishlist', tone: 'wishlist' as const, values: view.savings.map((p) => p.wishlist ?? 0), dashed: true }]),
         ]}
       />
       <ChartLegend
         items={[
           { tone: 'savings', label: 'Savings' },
           ...(reserveNow === undefined ? [] : [{ tone: 'mom' as const, label: 'Mom reserve', dashed: true }]),
+          ...(wishlistNow === undefined ? [] : [{ tone: 'wishlist' as const, label: 'Wishlist', dashed: true }]),
         ]}
       />
       <p className="trend-note">Since setup day ({monthDay(view.setupDay)}), at the end of each pay period. Nothing before: the buckets did not exist then.</p>

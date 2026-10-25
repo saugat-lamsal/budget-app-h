@@ -2,7 +2,7 @@ import type { Server } from 'node:http';
 import type { Browser, Page } from 'playwright';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { memoryLog } from '../../../server/src/log.js';
-import { parseRequest } from '../../../server/src/choices.js';
+import { parseWishlistRequest } from '../../../server/src/wishlist-items.js';
 import { ACCOUNT_IDS } from '../../../server/test/fake-plaid.js';
 import { herLife } from '../../../server/test/her-harness.js';
 import { decision, noonInNewYork, type Life } from '../../../server/test/keeper-harness.js';
@@ -47,8 +47,8 @@ async function herWithAPurchase(): Promise<Life> {
 }
 
 function add(life: Life, name: string, price: number): void {
-  const request = parseRequest({ id: decision(), wishlist: { add: { name, price } } });
-  if (request === null || !('wishlist' in request) || !life.keeper.wishlist(request).ok) throw new Error(`could not add ${name}`);
+  const request = parseWishlistRequest({ id: decision(), wishlist: { add: { name, price } } });
+  if (request === null || !life.keeper.wishlist(request).ok) throw new Error(`could not add ${name}`);
 }
 
 async function open(page: Page, base: string, path: string): Promise<void> {

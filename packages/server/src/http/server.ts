@@ -7,14 +7,13 @@ import { BACKUP_BEAT_PATH, BACKUP_HEALTH_PATH, fromThisMachine } from '../backup
 import { WEBHOOK_BODY_LIMIT, WEBHOOK_PATH } from './webhook-path.js';
 import type { BankAnswer, BankConnectedRequest, BankConnectionView, BankLinkAnswer, BankLinkRequest, BankRolesRequest } from '../views/bank.js';
 import { parseRequest } from '../choices.js';
-import type { WishlistRequest, WishlistResponse } from '../wishlist-items.js';
 import { HER_POT_SLUGS, POT_SLUGS, potOfSlug, type ActivityView } from '../views/activity.js';
 import type { AlertsView } from '../views/alerts.js';
 import type { StatusView } from '../views/status.js';
 import type { TrendsView } from '../views/trends.js';
 import type { BucketsView } from '../views/buckets.js';
 import type { BankRuleRequest, BankRuleResponse } from '../views/bank-rules.js';
-import type { ChoiceRequest, ChoiceResponse, MoveRequest, MoveResponse, RuleRequest, RuleResponse, SettingsRequest, SettingsResponse, SetupRequest, SetupResponse } from '../views/choice.js';
+import type { ChoiceRequest, ChoiceResponse, MoveRequest, MoveResponse, RuleRequest, RuleResponse, SettingsRequest, SettingsResponse, SetupRequest, SetupResponse, WishlistResponse } from '../views/choice.js';
 import type { HomeView } from '../views/home.js';
 import type { PaydayView } from '../views/payday.js';
 import type { PushAnswer, PushOnRequest } from '../views/push.js';
@@ -247,7 +246,8 @@ export type SettingsHandler = (request: IncomingMessage, change: SettingsRequest
 export type RuleHandler = (request: IncomingMessage, change: RuleRequest) => RuleResponse | Promise<RuleResponse>;
 export type SetupHandler = (request: IncomingMessage, answer: SetupRequest) => SetupResponse | Promise<SetupResponse>;
 export type BankRuleHandler = (request: IncomingMessage, change: BankRuleRequest) => BankRuleResponse | Promise<BankRuleResponse>;
-export type WishlistHandler = (request: IncomingMessage, change: WishlistRequest) => WishlistResponse | Promise<WishlistResponse>;
+// Her rulebook, 50.1: it reads what was sent itself; null when it is not a list change.
+export type WishlistHandler = (request: IncomingMessage, sent: unknown) => WishlistResponse | null | Promise<WishlistResponse | null>;
 
 // What handles each kind of request sent to /api/choice.
 interface ChoiceHandlers {
@@ -363,6 +363,13 @@ async function markSeen(request: IncomingMessage, response: ServerResponse, seen
 async function takeChoice(request: IncomingMessage, response: ServerResponse, handlers: ChoiceHandlers): Promise<void> {
   const sent = await readOwnJson(request, response, CHOICE_LIMIT);
   if (response.writableEnded || response.headersSent) return;
+  // Her rulebook, 50.1: a change to her Wishlist list, read by its own handler.
+  if (handlers.wishlist !== undefined && typeof sent === 'object' && sent !== null && 'wishlist' in sent) {
+    const said = await handlers.wishlist(request, sent);
+    if (said === null) send(response, 400, 'text/plain; charset=utf-8', 'Not a choice that can be made.', 'no-store');
+    else send(response, said.ok ? 200 : 422, 'application/json; charset=utf-8', JSON.stringify(said), 'no-store');
+    return;
+  }
   const parsed = parseRequest(sent);
   if (parsed === null) {
     send(response, 400, 'text/plain; charset=utf-8', 'Not a choice that can be made.', 'no-store');
@@ -383,9 +390,7 @@ async function takeChoice(request: IncomingMessage, response: ServerResponse, ha
             ? await handlers.setup?.(request, parsed)
             : 'bankRule' in parsed
               ? await handlers.bankRule?.(request, parsed)
-              : 'wishlist' in parsed
-                ? await handlers.wishlist?.(request, parsed)
-                : await handlers.choice?.(request, parsed);
+              : await handlers.choice?.(request, parsed);
   if (answer === undefined) {
     send(response, 404, 'application/json; charset=utf-8', JSON.stringify({ error: 'not-found' }), 'no-store');
     return;

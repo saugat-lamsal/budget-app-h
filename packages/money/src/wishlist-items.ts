@@ -99,11 +99,7 @@ export function changeWishlist(list: WishlistList, change: WishlistChange, date:
   ];
   if ('add' in change) {
     if (items.length >= WISHLIST_MAX_ITEMS) refuse(`The list has ${WISHLIST_MAX_ITEMS} things already. Remove one to add another.`);
-    const item: WishlistItem = {
-      id: `item-${list.nextId}`,
-      name: nameOf(change.add.name),
-      price: priceOf(change.add.price),
-    };
+    const item: WishlistItem = { id: `item-${list.nextId}`, name: nameOf(change.add.name), price: priceOf(change.add.price) };
     return freeze([...items, item], list.bought, line('added', item), list.nextId + 1);
   }
   if ('change' in change) {
@@ -181,12 +177,7 @@ export function fillWishlist(bucket: Cents, items: readonly WishlistItem[]): Wis
     const price = BigInt(item.price);
     const has = left < price ? left : price;
     left -= has;
-    return {
-      ...item,
-      has: Number(has),
-      ready: has === price,
-      percent: Number((has * 100n) / price),
-    };
+    return { ...item, has: Number(has), ready: has === price, percent: Number((has * 100n) / price) };
   });
   return Object.freeze({ items: Object.freeze(filled), more: Number(left) });
 }

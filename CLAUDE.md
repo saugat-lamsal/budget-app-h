@@ -148,8 +148,8 @@ Test only what changed (upstream's rule, kept):
 - Never rerun a suite that already passed on the same code.
 - Long simulations only as point 7 says.
 - A commit with only docs or notes gets [skip ci], with one exception:
-  main needs the four CI checks (checks, chromium, webkit, image) before a
-  pull request can merge, and a pull request whose last commit says
+  main needs the four CI checks (checks, webkit 1/2, webkit 2/2, image)
+  before a pull request can merge, and a pull request whose last commit says
   [skip ci] never gets them. So [skip ci] goes only on a docs or notes
   commit that is not the last commit of a pull request with code in it;
   the last commit of such a pull request always runs CI.
@@ -160,10 +160,11 @@ Test only what changed (upstream's rule, kept):
 One good test per case beats many that check the same thing.
 
 - Default run: `npm test`, and CI on every pull request (jobs: checks,
-  webkit, image). It leaves out the slow files, runs fast-check at most
+  webkit 1/2 and webkit 2/2, image). It leaves out the slow files, runs fast-check at most
   150 times a property, one short simulated life where a file needs one,
   and the browser tests in WebKit only (her phone is an iPhone, Safari's
-  engine). Locally, `BROWSER_ENGINE=chromium` picks Chromium.
+  engine), split by file in two shards that run at the same time (vitest
+  --shard). Locally, `BROWSER_ENGINE=chromium` picks Chromium.
 - Slow run: `npm run test:slow` (sets TEST_SLOW=1). Everything, with the
   counts each test file had before, and the browser tests in Chromium. By
   hand in CI: Actions, Tests, Run workflow, tick "Run the slow tests".
@@ -392,3 +393,21 @@ or "Due" on Wishlist items and cards, never color alone.
   see "Two test runs". Before it, the default run took 4 min 20 s here
   without browsers, and CI 17 min 30 s; the PR text has the times after.
   Required checks on main: checks, webkit, image.
+- PR #9 merged (Oct 24, 2026); its branch deleted.
+- PR 10+11, Wishlist items and Trends for her setup (branch
+  her-wishlist-items-trends). Rules in force: 40.2, 40.4, 40.5, 40.11 and
+  50.1 to 50.3; section H holds no approved text not built. Money:
+  wishlist-items.ts (50.1 the list and its refusals, 50.2 the fill, 50.3
+  bought and changed back; no money moves) and Book.wishlistSpentIn (a
+  read hook, 40.2). Server: the list is kept as answers in the books'
+  history (Answer.wishlist, replayed in history-db), changed through
+  /api/choice ({ wishlist: ... }, wishlist-items.ts), and a sort to
+  Wishlist names the item (ChoiceRequest.wishlistItem) in the same answer;
+  Review and the bucket lists carry the list, Wishlist's list carries the
+  fill, what was bought, and the changes. Trends: Wishlist's part of each
+  bar, Wishlist beside savings, no estimate for it; 40.7 stays on needs and
+  wants (HB27). Web: the list on /buckets/wishlist, "Which thing on your
+  list was it?" in the choice sheet, Trends' Wishlist part and line.
+  Readings HB26 to HB29. CI: the WebKit job in two shards, webkit 1/2 and
+  webkit 2/2, both required on main (checks, webkit 1/2, webkit 2/2,
+  image).

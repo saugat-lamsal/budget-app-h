@@ -7,8 +7,8 @@
 // packages/money/test/wishlist-items-her.test.ts. Every name, price and date
 // is made up.
 import { describe, expect, it } from 'vitest';
-import { parseRequest } from '../src/choices.js';
-import type { WishlistResponse } from '../src/wishlist-items.js';
+import { parseWishlistRequest } from '../src/wishlist-items.js';
+import type { WishlistResponse } from '../src/views/choice.js';
 import { ACCOUNT_IDS } from './fake-plaid.js';
 import { herLife } from './her-harness.js';
 import { choose, decision, lifeInAFile, noonInNewYork, setUpThroughTheDesk, type Life } from './keeper-harness.js';
@@ -43,8 +43,8 @@ async function herWithWishlist(): Promise<Life> {
 }
 
 function edit(k: Keeper, wishlist: unknown, more: Record<string, unknown> = {}): WishlistResponse {
-  const parsed = parseRequest({ id: decision(), wishlist, ...more });
-  if (parsed === null || !('wishlist' in parsed)) throw new Error(`not a list change: ${JSON.stringify(wishlist)}`);
+  const parsed = parseWishlistRequest({ id: decision(), wishlist, ...more });
+  if (parsed === null) throw new Error(`not a list change: ${JSON.stringify(wishlist)}`);
   return k.wishlist(parsed);
 }
 
@@ -130,11 +130,11 @@ describe('50.1 Wishlist items through the desk', () => {
   it('50.1 the same decision sent twice changes nothing the second time; a refused change leaves nothing behind', async () => {
     const life = await herWithWishlist();
     const k = life.keeper;
-    const request = parseRequest({
+    const request = parseWishlistRequest({
       id: decision(),
       wishlist: { add: { name: 'Rain jacket', price: 12_000 } },
     });
-    if (request === null || !('wishlist' in request)) throw new Error('not a list change');
+    if (request === null) throw new Error('not a list change');
     expect(k.wishlist(request)).toMatchObject({ ok: true, replayed: false });
     expect(k.wishlist(request)).toMatchObject({ ok: true, replayed: true });
     expect(edit(k, { add: { name: 'Free thing', price: 0 } })).toEqual({
@@ -168,7 +168,7 @@ describe('50.1 Wishlist items through the desk', () => {
       { remove: {} },
       'add',
     ]) {
-      expect(parseRequest({ id: decision(), wishlist: bad })).toBeNull();
+      expect(parseWishlistRequest({ id: decision(), wishlist: bad })).toBeNull();
     }
   });
 });

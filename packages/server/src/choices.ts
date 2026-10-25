@@ -54,7 +54,6 @@ import type {
 } from './views/choice.js';
 import { ruleViewOf } from './views/settings.js';
 import type { BankRuleRequest, BankRuleSpec } from './views/bank-rules.js';
-import { parseWishlistRequest, type WishlistRequest } from './wishlist-items.js';
 
 // How a tap reaches the books (Phase 4). The screen sends the choice it was
 // offered; the money math decides. Three promises:
@@ -134,10 +133,8 @@ export function parseMoveRequest(value: unknown): MoveRequest | null {
 
 // Whatever the phone sent: a move, a settings change, or a rule change if it
 // says so, otherwise a choice.
-export function parseRequest(value: unknown): ChoiceRequest | MoveRequest | SettingsRequest | RuleRequest | SetupRequest | BankRuleRequest | WishlistRequest | null {
+export function parseRequest(value: unknown): ChoiceRequest | MoveRequest | SettingsRequest | RuleRequest | SetupRequest | BankRuleRequest | null {
   if (!isRecord(value)) return null;
-  // Her rulebook, 50.1: a change to her Wishlist list.
-  if ('wishlist' in value) return parseWishlistRequest(value);
   if ('bankRule' in value) return parseBankRuleRequest(value);
   if ('move' in value) return parseMoveRequest(value);
   if ('settings' in value) return parseSettingsRequest(value);

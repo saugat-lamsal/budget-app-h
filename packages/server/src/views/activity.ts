@@ -1,5 +1,4 @@
-import { type AnyPot, type Book, type BucketActivity, type Cents, type IsoDate, type Pot, type WishlistItem } from '@budget-app/money';
-import type { WishlistListView } from '../wishlist-items.js';
+import { type AnyPot, type Book, type BoughtItem, type BucketActivity, type Cents, type FilledItem, type IsoDate, type Pot, type WishlistItem, type WishlistLogLine } from '@budget-app/money';
 import { itemKey } from '../item-key.js';
 
 // What the screen for one bucket shows (QUESTIONS.md B97 to B102), worked out
@@ -40,6 +39,15 @@ export type ActivityView =
       // Her rulebook, 50.2 and 50.3: on Wishlist's list, how the bucket fills her items.
       readonly list?: WishlistListView;
     };
+
+// Her rulebook, 50.2 and 50.3: Wishlist's list, worked out on the server: how
+// the bucket fills the items, what was bought, and the changes, newest last (13.5).
+export interface WishlistListView {
+  readonly items: readonly FilledItem[];
+  readonly more: Cents;
+  readonly bought: readonly BoughtItem[];
+  readonly log: readonly WishlistLogLine[];
+}
 
 export function activityView(input: ActivityInput): ActivityView {
   const { today, book, pot, madeUpData } = input;

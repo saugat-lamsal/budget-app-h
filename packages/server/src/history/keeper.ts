@@ -60,7 +60,8 @@ import { statementScreenView, type StatementScreenView } from '../views/statemen
 import { recorderOf, totalsOf, type Answer, type Recorder, type SavedSetupAnswers } from './history.js';
 import { appendEvent, lastSeqOf, readDecision, readHistory, readLastChecked, readSetupInput, replayHistory, saveDecision, saveLastChecked, sealHistory, type DeskName } from './history-db.js';
 import { timeIn, todayIn } from './today.js';
-import { NO_WISHLIST, boughtWith, itemsForReview, tryWishlist, wishlistListView, type WishlistRequest, type WishlistResponse } from '../wishlist-items.js';
+import { NO_WISHLIST, boughtWith, itemsForReview, parseWishlistRequest, tryWishlist, wishlistListView } from '../wishlist-items.js';
+import type { WishlistRequest, WishlistResponse } from '../views/choice.js';
 import type { WishlistChange, WishlistList } from '@budget-app/money';
 
 // 0.7: how many events the books' history holds.
@@ -1130,7 +1131,10 @@ export class Keeper {
       ruleChange: (_request, change) => this.ruleChange(change),
       setup: (_request, answer) => this.setup(answer),
       bankRule: (_request, change) => this.bankRule(change),
-      wishlist: (_request, change) => this.wishlist(change),
+      wishlist: (_request, sent) => {
+        const change = parseWishlistRequest(sent);
+        return change === null ? null : this.wishlist(change);
+      },
       seen: (_request, what) => this.seen(what),
       syncEvery: (_request, minutes) => this.changeSyncEvery(minutes),
       alerts: () => this.alertsView(),

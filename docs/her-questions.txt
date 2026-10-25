@@ -269,3 +269,42 @@ HB25 (screens). Buckets shows Wishlist in the Savings card ("Kept in your
     its own "Wishlist" card. In Review the two quick choices stay needs and
     wants; Wishlist is under "More choices". Payday says "Savings plus
     Wishlist" for what should be in the savings account (3.8).
+
+HB26 (PR 10+11, 50.1). The list. A name is 1 to 80 characters, with the
+    spaces around it dropped (80 is a typing limit, not a money rule); a
+    price is whole cents above $0.00. Changing an item to what it is already
+    is refused as no change. Removing an item asks first. Ids are never used
+    twice. The list starts on setup day and exists only where the setup has
+    Wishlist. Each change is an answer in the books' history, so it is kept
+    with everything else she answers and replays (0.6); no table of its own.
+    The changes are listed on Wishlist's screen, "Changes to your list",
+    newest first (13.5).
+
+HB27 (PR 10+11, 40.7). "Against your usual" stays on needs and wants, as
+    docs/her-plan.txt says (Piece E: "Rules 40.7 and 40.8 stay on needs and
+    wants"). 40.7 cites 40.2, which now counts Wishlist, so Wishlist
+    purchases are left out of it the way old card payments are: they are
+    planned, from money kept for them.
+
+HB28 (PR 10+11, 40.6, 40.10, 40.14 to 40.17, 40.12). The parts that read
+    40.2's spending count Wishlist purchases with the rest: where it went
+    (40.6), the payday effect (40.14), the days of the week (40.15) and
+    repeat charges (40.16). 40.11 lands needs and wants only (no estimate for
+    Wishlist), 40.12 is the savings bucket alone (Wishlist is not added), and
+    40.17 is Wants. Wishlist's part and line have their own chart color, and
+    are always said in words.
+
+HB29 (PR 10+11, 50.3). Which item. "What was paid" is what the purchase
+    takes from Wishlist (for a split one, its Wishlist part): what the bucket
+    went down by. "The day" is the purchase's day. It is asked wherever a
+    purchase is sorted to Wishlist, in Review and when sorting it again from
+    a bucket's list, while the list has items and the purchase is not marked
+    already; a sort to Wishlist that does not say which (or "None of them")
+    is refused, and nothing changes. Money leaving savings sorted to Wishlist
+    is not asked (its money already left savings, as in HB22). One purchase
+    marks at most one item. Changing back is on Wishlist's screen, under
+    "Bought" (the purchase's own row says "Bought: <item>"): the item comes
+    back to the place it had, or last if the list is shorter now; with 20 on
+    the list it is refused. Like a refund (60a), sorting the purchase out of
+    Wishlist later, or the bank taking it back (4.10), leaves the item
+    bought: it does not come back by itself, and she can change it back.

@@ -1,7 +1,7 @@
 import type { WishlistItem } from '@budget-app/money';
 import type { WishlistEdit, WishlistListView, WishlistResponse } from '@budget-app/server/views';
 import { useRef, useState } from 'react';
-import { newDecisionId, sendWishlist, type Reload } from '../app/api.js';
+import { newDecisionId, sendChoice, type Reload } from '../app/api.js';
 import { BottomSheet, Button, ButtonRow, Card, ListRow, Money, Notice, StatusLabel, TextField } from '../ui/blocks.js';
 import { moneyText } from '../ui/money-format.js';
 import { boughtText, itemProgressText, logLineText, moreText, priceOf } from './wishlist-items-text.js';
@@ -35,7 +35,7 @@ export function WishlistList({ list, reload, onChanged }: { readonly list: Wishl
     const what = JSON.stringify([wishlist, confirmed]);
     const id = unsent.current?.what === what ? unsent.current.id : newDecisionId();
     unsent.current = null;
-    sendWishlist({
+    sendChoice({
       id,
       wishlist,
       ...(confirmed ? { confirmed: true } : {}),

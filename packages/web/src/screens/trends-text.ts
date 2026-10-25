@@ -8,7 +8,7 @@ import { moneyText, moneyWords } from '../ui/money-format.js';
 // amount and date comes from the server; these only say them, so what a
 // bar's color shows is always also in words.
 
-const PART_NAMES: Readonly<Record<TrendsPart, string>> = { needs: 'Needs', wants: 'Wants', 'old-card': 'Old card payment', unsorted: 'Unsorted' };
+const PART_NAMES: Readonly<Record<TrendsPart, string>> = { needs: 'Needs', wants: 'Wants', 'old-card': 'Old card payment', unsorted: 'Unsorted', wishlist: 'Wishlist' };
 
 export function partName(part: TrendsPart): string {
   return PART_NAMES[part];
@@ -36,11 +36,18 @@ export function periodNote(p: TrendsPeriod): string | null {
 export function barWords(p: TrendsPeriod): string {
   const head = [`${periodRange(p)}${p.current ? ', so far' : ''}`, p.cutOff ? 'Part of a pay period' : null, p.beforeSetup === 'none' ? null : BEFORE[p.beforeSetup]].filter((n): n is string => n !== null).join('. ');
   // "Off in this setup": only the parts it has (no old card part with the old card off).
-  const parts = (['needs', 'wants', 'old-card', 'unsorted'] as const).flatMap((part) => {
+  // Her rulebook, 40.4: and Wishlist's part, where the setup has it.
+  const parts = (['needs', 'wants', 'old-card', 'unsorted', 'wishlist'] as const).flatMap((part) => {
     const cents = p.spent[part];
     return cents === undefined ? [] : [`${PART_NAMES[part].toLowerCase()} ${moneyWords(cents)}`];
   });
   return `${head}. Spent ${moneyWords(p.total)}: ${parts.join(', ')}.`;
+}
+
+// Her rulebook, 40.5: Wishlist over time beside savings, in words; nothing
+// where the setup has no Wishlist.
+export function wishlistOverTimeWords(first: { readonly wishlist?: number }, now: { readonly wishlist?: number }): string {
+  return now.wishlist === undefined ? '' : `; Wishlist from ${moneyWords(first.wishlist ?? 0)} to ${moneyWords(now.wishlist)}`;
 }
 
 // 40.1: how far back it goes.

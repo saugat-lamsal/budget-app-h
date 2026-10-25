@@ -447,3 +447,27 @@ The app side does not change: 2,965.00. Safe to spend: 250.00 - 60.00
 waiting = 190.00.
 
 Check: app side 2,965.00 | wishlist after the move 250.00 | wants after the move 250.00 | app side after the move 2,965.00 | safe to spend 190.00
+
+
+========================================================================
+EXAMPLE 18. Her Wishlist list, and an item bought for less (50.2, 50.3)
+========================================================================
+
+Wishlist holds 300.00. Her list, in her order: a rain jacket 250.00, a
+desk lamp 45.00, and a bike 400.00. The list only reads Wishlist (50.2):
+
+Rain jacket: the smaller of 250.00 and 300.00              = 250.00  Ready
+Desk lamp:   the smaller of 45.00 and 300.00 - 250.00 = 50.00 = 45.00  Ready
+Bike:        the smaller of 400.00 and 50.00 - 45.00 = 5.00   =   5.00
+             5.00 of 400.00 is 1.25%, said as 1% of the way (rounded down)
+All 300.00 went to the items, and the bike is still short, so nothing is
+more than the list needs: 0.00.
+
+Oct 7: she buys the desk lamp for 43.12 on the Capital One card, sorts it
+to Wishlist in review, and picks "Desk lamp". The lamp is marked bought,
+for 43.12, and leaves the list. Wishlist goes down by what it cost, not
+its price (50.3, 60a):
+Wishlist: 300.00 - 43.12 = 256.88
+Rain jacket: 250.00, Ready. Bike: 256.88 - 250.00 = 6.88.
+
+Check: jacket has 250.00 | lamp has 45.00 | bike has 5.00 | more than the list needs 0.00 | paid for the lamp 43.12 | wishlist after the lamp 256.88 | bike has after 6.88

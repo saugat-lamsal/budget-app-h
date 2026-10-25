@@ -13,6 +13,7 @@ import type {
   Settings,
   SettingsPreview,
   SplitBucket,
+  WishlistChange,
 } from '@budget-app/money';
 import type { BankRulePreview, BankRuleSpec } from './bank-rules.js';
 
@@ -69,6 +70,22 @@ export interface ChoiceRequest {
   // list it was (an item's id), or 'none'. Asked while the list has items.
   readonly wishlistItem?: string;
 }
+
+// ----- Her rulebook, 50.1 and 50.3: changes to her Wishlist list -----
+
+// What the phone can send about the list. Marking an item bought comes with
+// the sort in review instead (ChoiceRequest.wishlistItem), in the same answer.
+export type WishlistEdit = Exclude<WishlistChange, { readonly bought: unknown }>;
+
+export interface WishlistRequest {
+  // As for a choice: made once on the phone, sent again, the same, on a retry.
+  readonly id: string;
+  readonly wishlist: WishlistEdit;
+  // Removing an item asks first (anything final asks first).
+  readonly confirmed?: boolean;
+}
+
+export type WishlistResponse = { readonly ok: true; readonly replayed: boolean } | { readonly ok: false; readonly code: RefusalCode; readonly why: string };
 
 // What was done.
 export interface Done {

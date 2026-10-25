@@ -14,7 +14,8 @@ setup" after section 1, section 2, 12.2, 40.2 and 40.4; PR 4: section 2,
 9.3, 9.8, 12.1, 12.6 and 14.2; PR 6: 0.5, 0.7, 1.1, 1.3, section 2's sync
 line, 10.5, 10.7, 10.13 and 12.3; PR 7+8: section 52; PR 9: section 2's
 split, 3.3, 3.4, 3.8, 4.2, 4.4, 11.3, 12.2, 13.1, 13.4, 14.2, 50.4 and
-52.4's buckets). The rest of her
+52.4's buckets; PR 10+11: 40.2, 40.4, 40.5, 40.11 and 50.1 to 50.3). The
+rest of her
 setup is in section "H. Approved for her setup, not built yet" at the end:
 the texts he approved on Oct 23, 2026 (docs/her-plan.txt). A text there is not in
 force until the pull request named above it moves it into its place here,
@@ -981,7 +982,8 @@ it is worked out on the server, and nothing on it is sent anywhere.
       still pending on setup day counts once, at the amount setup day
       counted (14.2), and any later difference is in the books. In this
       setup there is no old card ("Off in this setup"), and nothing ever
-      shows "Old card payment".
+      shows "Old card payment". In this setup, spending in Wishlist as the
+      books count it is spending too, its own part, "Wishlist".
 40.3  Pay periods. From setup day on, the books' pay periods (3.1, B53).
       Before setup day, a pay period begins at the last paycheck you gave on
       setup day, and before that at each payday the pay schedule gives
@@ -994,12 +996,14 @@ it is worked out on the server, and nothing on it is sent anywhere.
       90 days and the current one, with needs, wants, old card payments,
       and unsorted, each with its amount. Tapping a bar lists the items
       behind it, which add up to it to the cent. In this setup a bar never
-      shows "Old card payment" ("Off in this setup").
+      shows "Old card payment" ("Off in this setup"), and Wishlist spending
+      is its own part of each pay period's bar.
 40.5  Past: savings over time. What the savings bucket held when tracking
       started, at the end of each pay period since, and now, as the books
       hold it, with the mom reserve beside it the same way, each its own
       amount (they are not added together). Nothing before setup day: the buckets did
-      not exist then.
+      not exist then. In this setup, Wishlist over time beside savings, its
+      own amount.
 40.6  Past: where it went. The last 90 days of spending (40.2), grouped by
       place: the name in each item's description, found as in 13.8; the
       same name on any account is one place. Old
@@ -1050,7 +1054,8 @@ it is worked out on the server, and nothing on it is sent anywhere.
       Spending waiting in review is in neither until it is sorted, and
       is said beside them: "Not counting $35.00 waiting in review."
       Before day 3: "Too early in the pay period to tell." Once the
-      next payday has passed with no paycheck, no estimate.
+      next payday has passed with no paycheck, no estimate. In this
+      setup, no estimate for Wishlist: it is not spent at a pace.
 40.12 Future: savings a year out. A range, "Estimate: $X to $Y": what
       the savings bucket holds now, plus, for each payday in the next
       365 days (the pay schedule, section 2), what it gained in a pay
@@ -1138,7 +1143,25 @@ a.  Future and Habits on the Trends tab, as 40.10 to 40.17: Needs and Wants
 
 ## 50. Wishlist
 
-50.1 to 50.3 (Wishlist items) are in section H, for PR 10.
+50.1  Wishlist items: up to 20, each a name and a price, in the order you
+      choose. Adding, changing, removing and moving one is logged (13.5).
+      The names stay in the app's database on the server, like your sorting
+      rules.
+50.2  The Wishlist bucket fills the items in order. Going down the list,
+      each item gets the smaller of its price and what is left of the
+      bucket after the items above it. An item that has its whole price says
+      "Ready". With the bucket at zero or below, none has anything. What is
+      more than all the prices together is shown as "More than the list
+      needs". Each item shows what it has, its price, and how far along it
+      is, in words and amount, not only a bar. The items only read the
+      bucket: they never move money.
+50.3  When you sort a purchase to Wishlist, review also asks which item it
+      was, or "None of them". The item you pick is marked bought, with the
+      day and what was paid, and leaves the list. The bucket goes down by
+      what the purchase cost, not the item's price. A purchase marked bought
+      can be changed back from its row on Wishlist's list. A refund goes back
+      to the Wishlist bucket (4.5). The item does not come back by itself;
+      you can add it again. (60a)
 
 50.4  Moving Wishlist money for a purchase. Wishlist money is kept in the
       savings account (3.8), and purchases are paid from checking or a
@@ -1158,7 +1181,8 @@ a.  Future and Habits on the Trends tab, as 40.10 to 40.17: Needs and Wants
       once $X is $0.00. A move from savings to checking is not spending
       (5.3).
 
-Readings HB19 to HB25 (docs/her-questions.txt), for his check.
+Readings HB19 to HB25 (docs/her-questions.txt), for his check. 50.1 to
+50.3 and Trends' Wishlist parts: readings HB26 to HB29.
 
 
 ## 51. A paycheck waiting for your yes
@@ -1301,35 +1325,9 @@ change with the answer.
 
   Trends' Wishlist parts are built in PR 10+11 (60f, below).
 
-### PR 10. Wishlist items
+### PR 10+11. Wishlist items, and Trends for her setup (60f)
 
-  50.1  Wishlist items: up to 20, each a name and a price, in the order you
-        choose. Adding, changing, removing and moving one is logged (13.5).
-        The names stay in the app's database on the server, like your
-        sorting rules.
-  50.2  The Wishlist bucket fills the items in order. Going down the list,
-        each item gets the smaller of its price and what is left of the
-        bucket after the items above it. An item that has its whole price
-        says "Ready". With the bucket at zero or below, none has anything.
-        What is more than all the prices together is shown as "More than
-        the list needs". Each item shows what it has, its price, and how
-        far along it is, in words and amount, not only a bar. The items
-        only read the bucket: they never move money.
-  50.3  When you sort a purchase to Wishlist, review also asks which item
-        it was, or "None of them". The item you pick is marked bought, with
-        the day and what was paid, and leaves the list. The bucket goes
-        down by what the purchase cost, not the item's price. A purchase
-        marked bought can be changed back from its row on Wishlist's list.
-        A refund goes back to the Wishlist bucket (4.5). The item does not
-        come back by itself; you can add it again. (60a)
-
-### PR 10+11. Trends for her setup: Wishlist's part (60f)
-
-  Until this PR, 40.2, 40.4, 40.5 and 40.11 stand as they are, and Trends
-  reads needs and wants only.
-  40.2 and 40.4: Wishlist spending is its own part of each pay period's
-  bar. 40.5: Wishlist over time beside savings, its own amount. 40.11: no
-  estimate for Wishlist.
+  In place: 40.2, 40.4, 40.5, 40.11 and 50.1 to 50.3.
 
 ### Unchanged for her setup
 

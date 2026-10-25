@@ -1,34 +1,12 @@
-import { EMPTY_WISHLIST, MoneyError, changeWishlist, fillWishlist, type Book, type BoughtItem, type Cents, type FilledItem, type IsoDate, type WishlistChange, type WishlistItem, type WishlistList, type WishlistLogLine } from '@budget-app/money';
-import type { RefusalCode } from './views/choice.js';
+import { EMPTY_WISHLIST, MoneyError, changeWishlist, fillWishlist, type Book, type IsoDate, type WishlistChange, type WishlistItem, type WishlistList } from '@budget-app/money';
+import type { WishlistListView } from './views/activity.js';
+import type { RefusalCode, WishlistEdit, WishlistRequest } from './views/choice.js';
 
 // Her rulebook, 50.1 to 50.3 (PR 10+11): Wishlist items on the server. Each
 // change to the list is an answer in the books' history (history.ts,
 // Answer.wishlist), so the list is kept in the database with everything else
 // she answers, comes back the same after a restart, and replays (0.6). The
 // arithmetic and the refusals are the money package's (wishlist-items.ts).
-
-// What the phone can send about the list. Marking an item bought comes with
-// the sort in review instead (ChoiceRequest.wishlistItem), in the same answer.
-export type WishlistEdit = Exclude<WishlistChange, { readonly bought: unknown }>;
-
-export interface WishlistRequest {
-  // As for a choice: made once on the phone, sent again, the same, on a retry.
-  readonly id: string;
-  readonly wishlist: WishlistEdit;
-  // Removing an item asks first (anything final asks first).
-  readonly confirmed?: boolean;
-}
-
-export type WishlistResponse = { readonly ok: true; readonly replayed: boolean } | { readonly ok: false; readonly code: RefusalCode; readonly why: string };
-
-// The Wishlist screen's list, worked out on the server: how the bucket fills
-// the items (50.2), what was bought (50.3), and the changes, newest last (13.5).
-export interface WishlistListView {
-  readonly items: readonly FilledItem[];
-  readonly more: Cents;
-  readonly bought: readonly BoughtItem[];
-  readonly log: readonly WishlistLogLine[];
-}
 
 const ID_FORMAT = /^[A-Za-z0-9_-]{8,64}$/;
 const ITEM_FORMAT = /^item-[1-9][0-9]{0,8}$/;
@@ -39,8 +17,8 @@ export const NO_WISHLIST = 'This setup has no Wishlist';
 
 // The request, if it is exactly the right shape, otherwise null. Nothing is
 // guessed or repaired; the money math judges names and prices.
-export function parseWishlistRequest(value: Readonly<Record<string, unknown>>): WishlistRequest | null {
-  if (!onlyKeys(value, ['id', 'wishlist', 'confirmed'])) return null;
+export function parseWishlistRequest(value: unknown): WishlistRequest | null {
+  if (!isRecord(value) || !onlyKeys(value, ['id', 'wishlist', 'confirmed'])) return null;
   const { id, wishlist, confirmed } = value;
   if (typeof id !== 'string' || !ID_FORMAT.test(id)) return null;
   if (confirmed !== undefined && typeof confirmed !== 'boolean') return null;
@@ -98,11 +76,7 @@ export function tryWishlist(list: WishlistList, change: WishlistChange, date: Is
     return { ok: true, list: changeWishlist(list, change, date) };
   } catch (error) {
     if (!(error instanceof MoneyError)) throw error;
-    return {
-      ok: false,
-      code: /not on your list any more|not marked bought|marked bought already/.test(error.message) ? 'changed' : 'refused',
-      why: error.message,
-    };
+    return { ok: false, code: /not on your list any more|not marked bought|marked bought already/.test(error.message) ? 'changed' : 'refused', why: error.message };
   }
 }
 
@@ -127,35 +101,13 @@ export function itemsForReview(list: WishlistList): readonly WishlistItem[] {
 // items and the purchase is not marked already; "none" marks nothing.
 export function boughtWith(book: Book, list: WishlistList, purchaseId: string, pick: string | undefined): { readonly ok: true; readonly change: WishlistChange | null } | { readonly ok: false; readonly code: RefusalCode; readonly why: string } {
   const purchase = book.wishlistFlows().purchases.find((p) => p.id === purchaseId);
-  if (purchase === undefined) {
-    if (pick === undefined || pick === 'none') return { ok: true, change: null };
-    return {
-      ok: false,
-      code: 'refused',
-      why: 'Only a purchase sorted to Wishlist can be one of the things on your list. Nothing was changed.',
-    };
+  if (pick === undefined || pick === 'none') {
+    const asks = purchase !== undefined && list.items.length > 0 && !list.bought.some((b) => b.purchase === purchaseId);
+    if (asks && pick === undefined) return { ok: false, code: 'refused', why: 'Which thing on your list was it? Pick one, or None of them.' };
+    return { ok: true, change: null };
   }
-  if (list.bought.some((b) => b.purchase === purchaseId) || (list.items.length === 0 && (pick === undefined || pick === 'none'))) {
-    if (pick === undefined || pick === 'none') return { ok: true, change: null };
-  }
-  if (pick === 'none') return { ok: true, change: null };
-  if (pick === undefined)
-    return {
-      ok: false,
-      code: 'refused',
-      why: 'Which thing on your list was it? Pick one, or None of them.',
-    };
-  return {
-    ok: true,
-    change: {
-      bought: {
-        item: pick,
-        purchase: purchaseId,
-        day: purchase.date,
-        paid: purchase.amount,
-      },
-    },
-  };
+  if (purchase === undefined) return { ok: false, code: 'refused', why: 'Only a purchase sorted to Wishlist can be one of the things on your list. Nothing was changed.' };
+  return { ok: true, change: { bought: { item: pick, purchase: purchaseId, day: purchase.date, paid: purchase.amount } } };
 }
 
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
