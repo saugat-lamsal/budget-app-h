@@ -3117,6 +3117,20 @@
   {
     "section": "home",
     "file": "packages/web/src/ui/blocks.tsx",
+    "find": "  useLayoutEffect(() => {\n    if (!busy && flown.current) bringBack();",
+    "replace": "  useEffect(() => {\n    if (!busy && flown.current) bringBack();",
+    "why": "[b264] a refused swipe's card is brought back in a passive effect, after a frame can show the refusal"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/ui/blocks.tsx",
+    "find": "  useLayoutEffect(() => {\n    if (!busy && flown.current) bringBack();",
+    "replace": "  useLayoutEffect(() => {\n    if (!busy && flown.current && false) bringBack();",
+    "why": "[b264] a refused swipe's card is never brought back by the refusal (only the 2 s timer would)"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/ui/blocks.tsx",
     "find": "      const at = dialog.style.transform || from;\n      dialog.style.transform = '';\n      if (!reduced) draw(dialog, at, 'translateY(0px)');",
     "replace": "      const at = dialog.style.transform || from;\n      if (!reduced) void draw(dialog, at, 'translateY(0px)').finished.then(() => (dialog.style.transform = ''), () => undefined);\n      else dialog.style.transform = '';",
     "why": "[b265] a short pull is not at rest until its way back ends"
