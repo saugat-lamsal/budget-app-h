@@ -63,6 +63,8 @@ PART B. READINGS FOR HIM TO CHECK
 
 HB1 to HB5: PR 4, merged with them. HB6 to HB11: agreed by him, Oct 24.
 HB12 to HB18: agreed by him, Oct 24 (PR 9's request).
+HB30 and HB32: agreed by him, Oct 25 (PR 12). HB31: his answer, Oct 25,
+below.
 
 HB1 (PR 4). Turning "Ask before splitting a paycheck" off while a paycheck
     waits for her yes: it keeps waiting for her yes. Only paychecks that
@@ -309,7 +311,8 @@ HB29 (PR 10+11, 50.3). Which item. "What was paid" is what the purchase
     Wishlist later, or the bank taking it back (4.10), leaves the item
     bought: it does not come back by itself, and she can change it back.
 
-HB30 (PR 12, 4.4, B95). A split with nothing left for the rest. Found by
+HB30 (PR 12, 4.4, B95). AGREED Oct 25, and to be sent upstream (he opens
+    that pull request himself). A split with nothing left for the rest. Found by
     the agent on her screens: Review's split sheet always sends Wishlist as
     "the rest", so a purchase split across needs and wants only came to a
     rest of $0.00, which B95 refuses. 4.4 allows that split, so it was a
@@ -325,7 +328,9 @@ HB30 (PR 12, 4.4, B95). A split with nothing left for the rest. Found by
     wants with nothing left for "not mine"), so it is worth sending
     upstream too, with his OK.
 
-HB31 (PR 12, 0.5, B82, B86). Which "last checked" safe to spend. Found while
+HB31 (PR 12, 0.5, B82, B86). ANSWERED Oct 25: yes, fix it, in upstream
+    first, then merged here from upstream (docs/her-merging.txt); not built
+    here on its own. Which "last checked" safe to spend. Found while
     building her pay period: the number Home shows greyed while a bank
     cannot be read is the one Home last showed, saved when Home is opened
     (upstream's keeper.home()). B86 says it is remembered each time the bank
@@ -335,9 +340,10 @@ HB31 (PR 12, 0.5, B82, B86). Which "last checked" safe to spend. Found while
     it shows, so nothing is wrong about her money, only older than it
     could be. Not changed: it is upstream's code and reading. Recommended:
     save it after each sync that matched as well, in upstream first, then
-    merged here. Waiting on his answer.
+    merged here. His answer is at the top of HB31.
 
-HB32 (PR 12, 0.7, 12.3, HB9). Status while one bank cannot be read. Found
+HB32 (PR 12, 0.7, 12.3, HB9). AGREED Oct 25. Status while one bank cannot
+    be read. Found
     by the agent on her screens: the daily check line said "The totals
     match the bank" while the second bank's last sync had failed and the
     check waited (HB9), as Buckets said. Now, while either bank's last sync
