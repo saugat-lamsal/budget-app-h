@@ -502,6 +502,17 @@ SHOTS.push(
   ['her-everyday-trends-now', 'her-everyday', '/trends', async (page) => (await page.getByTestId('trends-segment-now').click(), 'full')],
   ['her-everyday-trends-future', 'her-everyday', '/trends', async (page) => (await page.getByTestId('trends-segment-future').click(), 'full')],
   ['her-everyday-trends-habits', 'her-everyday', '/trends', async (page) => (await page.getByTestId('trends-segment-habits').click(), 'full')],
+  ['her-everyday-wishlist-item-sheet', 'her-everyday', '/buckets/wishlist', async (page) => {
+    await page.getByTestId('wishlist-item-item-2').getByTestId('item-open').click();
+  }],
+  ['her-everyday-wishlist-dragging', 'her-everyday', '/buckets/wishlist', async (page) => {
+    await page.getByTestId('wishlist-item-item-1').evaluate((row) => row.scrollIntoView({ block: 'center' }));
+    const box = await page.getByTestId('wishlist-item-item-3').getByTestId('item-handle').boundingBox();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    for (let step = 1; step <= 6; step += 1) await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 - step * 20);
+    return 'no-sheet';
+  }],
   ['her-review-busy-which-item', 'her-review-busy', '/review', async (page) => {
     await page.locator('article', { hasText: 'MADE UP LAMPS' }).getByTestId('more').click();
     await page.getByTestId('review-sheet').getByTestId('choice-wishlist').click();

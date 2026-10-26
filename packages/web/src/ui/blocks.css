@@ -2227,3 +2227,84 @@ a.tile:active {
     transform: scaleX(0);
   }
 }
+
+/* ----- Her Wishlist list: a row dragged by its handle, tapped for its sheet ----- */
+
+.wishlist-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.wishlist-item {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+}
+
+.wishlist-item + .wishlist-item {
+  border-top: 1px solid var(--separator);
+}
+
+/* The rows a dragged row passes step aside; the dragged one follows the finger. */
+.wishlist-item {
+  transition: transform var(--duration) var(--ease);
+}
+
+.wishlist-item--dragging {
+  /* Solid, so the rows it passes over do not show through it. */
+  background: linear-gradient(var(--surface-2), var(--surface-2)), var(--surface-solid);
+  box-shadow: var(--shadow);
+}
+
+.wishlist-item__handle {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--tap);
+  min-height: var(--tap);
+  color: var(--text-2);
+  cursor: grab;
+  /* The finger drags the row, not the page. */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.wishlist-item__open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--tap);
+  padding: var(--space-3) var(--space-4) var(--space-3) 0;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--duration) var(--ease);
+}
+
+.wishlist-item__open:active {
+  background: var(--surface-2);
+}
+
+.wishlist-item__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.wishlist-item__text .bar {
+  display: block;
+}
+
+.wishlist-item__name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
