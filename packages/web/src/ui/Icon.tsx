@@ -26,6 +26,8 @@ const PATHS = {
   people: 'M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2.5 20c0-3.3 2.9-5.5 6.5-5.5s6.5 2.2 6.5 5.5M16.5 5a3.2 3.2 0 0 1 0 6.2M18 14.8c2.1.6 3.5 2.3 3.5 5.2',
   swap: 'M4 8h14l-3.5-3.5M20 16H6l3.5 3.5',
   bell: 'M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0',
+  // A handle to drag a row by (her Wishlist list).
+  grip: 'M5 8h14M5 12h14M5 16h14',
 } as const;
 
 export type IconName = keyof typeof PATHS;

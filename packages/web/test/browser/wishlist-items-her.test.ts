@@ -7,7 +7,7 @@ import { ACCOUNT_IDS } from '../../../server/test/fake-plaid.js';
 import { herLife } from '../../../server/test/her-harness.js';
 import { decision, noonInNewYork, type Life } from '../../../server/test/keeper-harness.js';
 import { loginCookieForTests } from '../../../server/test/login-for-tests.js';
-import { axeViolations, tappable } from './design-helpers.js';
+import { atRest, axeViolations, tappable } from './design-helpers.js';
 import { ENGINES, WEB_ROOT, close, launch, listen, phone, untilAnswered, untilQuiet, waitOrReport } from './harness.js';
 import { item } from './screens.js';
 
@@ -84,7 +84,7 @@ describe.each(ENGINES)('her Wishlist list on the screens, in %s', (_name, engine
     }
   }
 
-  it('50.1 50.2 Wishlist\'s screen: an empty list says so; items are added, moved and removed (asking first), and each says how far along it is in words', async () => {
+  it('50.1 50.2 Wishlist\'s screen: an empty list says so; items are added, dragged into a new place, changed and removed from their own sheet (removing asks first), and each says how far along it is in words', async () => {
     const life = await herWithAPurchase();
     await served(life, async (page, base) => {
       await open(page, base, '/buckets/wishlist');
@@ -100,14 +100,24 @@ describe.each(ENGINES)('her Wishlist list on the screens, in %s', (_name, engine
         await untilQuiet(page);
       }
       // Wishlist 300.00 fills the jacket (250.00), then 50.00 of the lamp's 45.00, and 5.00 more than the list needs.
-      expect(words(await page.getByTestId('wishlist-item-item-1').getByTestId('item-progress').innerText())).toBe('Ready Ready: $250.00 of $250.00');
-      expect(words(await page.getByTestId('wishlist-item-item-2').getByTestId('item-progress').innerText())).toBe('Ready Ready: $45.00 of $45.00');
+      expect(words(await page.getByTestId('wishlist-item-item-1').getByTestId('item-progress').innerText())).toBe('Ready: $250.00 of $250.00');
+      expect(words(await page.getByTestId('wishlist-item-item-2').getByTestId('item-progress').innerText())).toBe('Ready: $45.00 of $45.00');
       expect(words(await page.getByTestId('wishlist-more').innerText())).toBe('More than the list needs: $5.00');
+      // No buttons on the list itself: a handle to drag, and the row opens its own sheet.
+      expect(await page.getByTestId('wishlist-items').getByRole('button', { name: /^Move (up|down)$/ }).count()).toBe(0);
+      expect(await page.getByTestId('wishlist-items').getByTestId('item-handle').count()).toBe(2);
+      // Every row fits inside its card, at the phone's width.
+      const card = await page.getByTestId('wishlist-items').boundingBox();
+      for (const row of await page.getByTestId('wishlist-items').locator('[data-testid^="wishlist-item-"]').all()) {
+        const box = await row.boundingBox();
+        expect(box !== null && card !== null && box.x >= card.x && box.x + box.width <= card.x + card.width).toBe(true);
+      }
       for (const t of await tappable(page)) expect(Math.min(t.width, t.height), t.what).toBeGreaterThanOrEqual(44);
       expect(await axeViolations(page)).toEqual([]);
 
       // A price change that leaves the jacket short says so, in words.
-      await page.getByTestId('wishlist-item-item-1').getByTestId('item-change').click();
+      await page.getByTestId('wishlist-item-item-1').getByTestId('item-open').click();
+      await page.getByTestId('wishlist-sheet').getByTestId('item-change').click();
       await page.getByTestId('item-price-field').fill('400');
       await page.getByTestId('item-save').click();
       await page.getByTestId('wishlist-sheet').waitFor({ state: 'hidden' });
@@ -115,23 +125,78 @@ describe.each(ENGINES)('her Wishlist list on the screens, in %s', (_name, engine
       expect(words(await page.getByTestId('wishlist-item-item-1').getByTestId('item-progress').innerText())).toBe('$300.00 of $400.00, 75% of the way');
       expect(words(await page.getByTestId('wishlist-item-item-2').getByTestId('item-progress').innerText())).toBe('Nothing yet of $45.00');
 
-      // The lamp moved up gets the money first.
-      await page.getByTestId('wishlist-item-item-2').getByTestId('item-up').click();
+      // The lamp dragged above the jacket by its handle gets the money first.
+      const order = (): Promise<(string | null)[]> => page.locator('[data-testid^="wishlist-item-"]').evaluateAll((rows) => rows.map((r) => r.getAttribute('data-testid')));
+      // A row whose numbers just changed takes no tap for about a second (13.7); a drag waits for that too.
+      await atRest(page);
+      await page.getByTestId('wishlist-item-item-1').evaluate((row) => row.scrollIntoView({ block: 'center' }));
+      const handle = await page.getByTestId('wishlist-item-item-2').getByTestId('item-handle').boundingBox();
+      const top = await page.getByTestId('wishlist-item-item-1').boundingBox();
+      if (handle === null || top === null) throw new Error('the list is not on the screen');
+      const x = handle.x + handle.width / 2;
+      const y = handle.y + handle.height / 2;
+      await page.mouse.move(x, y);
+      await page.mouse.down();
+      for (let step = 1; step <= 10; step += 1) await page.mouse.move(x, y - ((y - top.y + 10) * step) / 10);
+      await page.mouse.up();
+      await page.getByTestId('wishlist-said').filter({ hasText: 'Moved Desk lamp' }).waitFor();
       await untilQuiet(page);
-      expect(await page.locator('[data-testid^="wishlist-item-"]').evaluateAll((rows) => rows.map((r) => r.getAttribute('data-testid')))).toEqual(['wishlist-item-item-2', 'wishlist-item-item-1']);
+      expect(await order()).toEqual(['wishlist-item-item-2', 'wishlist-item-item-1']);
+      expect(life.keeper.activity('wishlist')).toMatchObject({ list: { items: [{ id: 'item-2' }, { id: 'item-1' }] } });
+      expect(words(await page.getByTestId('wishlist-item-item-2').getByTestId('item-progress').innerText())).toBe('Ready: $45.00 of $45.00');
+
+      // Without dragging (VoiceOver, a keyboard), the row's own sheet moves it too.
+      await page.getByTestId('wishlist-item-item-2').getByTestId('item-open').click();
+      await page.getByTestId('wishlist-sheet').getByTestId('item-move-down').click();
+      await page.getByTestId('wishlist-sheet').waitFor({ state: 'hidden' });
+      await untilQuiet(page);
+      expect(await order()).toEqual(['wishlist-item-item-1', 'wishlist-item-item-2']);
+      await page.getByTestId('wishlist-item-item-2').getByTestId('item-open').click();
+      await page.getByTestId('wishlist-sheet').getByTestId('item-move-up').click();
+      await page.getByTestId('wishlist-sheet').waitFor({ state: 'hidden' });
+      await untilQuiet(page);
+      expect(await order()).toEqual(['wishlist-item-item-2', 'wishlist-item-item-1']);
 
       // Removing asks first; "Keep it" changes nothing.
-      await page.getByTestId('wishlist-item-item-1').getByTestId('item-remove').click();
+      await page.getByTestId('wishlist-item-item-1').getByTestId('item-open').click();
+      await page.getByTestId('wishlist-sheet').getByTestId('item-remove').click();
       await page.getByTestId('remove-no').click();
       await untilQuiet(page);
       expect(life.keeper.activity('wishlist')).toMatchObject({ list: { items: [{ id: 'item-2' }, { id: 'item-1' }] } });
-      await page.getByTestId('wishlist-item-item-1').getByTestId('item-remove').click();
+      await page.getByTestId('wishlist-item-item-1').getByTestId('item-open').click();
+      await page.getByTestId('wishlist-sheet').getByTestId('item-remove').click();
       await page.getByTestId('remove-yes').click();
       await page.getByTestId('wishlist-sheet').waitFor({ state: 'hidden' });
       await untilQuiet(page);
       expect(await page.getByTestId('wishlist-item-item-1').count()).toBe(0);
-      expect(await page.getByTestId('wishlist-log-line').allInnerTexts()).toHaveLength(5);
+      expect(await page.getByTestId('wishlist-log-line').allInnerTexts()).toHaveLength(7);
       expect(life.keeper.book()?.pots().wishlist).toBe(30_000);
+    });
+  });
+
+  it('50.1 a row dragged past two others lands two places up: two moves of one place, each logged, and the list as the server keeps it', async () => {
+    const life = await herWithAPurchase();
+    add(life, 'Rain jacket', 25_000);
+    add(life, 'Desk lamp', 4_500);
+    add(life, 'Book light', 1_500);
+    await served(life, async (page, base) => {
+      await open(page, base, '/buckets/wishlist');
+      await atRest(page);
+      await page.getByTestId('wishlist-item-item-2').evaluate((row) => row.scrollIntoView({ block: 'center' }));
+      const handle = await page.getByTestId('wishlist-item-item-3').getByTestId('item-handle').boundingBox();
+      const top = await page.getByTestId('wishlist-item-item-1').boundingBox();
+      if (handle === null || top === null) throw new Error('the list is not on the screen');
+      const x = handle.x + handle.width / 2;
+      const y = handle.y + handle.height / 2;
+      await page.mouse.move(x, y);
+      await page.mouse.down();
+      for (let step = 1; step <= 12; step += 1) await page.mouse.move(x, y - ((y - top.y + 10) * step) / 12);
+      await page.mouse.up();
+      await page.getByTestId('wishlist-said').filter({ hasText: 'Moved Book light to number 1 on your list.' }).waitFor();
+      await untilQuiet(page);
+      expect(await page.locator('[data-testid^="wishlist-item-"]').evaluateAll((rows) => rows.map((r) => r.getAttribute('data-testid')))).toEqual(['wishlist-item-item-3', 'wishlist-item-item-1', 'wishlist-item-item-2']);
+      expect(life.keeper.activity('wishlist')).toMatchObject({ list: { items: [{ id: 'item-3' }, { id: 'item-1' }, { id: 'item-2' }] } });
+      expect((await page.getByTestId('wishlist-log-line').allInnerTexts()).filter((line) => line.includes('moved Book light up'))).toHaveLength(2);
     });
   });
 
