@@ -23,6 +23,7 @@ import type { CardRemindersOff, HomeInput, PendingMoneyIn, WhyLine } from '../vi
 import type { MadeUpBank } from './made-up-bank.js';
 import type { BeforeSetup } from '../trends.js';
 import { madeUpTrendsHistory } from './trends-history.js';
+import type { HerLive } from './her-lives.js';
 import { SETUP_OWES_MORE, SETUP_PENDING, SETUP_PENDING_PAYMENT, SETUP_SUGGEST } from './setup-lives.js';
 
 // Made-up lives for the demo (npm run demo) and the browser tests. Every
@@ -57,6 +58,11 @@ const FEEDS = new WeakMap<Book, readonly BankTransaction[]>();
 // would match on Settings (section 2, 24c). Empty for a book not made here.
 export function madeUpFeed(book: Book): readonly BankTransaction[] {
   return FEEDS.get(book) ?? [];
+}
+
+// Her lives (her-lives.ts) keep what their made-up banks sent the same way.
+export function rememberFeed(book: Book, fed: readonly BankTransaction[]): void {
+  FEEDS.set(book, fed);
 }
 
 // The bank rules the made-up lives that are tracking already came with
@@ -475,6 +481,11 @@ export interface DemoScenario {
   readonly setup?: () => MadeUpBank;
   // Section 40: a made-up bank history from before setup day, for the Trends tab.
   readonly trends?: () => BeforeSetup;
+  // Her setup's lives (her-lives.ts): the life with her cards, statements and
+  // Wishlist list besides what Home is given. Its input is the one Home gets.
+  readonly her?: () => HerLive;
+  // The bank rules its made-up bank came with, when not the demo's own.
+  readonly bankRules?: readonly BankRule[];
 }
 
 export const DEMO_SCENARIOS: readonly DemoScenario[] = [

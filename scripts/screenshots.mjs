@@ -479,6 +479,42 @@ const SHOTS = [
   ['setup-loading', 'slow', '/setup/bank', 'loading-setup'],
 ];
 
+// Her setup's made-up lives (packages/server/src/demo/her-lives.ts): every screen of each.
+const HER_LIVES = ['her-everyday', 'her-payday', 'her-review-busy', 'her-card-due', 'her-one-bank-down'];
+for (const life of HER_LIVES) {
+  SHOTS.push(
+    [`${life}-home`, life, '/home', 'full'],
+    [`${life}-buckets`, life, '/buckets', 'full'],
+    [`${life}-wishlist`, life, '/buckets/wishlist', 'full'],
+    [`${life}-review`, life, '/review', 'full'],
+    [`${life}-trends`, life, '/trends', 'full'],
+    [`${life}-settings`, life, '/settings', 'full'],
+    [`${life}-payday-screen`, life, '/payday', 'full'],
+    [`${life}-statement-capital-one`, life, '/statement/everyday-card', 'full'],
+    [`${life}-statement-amex`, life, '/statement/second-card', 'full'],
+  );
+}
+SHOTS.push(
+  ['her-everyday-cards-why', 'her-everyday', '/home', async (page) => {
+    await page.getByTestId('cards-why').click();
+  }],
+  ['her-everyday-statement-by-paycheck', 'her-everyday', '/statement/second-card', async (page) => (await page.getByTestId('statement-by-paycheck').click(), 'full')],
+  ['her-everyday-trends-now', 'her-everyday', '/trends', async (page) => (await page.getByTestId('trends-segment-now').click(), 'full')],
+  ['her-everyday-trends-future', 'her-everyday', '/trends', async (page) => (await page.getByTestId('trends-segment-future').click(), 'full')],
+  ['her-everyday-trends-habits', 'her-everyday', '/trends', async (page) => (await page.getByTestId('trends-segment-habits').click(), 'full')],
+  ['her-review-busy-which-item', 'her-review-busy', '/review', async (page) => {
+    await page.locator('article', { hasText: 'MADE UP LAMPS' }).getByTestId('more').click();
+    await page.getByTestId('review-sheet').getByTestId('choice-wishlist').click();
+    await page.getByTestId('which-item-title').waitFor();
+  }],
+  ['her-review-busy-split-three', 'her-review-busy', '/review', async (page) => {
+    await page.locator('article', { hasText: 'BIG BOX STORE' }).getByTestId('more').click();
+    await page.getByTestId('split-needs').fill('20.00');
+    await page.getByTestId('split-wants').fill('15.00');
+    await page.getByTestId('review-sheet').evaluate((e) => e.scrollTo(0, e.scrollHeight));
+  }],
+);
+
 mkdirSync(out, { recursive: true });
 const browser = await webkit.launch();
 try {

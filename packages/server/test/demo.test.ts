@@ -400,6 +400,10 @@ describe('the demo is made-up data only', () => {
       'bank/why.ts',
       'choices.ts',
       'demo/demo-server.ts',
+      // Her setup's made-up lives and screens (docs/her-plan.txt): the money math and the views, worked out
+      // in memory. No database, no bank, no clock of its own.
+      'demo/her-lives.ts',
+      'demo/her-screens.ts',
       'demo/made-up-bank.ts',
       'demo/main.ts',
       'demo/scenarios.ts',
@@ -432,9 +436,13 @@ describe('the demo is made-up data only', () => {
       'views/bank.ts',
       'views/buckets.ts',
       'views/choice.ts',
+      // Her rulebook, 52.1: each card on Home, worked out from a book handed to it.
+      'views/home-cards.ts',
       'views/home.ts',
       // What Settings shows about logging in (Step 2): a type only; the demo has no login.
       'views/login.ts',
+      // Her rulebook, "Off in this setup": takes what is off out of a view before it is sent.
+      'views/off.ts',
       'views/payday.ts',
       // What Settings shows about notifications (Phase 5): types only; the demo has none.
       'views/push.ts',
@@ -447,6 +455,8 @@ describe('the demo is made-up data only', () => {
       'views/status.ts',
       // Section 40: the Trends tab's types, and its parts' names.
       'views/trends.ts',
+      // Her rulebook, 50.1 to 50.3: her list of things, changed in memory.
+      'wishlist-items.ts',
     ]);
     for (const file of files) expect(file, file).not.toMatch(/^(db|crypto|serve)\/|^(connect|status|log)\.ts$|^plaid\/(client|sandbox-lock)\.ts$|^sync\/sync\.ts$|^history\/(history-db|keeper)\.ts$/);
     // node:crypto only names a preview of a settings change (choices.ts, previewKey).
