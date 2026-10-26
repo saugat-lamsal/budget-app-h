@@ -15,6 +15,8 @@ import { settingsView } from '../views/settings.js';
 import { NO_ANSWERS, SETUP_LOOK_BACK_DAYS, setupView } from '../setup-view.js';
 import { madeUpHistory, madeUpLines } from './made-up-bank.js';
 import { DEMO_BANK_RULES, DEMO_SCENARIOS, SETUP_SCENARIOS, demoScenario, madeUpFeed, type DemoScenario } from './scenarios.js';
+import { HER_SCENARIOS, herScenario, type HerLive } from './her-lives.js';
+import { herActivity, herBuckets, herChoice, herHome, herPayday, herReview, herSettings, herStatement, herTrends, herWishlist } from './her-screens.js';
 
 // The screens on made-up data only (Phase 4). /demo lists the made-up
 // lives; picking one remembers it in a cookie and opens Home. Nothing here
@@ -29,14 +31,16 @@ export function createDemoServer(options: { readonly webRoot: string; readonly o
     let live = lives.get(scenario.name);
     if (live === undefined) {
       if (scenario.input === null) throw new Error('made-up failure, for the demo');
-      const input = scenario.input();
+      // Her lives (her-lives.ts) bring their cards, statements and list with their input.
+      const her = scenario.her?.() ?? null;
+      const input = her?.input ?? scenario.input();
       // The bank rules are kept per life, and read with Setup day and
       // Settings alike (section 2, 24c).
       const holder: { live?: Live } = {};
       const bankRules = demoBankRulesDesk(scenario, input.today, () => holder.live?.input.book ?? null, input.book);
       // A life not set up yet does setup day on its made-up bank (section 14).
       const setup = demoSetupDesk(scenario, input.today, bankRules);
-      live = { input, seen: new Set(), desk: input.book === null ? null : new ChoiceDesk(input.book, () => input.today), setup, bankRules };
+      live = { input, seen: new Set(), desk: input.book === null ? null : new ChoiceDesk(input.book, () => input.today), setup, bankRules, her, wishlistDone: new Set() };
       holder.live = live;
       lives.set(scenario.name, live);
     }
@@ -52,26 +56,30 @@ export function createDemoServer(options: { readonly webRoot: string; readonly o
     ...(options.onError === undefined ? {} : { onError: options.onError }),
     home: async (request) => {
       const live = await wait(scenarioOf(request));
-      return homeView({ ...live.input, seenTakeBacks: live.seen });
+      const view = homeView({ ...live.input, seenTakeBacks: live.seen });
+      return live.her === null ? view : herHome(live.her, view);
     },
     buckets: async (request) => {
-      const { input } = await wait(scenarioOf(request));
-      return bucketsView({ today: input.today, book: input.book, bank: input.bank, madeUpData: input.madeUpData, catchingUp: input.catchingUp ?? false, why: input.bankDetail?.why ?? null });
+      const { input, her } = await wait(scenarioOf(request));
+      const view = bucketsView({ today: input.today, book: input.book, bank: input.bank, madeUpData: input.madeUpData, catchingUp: input.catchingUp ?? false, why: input.bankDetail?.why ?? null });
+      return her === null ? view : herBuckets(view);
     },
     trends: async (request) => {
       const scenario = scenarioOf(request);
-      const { input } = await wait(scenario);
-      return trendsView({ today: input.today, book: input.book, bank: input.bank, madeUpData: input.madeUpData, catchingUp: input.catchingUp ?? false, why: input.bankDetail?.why ?? null, before: scenario.trends?.() ?? null });
+      const { input, her } = await wait(scenario);
+      const view = trendsView({ today: input.today, book: input.book, bank: input.bank, madeUpData: input.madeUpData, catchingUp: input.catchingUp ?? false, why: input.bankDetail?.why ?? null, before: scenario.trends?.() ?? null });
+      return her === null ? view : herTrends(view);
     },
     review: async (request) => {
-      const { input } = await wait(scenarioOf(request));
-      return reviewView({ today: input.today, book: input.book, madeUpData: input.madeUpData });
+      const { input, her } = await wait(scenarioOf(request));
+      const view = reviewView({ today: input.today, book: input.book, madeUpData: input.madeUpData });
+      return her === null ? view : herReview(her, view);
     },
     choice: (request, choice) => {
-      const { desk } = liveOf(scenarioOf(request));
+      const { desk, her } = liveOf(scenarioOf(request));
       // Before setup day there is nothing in review to choose from.
       if (desk === null) return { ok: false, code: 'not-waiting', why: 'That one was already dealt with. Nothing was changed.' };
-      return desk.decide(choice);
+      return her === null ? desk.decide(choice) : herChoice(her, desk, choice);
     },
     move: (request, move) => {
       const { desk } = liveOf(scenarioOf(request));
@@ -80,17 +88,35 @@ export function createDemoServer(options: { readonly webRoot: string; readonly o
       return desk.move(move);
     },
     activity: async (request, pot) => {
-      const { input } = await wait(scenarioOf(request));
-      return activityView({ today: input.today, book: input.book, pot, madeUpData: input.madeUpData });
+      const { input, her } = await wait(scenarioOf(request));
+      const view = activityView({ today: input.today, book: input.book, pot, madeUpData: input.madeUpData });
+      return her === null ? view : herActivity(her, view, pot);
+    },
+    // Her setup's Wishlist list (50.2) and the changes to it (50.1); upstream's lives have none.
+    wishlistActivity: async (request) => {
+      const { input, her } = await wait(scenarioOf(request));
+      if (her === null) throw new Error('this made-up life has no Wishlist');
+      return herActivity(her, activityView({ today: input.today, book: input.book, pot: 'wishlist', madeUpData: input.madeUpData }), 'wishlist');
+    },
+    wishlist: (request, sent) => {
+      const live = liveOf(scenarioOf(request));
+      return live.her === null ? null : herWishlist(live.her, live.wishlistDone, sent);
+    },
+    statement: async (request, card) => {
+      const { her } = await wait(scenarioOf(request));
+      if (her === null) return { state: 'off' };
+      return herStatement(her, card);
     },
     payday: async (request) => {
-      const { input } = await wait(scenarioOf(request));
-      return paydayView({ today: input.today, book: input.book, bank: input.bank, madeUpData: input.madeUpData });
+      const { input, her } = await wait(scenarioOf(request));
+      const view = paydayView({ today: input.today, book: input.book, bank: input.bank, madeUpData: input.madeUpData });
+      return her === null ? view : herPayday(view);
     },
     settings: async (request) => {
       const { input } = await wait(scenarioOf(request));
-      const { bankRules } = liveOf(scenarioOf(request));
-      return settingsView({ today: input.today, book: input.book, bank: input.bank, madeUpData: input.madeUpData, bankRules: { rules: bankRules.rules(), log: bankRules.log(), recentDays: RECENT_DAYS }, ...(input.cardsOff === undefined ? {} : { cardsOff: input.cardsOff }) });
+      const { bankRules, her } = liveOf(scenarioOf(request));
+      const view = settingsView({ today: input.today, book: input.book, bank: input.bank, madeUpData: input.madeUpData, bankRules: { rules: bankRules.rules(), log: bankRules.log(), recentDays: RECENT_DAYS }, ...(input.cardsOff === undefined ? {} : { cardsOff: input.cardsOff }) });
+      return her === null ? view : herSettings(view);
     },
     settingsChange: (request, change) => {
       const { desk } = liveOf(scenarioOf(request));
@@ -149,7 +175,7 @@ export function createDemoServer(options: { readonly webRoot: string; readonly o
       }
       const picked = /^\/demo\/([a-z-]+)$/.exec(path)?.[1];
       if (picked === undefined) return false;
-      if (demoScenario(picked) === undefined) {
+      if (demoScenario(picked) === undefined && herScenario(picked) === undefined) {
         send(response, 404, 'text/plain; charset=utf-8', 'No such made-up life.', 'no-store');
         return true;
       }
@@ -171,6 +197,10 @@ interface Live {
   desk: ChoiceDesk | null;
   readonly setup: SetupDesk | null;
   readonly bankRules: BankRulesDesk;
+  // Her setup's life (her-lives.ts), or null for upstream's.
+  readonly her: HerLive | null;
+  // The decision numbers of the changes made to her Wishlist list.
+  readonly wishlistDone: Set<string>;
 }
 
 // The setup desk of a made-up life not set up yet, on its made-up bank, with
@@ -199,7 +229,7 @@ export function demoBankRulesDesk(scenario: DemoScenario, today: IsoDate, bookOf
   const bank = scenario.setup === undefined ? null : madeUpHistory(scenario.setup());
   const book = bank !== null ? null : made !== undefined ? made : (scenario.input?.().book ?? null);
   const lines = bank !== null ? bankLinesOf(bank) : book === null ? [] : madeUpLines(madeUpFeed(book));
-  return new BankRulesDesk({ rules: bank?.rules ?? (book === null ? [] : DEMO_BANK_RULES), lines: () => lines, today: () => today, bookLines: () => bookOf()?.changeLog().length ?? 0 });
+  return new BankRulesDesk({ rules: bank?.rules ?? (book === null ? [] : (scenario.bankRules ?? DEMO_BANK_RULES)), lines: () => lines, today: () => today, bookLines: () => bookOf()?.changeLog().length ?? 0 });
 }
 
 // Where the demo listens: this computer only, unless --wifi.
@@ -214,13 +244,14 @@ export function demoAddress(args: readonly string[]): { readonly host: string; r
 function scenarioOf(request: IncomingMessage): DemoScenario {
   const cookie = request.headers.cookie ?? '';
   const name = /(?:^|;\s*)demo=([a-z-]+)/.exec(cookie)?.[1] ?? 'normal';
-  return demoScenario(name) ?? (DEMO_SCENARIOS[0] as DemoScenario);
+  return demoScenario(name) ?? herScenario(name) ?? (DEMO_SCENARIOS[0] as DemoScenario);
 }
 
 function demoPage(current: DemoScenario): string {
   const item = (s: DemoScenario): string => `<li><a href="/demo/${s.name}"${s === current ? ' aria-current="true"' : ''}>${s.title}</a></li>`;
   const items = DEMO_SCENARIOS.map(item).join('\n');
   const setupItems = SETUP_SCENARIOS.map(item).join('\n');
+  const herItems = HER_SCENARIOS.map(item).join('\n');
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -239,6 +270,11 @@ ${items}
 <p>These open Setup day with a made-up bank.</p>
 <ul>
 ${setupItems}
+</ul>
+<h2>Her setup</h2>
+<p>Made-up lives set up the way hers is: two cards, a Wishlist, and her paycheck asking first.</p>
+<ul>
+${herItems}
 </ul>
 </body>
 </html>`;
