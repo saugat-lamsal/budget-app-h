@@ -184,9 +184,11 @@ export class PlaidClient {
   // (Plaid's update mode, where a webhook address has no effect: the
   // connection keeps its own), where he can also add an account that is
   // missing. It never makes a connection itself; Link does, once he logs in.
-  async createLinkToken(input: { readonly clientUserId: string; readonly updateKey?: BankKey; readonly webhook?: string | null }): Promise<string> {
+  // Her rulebook, section 2: historyDays asks for that many days instead (her
+  // setup's 730; Plaid takes it only when the connection is made, TXN-009).
+  async createLinkToken(input: { readonly clientUserId: string; readonly updateKey?: BankKey; readonly webhook?: string | null; readonly historyDays?: number }): Promise<string> {
     const body: Record<string, unknown> = { client_name: 'Budget App', language: 'en', country_codes: ['US'], user: { client_user_id: input.clientUserId } };
-    if (input.updateKey === undefined) Object.assign(body, { products: ['transactions', 'liabilities'], transactions: { days_requested: HISTORY_DAYS }, ...(input.webhook === undefined || input.webhook === null ? {} : { webhook: input.webhook }) });
+    if (input.updateKey === undefined) Object.assign(body, { products: ['transactions', 'liabilities'], transactions: { days_requested: input.historyDays ?? HISTORY_DAYS }, ...(input.webhook === undefined || input.webhook === null ? {} : { webhook: input.webhook }) });
     else Object.assign(body, { access_token: input.updateKey.reveal(), update: { account_selection_enabled: true } });
     const reply = await this.#post<{ link_token?: unknown }>(ENDPOINTS.linkTokenCreate, body, input.updateKey);
     if (typeof reply.link_token !== 'string' || reply.link_token === '') throw new Error('Plaid sent no link key');

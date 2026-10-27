@@ -69,6 +69,9 @@ export interface BankDeskInput {
   // Her rulebook, 1.1 (PR 6): how many bank connections this setup has; one
   // (upstream's) when left out.
   readonly banks?: () => 1 | 2;
+  // Her rulebook, section 2: how many days of history a new connection asks
+  // for; upstream's 90 when left out.
+  readonly historyDays?: () => number;
 }
 
 const refuse = (code: BankRefusal['code'], why: string): BankRefusal => ({ ok: false, code, why });
@@ -162,7 +165,8 @@ export class BankDesk {
 
   async #linkToken(updateKey?: BankKey): Promise<BankLinkAnswer> {
     try {
-      const linkToken = await this.#input.plaid.createLinkToken({ clientUserId: CLIENT_USER_ID, ...(updateKey === undefined ? { webhook: this.#input.webhook?.() ?? null } : { updateKey }) });
+      const days = this.#input.historyDays?.();
+      const linkToken = await this.#input.plaid.createLinkToken({ clientUserId: CLIENT_USER_ID, ...(updateKey === undefined ? { webhook: this.#input.webhook?.() ?? null, ...(days === undefined ? {} : { historyDays: days }) } : { updateKey }) });
       return { ok: true, linkToken };
     } catch (error) {
       this.#input.log.warn('no link key from Plaid', { kind: kindOf(error) });

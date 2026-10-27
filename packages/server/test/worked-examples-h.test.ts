@@ -10,7 +10,7 @@ import { HER_START } from '../src/setup-start.js';
 import { bankView } from '../src/bank/balances.js';
 import { readAccounts, readItems } from '../src/db/store.js';
 import { bankStatus } from '../src/status.js';
-import { HER_BANK_RULES, herLife, setUpHer } from './her-harness.js';
+import { HER_BANK_RULES, finderLife, herLife, setUpHer } from './her-harness.js';
 import { choose, decision, lifeInAFile, noonInNewYork, type Life } from './keeper-harness.js';
 
 const text = readFileSync(new URL('../worked-examples-h.txt', import.meta.url), 'utf8');
@@ -286,6 +286,29 @@ examples[6] = async () => {
       'difference by the available balance while held': byAvailable,
       'bank side after it posts': posted.bankSide,
       'difference after it posts': posted.difference,
+    };
+  } finally {
+    life.done();
+  }
+};
+
+// PR 13: the rule finder on her setup day (53.2, 53.3, 53.6, 53.7).
+examples[7] = async () => {
+  const life = await finderLife();
+  try {
+    const view = life.keeper.setupView();
+    if (view.state !== 'not-set-up' || !view.ready || view.found === undefined) throw new Error('no rule finder');
+    const found = view.found;
+    const total = (contains: string): Cents => {
+      const line = found.find((l) => l.rule.contains === contains);
+      if (line === undefined) throw new Error(`no suggestion "${contains}"`);
+      return line.matches.items.reduce((sum, i) => sum + i.amount, 0);
+    };
+    return {
+      'capital one side in all': total('TO CRD 0412'),
+      'amex side in all': total('EPAY TO AMEX ACH'),
+      'paychecks in all': total('MADEUP CORP PAYROLL PPD ID 4455'),
+      'green leaf in all': total('GREEN LEAF MARKET'),
     };
   } finally {
     life.done();

@@ -16,6 +16,7 @@ import type {
   WishlistChange,
 } from '@budget-app/money';
 import type { BankRulePreview, BankRuleSpec } from './bank-rules.js';
+import type { FoundGroup, FoundPreview } from './rule-finder.js';
 
 // How a tap reaches the books. The screen sends the choice it was offered;
 // the server hands it to the money math, which decides. Types only, so the
@@ -241,6 +242,13 @@ export type SetupStep =
   // A25: how many days back setup day asks about transfers with only one
   // side showing. A setting (0.2): any whole number of days from zero up.
   | { readonly lookBack: number }
+  // Her rulebook, 53.1: her answer to a suggestion of the rule finder: keep it
+  // as it is (a place with the bucket she picks, 53.7), skip it, or keep it
+  // with her own words, which asks first (53.8, 53.9); or skip a whole group.
+  | { readonly found: { readonly id: string; readonly answer: 'add'; readonly bucket?: 'needs' | 'wants' } }
+  | { readonly found: { readonly id: string; readonly answer: 'skip' } }
+  | { readonly found: { readonly id: string; readonly answer: 'change'; readonly contains: string; readonly bucket?: 'needs' | 'wants' } }
+  | { readonly foundGroup: { readonly group: FoundGroup; readonly answer: 'skip' } }
   // 14.3: start tracking. Final, so it needs his yes.
   | { readonly start: true };
 
@@ -264,6 +272,9 @@ export type SetupDone =
   | { readonly step: 'suggestion'; readonly id: string; readonly answer: 'added' | 'changed' | 'skipped'; readonly ruleId: string | null }
   // A25: asked is how many transfers setup day asks about now.
   | { readonly step: 'look-back'; readonly days: number; readonly asked: number }
+  // Her rulebook, 53.1: ruleId names the bank rule or sorting rule it made; null when skipped.
+  | { readonly step: 'found'; readonly id: string; readonly answer: 'added' | 'changed' | 'skipped'; readonly ruleId: string | null }
+  | { readonly step: 'found-group'; readonly group: FoundGroup; readonly skipped: number }
   // Tracking has started. stillToSet: the rules he has not set yet, for Settings.
   | { readonly step: 'started'; readonly startingMoney: Cents; readonly stillToSet: readonly ('paycheckRule' | 'momRule')[] };
 
@@ -271,4 +282,6 @@ export type SetupResponse =
   | { readonly ok: true; readonly replayed: boolean; readonly done: SetupDone }
   // Nothing was changed. why is for him to read. With needs-confirmation for
   // a suggestion he changed, preview says what the rule would match.
-  | { readonly ok: false; readonly code: RefusalCode; readonly why: string; readonly preview?: BankRulePreview };
+  // Her rulebook, 53.8: with needs-confirmation for a finder suggestion she
+  // changed, foundPreview says what it would match and overlap.
+  | { readonly ok: false; readonly code: RefusalCode; readonly why: string; readonly preview?: BankRulePreview; readonly foundPreview?: FoundPreview };

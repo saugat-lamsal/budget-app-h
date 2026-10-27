@@ -185,6 +185,24 @@ export function parseSetupRequest(value: unknown): SetupRequest | null {
     const days = setup['lookBack'];
     if (!isWhole(days) || days < 0) return null;
     step = { lookBack: days };
+  } else if ('found' in setup) {
+    // Her rulebook, 53.1: an answer to the rule finder.
+    const f = setup['found'];
+    if (!isRecord(f) || typeof f['id'] !== 'string' || f['id'] === '' || f['id'].length > MAX_ITEM_LENGTH) return null;
+    const given = f['bucket'];
+    const bucket: 'needs' | 'wants' | undefined = given === 'needs' || given === 'wants' ? given : undefined;
+    if (given !== undefined && bucket === undefined) return null;
+    const withBucket: { readonly bucket?: 'needs' | 'wants' } = bucket === undefined ? {} : { bucket };
+    if (f['answer'] === 'skip' && onlyKeys(f, ['id', 'answer'])) step = { found: { id: f['id'], answer: 'skip' } };
+    else if (f['answer'] === 'add' && onlyKeys(f, ['id', 'answer', 'bucket'])) step = { found: { id: f['id'], answer: 'add', ...withBucket } };
+    else if (f['answer'] === 'change' && onlyKeys(f, ['id', 'answer', 'contains', 'bucket']) && typeof f['contains'] === 'string' && f['contains'].length <= MAX_ITEM_LENGTH) {
+      step = { found: { id: f['id'], answer: 'change', contains: f['contains'], ...withBucket } };
+    } else return null;
+  } else if ('foundGroup' in setup) {
+    const g = setup['foundGroup'];
+    const groups = ['card-payments', 'transfers', 'people-fees', 'paycheck', 'places'] as const;
+    if (!isRecord(g) || !onlyKeys(g, ['group', 'answer']) || g['answer'] !== 'skip' || !groups.includes(g['group'] as (typeof groups)[number])) return null;
+    step = { foundGroup: { group: g['group'] as (typeof groups)[number], answer: 'skip' } };
   } else if ('start' in setup) {
     if (setup['start'] !== true) return null;
     step = { start: true };

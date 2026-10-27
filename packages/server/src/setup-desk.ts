@@ -13,15 +13,18 @@ import {
   type Settings,
   type SortingRule,
   type StartingPots,
+  type TextRule,
 } from '@budget-app/money';
 import { BankRulesDesk } from './bank-rules-desk.js';
-import { bankLinesOf, type BankRuleSpec } from './bank-rules.js';
+import { MAX_RULE_TEXT, bankLinesOf, type BankRuleSpec } from './bank-rules.js';
 import { canonical, refuse } from './choices.js';
 import { planSetup, type BankHistory } from './setup-history.js';
 import type { StoredItem } from './sync/plan.js';
 import type { BankRuleRequest, BankRuleResponse, SuggestionLine } from './views/bank-rules.js';
 import type { SetupDone, SetupRequest, SetupResponse } from './views/choice.js';
-import { NO_ANSWERS, setupView, type SetupAnswers } from './setup-view.js';
+import { NO_ANSWERS, setupView, startingRules, type SetupAnswers } from './setup-view.js';
+import { decideFound, finderOf, keptRules, skipGroup, type Finder, type FoundStep } from './setup-finder.js';
+import type { FoundGroup } from './views/rule-finder.js';
 import type { SetupReadyView, SetupView } from './views/setup.js';
 
 // How taps on the Setup day screens reach the books (rulebook section 14).
@@ -56,6 +59,8 @@ export interface SetupDeskInput {
   // His answers so far, for a desk made again from what was kept (the real
   // server); none for a new one.
   readonly answers?: SetupAnswers;
+  // Her rulebook, section 53: the rule finder, in place of 20a's suggestions.
+  readonly ruleFinder?: boolean;
 }
 
 export interface Started {
@@ -67,6 +72,9 @@ export interface Started {
   readonly input: SetupInput;
   readonly items: readonly StoredItem[];
   readonly startingMoney: Cents;
+  // Her rulebook, 53.1: the sorting rules and paycheck rule she kept from the
+  // rule finder, which tracking starts with, for the change log (13.5).
+  readonly found?: { readonly rules: readonly SortingRule[]; readonly paycheckRule: TextRule | null };
 }
 
 export class SetupDesk {
@@ -124,6 +132,7 @@ export class SetupDesk {
       settings: this.#input.settings,
       rules: this.#input.rules ?? [],
       halvesWithinDays: this.#input.halvesWithinDays,
+      ...(this.#input.ruleFinder === true ? { ruleFinder: true } : {}),
     });
   }
 
@@ -188,6 +197,12 @@ export class SetupDesk {
       return this.#suggestion(shown, step.suggestion, request);
     }
 
+    // Her rulebook, 53.1: an answer to the rule finder, or a whole group skipped.
+    if ('found' in step || 'foundGroup' in step) {
+      if (this.#input.ruleFinder !== true) return refuse('refused', 'This setup has no rule finder');
+      return 'found' in step ? this.#found(step.found, request) : this.#foundGroup(step.foundGroup.group, view);
+    }
+
     // B42: the day of his last paycheck, on or before today.
     if ('lastPaycheck' in step) {
       const date = step.lastPaycheck;
@@ -249,13 +264,14 @@ export class SetupDesk {
     const bank = this.#bank();
     if (bank === null) return refuse('refused', 'There is no bank connection yet');
     let plan: ReturnType<typeof planSetup>;
+    // Her rulebook, 53.1: with the sorting rules and paycheck rule she kept, at the end of their lists.
+    const kept = keptRules(this.#answers.found);
     try {
       plan = planSetup(bank, {
         today,
         assignment: this.#answers.assignment,
         lastPaycheckDate: date,
-        settings: this.#input.settings,
-        rules: this.#input.rules ?? [],
+        ...startingRules({ settings: this.#input.settings, rules: this.#input.rules ?? [], answers: this.#answers }),
         inTransit: view.halves.filter((h) => h.onItsWay === true).map((h) => h.id),
       });
     } catch (error) {
@@ -263,7 +279,8 @@ export class SetupDesk {
       throw error;
     }
     if (!plan.ok) return refuse('refused', 'It does not add up to the starting money');
-    this.#started = { book: plan.book, bank: plan.bank, input: plan.input, items: plan.items, startingMoney: plan.startingMoney };
+    const found = kept.sorting.length === 0 && kept.paycheck === null ? {} : { found: { rules: kept.sorting, paycheckRule: kept.paycheck } };
+    this.#started = { book: plan.book, bank: plan.bank, input: plan.input, items: plan.items, startingMoney: plan.startingMoney, ...found };
     const settings = plan.book.settings();
     // With the mom reserve off there is no mom rule to set ("Off in this setup").
     const stillToSet = (['paycheckRule', 'momRule'] as const).filter((key) => settings[key] === null && !(key === 'momRule' && plan.book.switches().momReserve === 'off'));
@@ -305,6 +322,43 @@ export class SetupDesk {
     }
     const done = this.#bankRules.apply({ add: answer.rule });
     return done.ok ? record('changed', done.done.rule.id) : refuse('refused', done.why);
+  }
+
+  // Her rulebook, 53.1: the finder as the screen shows it now (setup-finder.ts).
+  #finder(): Finder | null {
+    const bank = this.#bank();
+    return bank === null ? null : finderOf({ bank, answers: this.#answers.found, settings: this.#input.settings, rules: this.#input.rules ?? [] });
+  }
+
+  #found(step: FoundStep, request: SetupRequest): SetupDone | Extract<SetupResponse, { ok: false }> {
+    const finder = this.#finder();
+    if (finder === null) return refuse('refused', 'There is no bank connection yet');
+    const decided = decideFound({
+      finder,
+      found: this.#answers.found ?? new Map(),
+      step,
+      ...(request.confirmed === undefined ? {} : { confirmed: request.confirmed }),
+      ...(request.seen === undefined ? {} : { seen: request.seen }),
+      maxText: MAX_RULE_TEXT,
+      keepBankRule: (rule) => {
+        const done = this.#bankRules.apply({ add: { account: rule.account, contains: rule.contains, means: rule.means, ...(rule.other === null ? {} : { other: rule.other }) } });
+        return done.ok ? { ok: true, ruleId: done.done.rule.id } : { ok: false, why: done.why };
+      },
+    });
+    if (!decided.ok) return decided.foundPreview === undefined ? refuse(decided.code, decided.why) : { ...refuse(decided.code, decided.why), foundPreview: decided.foundPreview };
+    this.#answers = { ...this.#answers, found: decided.found };
+    this.#dropAnswersNotAsked();
+    return { step: 'found', id: step.id, answer: decided.done.answer, ruleId: decided.done.ruleId };
+  }
+
+  #foundGroup(group: FoundGroup, view: SetupReadyView): SetupDone | Extract<SetupResponse, { ok: false }> {
+    const finder = this.#finder();
+    if (finder === null) return refuse('refused', 'There is no bank connection yet');
+    const decided = skipGroup(finder, this.#answers.found ?? new Map(), group);
+    if (!decided.ok) return refuse(decided.code, decided.why);
+    this.#answers = { ...this.#answers, found: decided.found };
+    const before = (view.found ?? []).filter((l) => l.group === group && l.status === 'open').length;
+    return { step: 'found-group', group, skipped: before };
   }
 
   #ready(): SetupReadyView {

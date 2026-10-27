@@ -1,12 +1,13 @@
-HER RULE FINDER (Oct 26, 2026). APPROVED OCT 26; NOT BUILT YET.
+HER RULE FINDER (Oct 26, 2026). APPROVED OCT 26; BUILT IN PR 13.
 
 His ask, Oct 26: on her setup day, before tracking starts, a rule finder
 that reads her whole bank history from both connections and suggests
 rules for her to confirm, change or skip. This file is the draft of its
 rule texts (section 53, and changes to section 2 and 40.1), as he
 approved it on Oct 26 with HA7's five recommendations
-(docs/her-questions.txt, rulebook 60g). The texts are in the rulebook's
-section H, under PR 13, which moves them into place with their tests.
+(docs/her-questions.txt, rulebook 60g). PR 13 put the texts in place in
+the rulebook (section 2, 40.1, section 53), with their tests; readings
+HB34 to HB37.
 
 No wording or numbers from her real accounts are in this file. Every
 example is made up.

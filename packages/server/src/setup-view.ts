@@ -17,6 +17,7 @@ import {
   type StartingPots,
 } from '@budget-app/money';
 import { bankLinesOf, suggestBankRules } from './bank-rules.js';
+import { finderOf, keptRules, type FoundAnswer } from './setup-finder.js';
 import { bankRuleOf, halvesInTransitIn, notReadyWhy, planSetup, setupPreviewOf, type BankHistory } from './setup-history.js';
 import type { SuggestionLine } from './views/bank-rules.js';
 import type { AccountLine, HalfLine, SetupMissing, SetupReadyView, SetupView } from './views/setup.js';
@@ -33,6 +34,9 @@ export interface SetupAnswers {
   readonly onItsWay: ReadonlyMap<string, boolean>;
   readonly lastPaycheckDate: IsoDate | null;
   readonly assignment: StartingPots;
+  // Her rulebook, 53.1: her answer to each rule finder suggestion, by its id
+  // (setup-finder.ts). None in upstream's setup, or saved before it existed.
+  readonly found?: ReadonlyMap<string, FoundAnswer>;
 }
 
 export const NO_ANSWERS: SetupAnswers = {
@@ -55,6 +59,16 @@ export interface SetupViewInput {
   // How many days back setup day asks about halves on their way, to start
   // with (A25: a setting, section 2; his answer replaces it).
   readonly halvesWithinDays: number;
+  // Her rulebook, section 53: the rule finder, in place of 20a's suggestions.
+  readonly ruleFinder?: boolean;
+}
+
+// What tracking starts with: the settings and sorting rules, with the
+// sorting rules and the paycheck rule she kept from the rule finder (53.1).
+export function startingRules(input: { readonly settings: Settings; readonly rules: readonly SortingRule[]; readonly answers: SetupAnswers }): { readonly settings: Settings; readonly rules: readonly SortingRule[] } {
+  const kept = keptRules(input.answers.found);
+  if (kept.sorting.length === 0 && kept.paycheck === null) return { settings: input.settings, rules: input.rules };
+  return { settings: { ...input.settings, paycheckRule: input.settings.paycheckRule ?? kept.paycheck }, rules: [...input.rules, ...kept.sorting] };
 }
 
 // Section 2, A25: setup day looks back this many days, until he changes it.
@@ -74,7 +88,9 @@ export function setupView(input: SetupViewInput): SetupView {
 
   // 20a: the suggestions, with his answers. One whose rule he has removed
   // since is open again.
-  const suggestions: SuggestionLine[] = suggestBankRules(bankLinesOf(bank), bank.rules).map((s) => {
+  // Her rulebook, section 53: the rule finder takes their place.
+  const finder = input.ruleFinder === true ? finderOf({ bank, answers: answers.found, settings, rules: input.rules }) : null;
+  const suggestions: SuggestionLine[] = (finder !== null ? [] : suggestBankRules(bankLinesOf(bank), bank.rules)).map((s) => {
     const answer = answers.suggestions.get(s.id);
     const added = answer !== undefined && answer.answer !== 'skipped' && bank.rules.some((r) => r.id === answer.ruleId);
     const status = answer?.answer === 'skipped' ? 'skipped' : added ? answer.answer : s.covered ? 'covered' : 'open';
@@ -116,8 +132,7 @@ export function setupView(input: SetupViewInput): SetupView {
         today,
         assignment: answers.assignment,
         lastPaycheckDate: answers.lastPaycheckDate,
-        settings,
-        rules: input.rules,
+        ...startingRules({ settings, rules: input.rules, answers }),
         inTransit: onItsWay.map((h) => h.id),
       });
       if (plan.ok) selfCheck = plan.book.selfCheck(plan.bank);
@@ -141,6 +156,7 @@ export function setupView(input: SetupViewInput): SetupView {
     bankSide: startingMoney(base.posted, charges),
     suggestions,
     unansweredSuggestions,
+    ...(finder === null ? {} : { found: finder.shown }),
     halves,
     halvesWithinDays: within,
     unanswered: halves.filter((h) => h.onItsWay === null).length,

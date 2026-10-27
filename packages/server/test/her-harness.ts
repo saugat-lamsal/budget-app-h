@@ -2,7 +2,8 @@ import { checkBankRules } from '../src/bank/reading.js';
 import { HER_START } from '../src/setup-start.js';
 import type { SetupResponse } from '../src/views/choice.js';
 import { BANK_RULES } from './harness.js';
-import { ACCOUNT_IDS } from './fake-plaid.js';
+import { addDays } from '@budget-app/money';
+import { ACCOUNT_IDS, type FakePlaid } from './fake-plaid.js';
 import { choose, decision, lifeInAFile, noonInNewYork, type Life } from './keeper-harness.js';
 
 // Her setup on the real server's books (her rulebook, "Off in this setup"):
@@ -77,4 +78,30 @@ export async function herWeeks(): Promise<Life> {
   const set = k.settingsChange({ id, settings, confirmed: true, seen: asked.preview.key });
   if (!set.ok) throw new Error(set.why);
   return life;
+}
+
+// Her rulebook, section 53: a history for the rule finder, in two made-up
+// wording styles (Capital One-like capitals on checking and its card,
+// Amex-like mixed case on the Amex card), connected with no bank rules yet,
+// before setup day: card payments to both cards, four paychecks 14 days
+// apart, a place paid 3 times, and two payments to people.
+export const FINDER_TODAY = '2026-10-01';
+
+export function finderHistory(fake: FakePlaid): void {
+  const ago = (days: number): string => addDays(FINDER_TODAY, -days);
+  const X = ACCOUNT_IDS.second;
+  for (let m = 0; m < 3; m += 1) {
+    fake.addPosted({ id: `pay-cap-${m}`, account: C, amount: 25_000 + m, date: ago(70 - 30 * m), description: `ONLINE PMT ${1047 + m} TO CRD 0412` });
+    fake.addPosted({ id: `got-cap-${m}`, account: E, amount: -(25_000 + m), date: ago(69 - 30 * m), description: 'CAPITAL ONE PYMT RECEIVED' });
+    fake.addPosted({ id: `pay-amex-${m}`, account: C, amount: 40_000 + m, date: ago(66 - 30 * m), description: `EPAY TO AMEX ACH W${4800 + m}` });
+    fake.addPosted({ id: `got-amex-${m}`, account: X, amount: -(40_000 + m), date: ago(64 - 30 * m), description: 'Online Payment Received - Thank You' });
+  }
+  for (let p = 0; p < 4; p += 1) fake.addPosted({ id: `wage-${p}`, account: C, amount: -(250_000 + p), date: ago(56 - 14 * p), description: `MADEUP CORP PAYROLL PPD ID 4455 R${p}` });
+  for (const [i, d] of [50, 30, 10].entries()) fake.addPosted({ id: `leaf-${i}`, account: E, amount: 6_000 + i, date: ago(d), description: `GREEN LEAF MARKET 045${i}`, label: 'FOOD_AND_DRINK_GROCERIES' });
+  for (const [i, name] of ['ALPHA', 'BRAVO', 'CHARLIE', 'DELTA', 'ECHO'].entries()) fake.addPosted({ id: `once-${i}`, account: E, amount: 1_100, date: ago(60), description: `${name} BAKERY` });
+  for (const [i, d] of [40, 20].entries()) fake.addPosted({ id: `zelle-${i}`, account: C, amount: 3_000 + i, date: ago(d), description: `ZELLE TO FRIEND${i} MADEUP ${i}`, label: 'TRANSFER_OUT_TRANSFER_OUT_FROM_APPS' });
+}
+
+export function finderLife(): Promise<Life> {
+  return lifeInAFile({ herSetup: true, rules: [], start: HER_START, today: FINDER_TODAY, history: finderHistory });
 }

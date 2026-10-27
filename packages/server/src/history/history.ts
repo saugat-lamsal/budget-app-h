@@ -1,6 +1,7 @@
 import { MoneyError, startTracking, type BankTransaction, type Book, type Cents, type IsoDate, type SetupInput, type WishlistChange } from '@budget-app/money';
 import type { AlertsEvent } from '../alerts/plan.js';
 import type { BankRuleLogLine } from '../views/bank-rules.js';
+import type { FoundAnswer } from '../views/rule-finder.js';
 
 // The book's history (Step 1 of the real server): what the bank sent and
 // every answer of his, in the order it happened. The book is rebuilt from it,
@@ -32,6 +33,8 @@ export interface SavedSetupAnswers {
   readonly lastPaycheckDate: IsoDate | null;
   readonly assignment: Readonly<Record<string, Cents>>;
   readonly suggestions: readonly (readonly [string, { readonly answer: string; readonly ruleId: string | null }])[];
+  // Her rulebook, 53.1: her answers to the rule finder; none before it existed.
+  readonly found?: readonly (readonly [string, FoundAnswer])[];
 }
 
 // One answer of his. Each part is there when the answer did it.
