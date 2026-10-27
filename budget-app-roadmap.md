@@ -45,6 +45,14 @@ are view and read-only and merge by themselves when CI is green.
   and the database with restarts, an agent through a full pay period on
   the screens, the table of every rule and its tests
   (docs/her-report.txt).
+- PR 12b: the posted balance for her Capital One accounts (12.1, HA8,
+  his OK Oct 26, 2026, 60h). Tests first, break-it about 25, her lives
+  200 x 2 years, the run through the bank connection, his review.
+- PR 13: the rule finder on setup day (section 53, his OK Oct 26, 2026,
+  60g; docs/her-rule-finder.txt). Before her connection day: Plaid takes
+  the 730 days only when a bank is first connected. Tests first,
+  break-it about 25, no long runs, his review. Before it, a live read of
+  her team's test bank labels.
 
 Finish line: section H of the rulebook is empty (every approved text is in
 force, with its tests), every numbered rule has a passing test, and PR 12's

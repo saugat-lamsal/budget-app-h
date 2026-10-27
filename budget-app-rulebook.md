@@ -16,8 +16,11 @@ line, 10.5, 10.7, 10.13 and 12.3; PR 7+8: section 52; PR 9: section 2's
 split, 3.3, 3.4, 3.8, 4.2, 4.4, 11.3, 12.2, 13.1, 13.4, 14.2, 50.4 and
 52.4's buckets; PR 10+11: 40.2, 40.4, 40.5, 40.11 and 50.1 to 50.3). Those
 are all the texts he approved on Oct 23, 2026 (docs/her-plan.txt), so
-section "H. Approved for her setup, not built yet" at the end is empty
-(PR 12, Oct 25, 2026): every rule here is in force. Unchanged for her
+section "H. Approved for her setup, not built yet" at the end was empty
+after PR 12 (Oct 25, 2026). It now holds two texts he approved on Oct 26,
+2026, not built yet: 12.1's posted balance for her Capital One accounts
+(60h, PR 12b) and the rule finder (section 53, docs/her-rule-finder.txt,
+60g, PR 13). Every rule above it is in force as written. Unchanged for her
 setup: the pay schedule (section 2), sorting rules (4.2, 6.2, 13.2, 13.6,
 13.8) and bank rules (section 2) stay exactly as upstream's; bank rules are
 per account, so they cover both banks without a change. "You" is the
@@ -1282,13 +1285,192 @@ f.  Trends' Wishlist parts (40.2, 40.4, 40.5, 40.11) are built in PR 10+11,
     with the rest of her Trends, not in PR 9 (Oct 24, 2026,
     docs/her-questions.txt HA6). Until then Trends reads needs and wants
     only.
+g.  The rule finder (Oct 26, 2026, docs/her-questions.txt HA7,
+    docs/her-rule-finder.txt): on setup day, rules suggested from both
+    banks' whole history, for you to confirm, change or skip (section 53,
+    in section H until PR 13 builds it). History at connection is 730
+    days in this setup, though Capital One sends 90. A place's rule picks
+    needs or wants only, never Wishlist (HB21 stands). A paycheck repeats
+    every 12 to 16 days. Places count purchases over the whole history. A
+    card that words payments from checking and from savings alike gets
+    one rule, naming the account you pick (53.9). The finder's numbers are
+    not settings.
+h.  Her checking and savings are at Capital One, which sends Plaid no
+    pending items, so the bank side uses their posted balance less pending
+    charges, not the available balance (12.1; Oct 26, 2026,
+    docs/her-questions.txt HA8). Built in PR 12b, before PR 13, and
+    checked in the rehearsal and her first days as HA8 says.
 
 
 ## H. Approved for her setup, not built yet
 
-Empty. Every text he approved for her setup (Oct 23, 2026,
-docs/her-plan.txt) is in force in its place above, with its tests; the
-pull requests that moved each one are listed at the top of this rulebook.
-A text he approves later that is not built yet goes here, indented so it
-is not yet counted as a rule (test/every-rule-has-a-test.test.ts), and
-names the pull request that will move it into place.
+Every text he approved for her setup on Oct 23, 2026 (docs/her-plan.txt)
+is in force in its place above, with its tests; the pull requests that
+moved each one are listed at the top of this rulebook. A text he approves
+later that is not built yet goes here, indented so it is not yet counted
+as a rule (test/every-rule-has-a-test.test.ts), and names the pull request
+that will move it into place.
+
+### PR 12b. The posted balance for her Capital One accounts (60h, his OK Oct 26, 2026)
+
+  In place: 12.1. Until then 12.1 stands as it is.
+
+  12.1, after "If the bank gives no available balance, its posted balance
+  less pending charges.": "In this setup checking and savings are at
+  Capital One, which sends Plaid no pending items, so for them the bank
+  side is always the posted balance less pending charges."
+
+### PR 13. The rule finder (60g, his OK Oct 26, 2026)
+
+  In place: section 2's "History at connection", "Paycheck rule" and
+  "Bank rules", 40.1, and section 53. Until then the rule each replaces
+  stands.
+
+  Section 2, "History at connection", becomes:
+
+  - History at connection: when each bank is connected, the app asks it
+    for the last 730 days, the most Plaid allows (upstream's setup asks
+    for 90). A bank may send less: Plaid says Capital One sends 90 days,
+    whatever is asked. The app keeps what each bank sends. This cannot
+    change once the bank is connected.
+
+  Section 2, "Paycheck rule": "(set after first sync)" becomes "(set after
+  first sync; the rule finder suggests it on setup day, 53.6)".
+
+  Section 2, "Bank rules": "the setup screen also suggests some from the
+  bank's own labels, for you to confirm" becomes "the rule finder suggests
+  them on setup day (53), for you to confirm".
+
+  40.1: "(the 90 days asked for at connection, section 2)" becomes "(the
+  last 90 days before the bank was connected, section 2; in this setup the
+  older history is read only by the rule finder, 53)".
+
+  A new section, in place as "## 53. The rule finder (setup day)":
+
+  53.1  Finding rules. On setup day, once the four accounts are picked
+        (1.2) and both banks have sent all the history they are going to
+        send, and before the starting money (14.2), the app offers "Find
+        rules in your history". It reads both banks' whole history
+        (section 2) and suggests rules in this order: card payments
+        (53.3), transfers between checking and savings (53.4), payments
+        to people, fees and interest (53.5), the paycheck rule (53.6),
+        and places you pay often (53.7). You confirm each one, change it
+        first, or skip it, and you can skip a whole group. Nothing is
+        made until you confirm, and skipping changes nothing. A rule you
+        confirm is added as if you made it in Settings, at the end of its
+        list, and logged (13.5). The finder only reads: it changes no
+        bucket and nothing the bank sent. You can finish setup day
+        without it. It is offered only before tracking starts. In this
+        setup it takes the place of setup day's suggestions from the
+        bank's labels (20a, B241). Its numbers (0 to 5 days, 12 to 16
+        days, 3 purchases) are not settings, like Trends' (42a).
+
+  53.2  The words that stay the same. A suggestion's text comes from the
+        bank items it was found from, all on one account: the longest
+        piece of text that every one of their descriptions contains,
+        ignoring capitals, that begins and ends at a whole word (words
+        are what the spaces separate) and has a letter in it. A word that
+        is not the same in all of them (a date, a confirmation number) is
+        never part of it. Of two pieces equally long, the one that comes
+        first in the newest description. If they share no such piece
+        (the bank words them two ways, or changed its wording), they are
+        split by their first word, as setup day's suggestions are split
+        now (20a), and each part gets its own text the same way. From
+        one item alone, its wording as B241 reads it: the words before
+        the first one holding a digit or #. Made-up example: "ONLINE PMT
+        1047 THANK YOU" and "ONLINE PMT 2213 THANK YOU" give "ONLINE
+        PMT".
+
+  53.3  Card payments. Money leaving checking or savings, and exactly the
+        same amount arriving on either card 0 to 5 days later, by the
+        days the banks dated them (the same day counts), within one bank
+        or across the two. The pairs are made oldest first: each item
+        leaving, oldest first, pairs with the earliest arrival 0 to 5
+        days later on a card that is not paired yet. For each account
+        and card the money went between, two suggestions, both "transfer
+        between my accounts": one on the account it left, to that card,
+        worded from the items leaving (53.2); and one on the card, from
+        that account, worded from the arrivals. So the card's side is
+        suggested too, which setup day missed before (QUESTIONS.md B227).
+        Pending items pair as well, and are worded apart from posted
+        ones, so a pending wording that differs from the posted one
+        (B226) is a suggestion of its own. Plaid's history sends only
+        posted items, so a pending wording is known only from what was
+        pending at the bank between connecting and setup day; Capital
+        One sends no pending items.
+
+  53.4  Transfers between checking and savings. Found the same way:
+        money leaves one and exactly the same amount arrives in the other
+        0 to 5 days later, paired oldest first. For each way the money
+        went, two suggestions, "transfer between my accounts": one on the
+        account it left, worded from the items leaving, and one on the
+        account it reached, worded from the arrivals, with pending items
+        worded apart as in 53.3.
+
+  53.5  Payments to people, fees and interest. From the labels the banks
+        send (Plaid's categories), as setup day's suggestions are now
+        (20a, B241), from both banks' whole history: payments to people
+        out of checking or savings, and fees and interest on each card.
+        One suggestion for each account and kind, worded from the items
+        with that label (53.2), pending ones apart. Transfers come from
+        their two sides (53.3, 53.4), not from labels alone.
+
+  53.6  The paycheck rule. Money in to checking or savings that repeats
+        about every 14 days. Deposits on one account are grouped by their
+        wording as B241 reads it; money in that 53.3 or 53.4 pairs as a
+        transfer is left out. A run is 3 or more deposits of one group,
+        each 12 to 16 days after the one before it in the run (others in
+        between, such as a bonus, are passed over). Each group's newest
+        run is a suggestion (the one ending latest; of two ending the
+        same day, the longer), with its days and amounts. Older deposits
+        before a longer gap (another job, say) are not part of it. Its
+        text is the words that stay the same across the run (53.2). Only
+        one can be confirmed: there is one paycheck rule.
+
+  53.7  Places you pay often. A place is a name found as 13.8 finds it
+        for each purchase; the same name on any account is one place, as
+        in 40.6. Each place with 3 or more purchases in the history, on
+        checking or either card, is a suggestion: a sorting rule for
+        purchases with the place's name as its text (13.8), and a
+        suggested bucket from the bank's category of most of its
+        purchases (the newest decides a tie): needs for groceries, rent
+        and utilities, medical care, insurance, transport and gas, loan
+        payments, childcare and education, and taxes and government
+        fees; wants for anything else. With no category, no bucket is
+        suggested. You pick needs or wants, or skip it; Wishlist stays a
+        choice made by hand in Review (HB21). Places are listed by how
+        many purchases, most first.
+
+  53.8  What it would have matched. Each suggestion shows how many items
+        in the history it would have matched, on which account, from
+        what day to what day, and the items themselves (day, description,
+        amount), newest first. Items it matches that it was not found
+        from are listed apart, "Also matches", so a text that reaches too
+        far is seen before you confirm it. A changed suggestion is shown
+        again with what its new text would have matched.
+
+  53.9  Never one item two ways. An item matches a rule when the rule
+        would read it: its account, its text, and the way the money went.
+        Two suggestions overlap when an item in the history matches both:
+        between them they could read it two ways (a card payment and a
+        purchase, a transfer from checking and one from savings, needs
+        and wants, a paycheck and a transfer). The finder never offers
+        one of them alone: the two are shown together with the items both
+        match, and you pick one or neither. A suggestion that overlaps a
+        rule you already have (one confirmed a moment ago, too) is shown
+        with that rule, and can only be changed or skipped. A changed
+        suggestion that would overlap is shown the same way. So no two
+        rules the finder makes match the same item in the history, and
+        their order in the lists does not change how the history reads.
+
+  In plain words, the finder's sheet in the app (made-up example):
+
+    Find rules in your history. The app looked through what your banks
+    sent and found things that repeat. For example, $250.00 left
+    checking on Mar 3 and $250.00 reached your Amex card on Mar 4, and
+    the same happened five more times. So it suggests two rules: on
+    checking, "EPAY TO AMEX" means paying your Amex card, and on the
+    Amex card, "ONLINE PAYMENT RECEIVED" means money from checking. Each
+    rule shows what it would have matched. Keep it, change its words
+    first, or skip it. Your buckets don't change: rules only decide how
+    the app reads what the banks send.
