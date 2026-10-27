@@ -7494,5 +7494,124 @@
     "find": "...startingRules({ settings: this.#input.settings, rules: this.#input.rules ?? [], answers: this.#answers }),",
     "replace": "settings: this.#input.settings,\n        rules: this.#input.rules ?? [],",
     "why": "[her-finder] 53.1 tracking starts without the place and the paycheck rule she kept"
+  },
+  {
+    "section": "cards",
+    "file": "packages/server/src/bank/paid-before-setup.ts",
+    "find": "if (item.status !== 'history' || item.removed || item.pending) continue;",
+    "replace": "if (item.removed || item.pending) continue;",
+    "why": "[her-paid] 9.3 a payment the books already have counts twice"
+  },
+  {
+    "section": "cards",
+    "file": "packages/server/src/bank/paid-before-setup.ts",
+    "find": "if (item.status !== 'history' || item.removed || item.pending) continue;",
+    "replace": "if (item.status !== 'history' || item.pending) continue;",
+    "why": "[her-paid] 9.3 a payment the bank removed still counts"
+  },
+  {
+    "section": "cards",
+    "file": "packages/server/src/bank/paid-before-setup.ts",
+    "find": "if (item.status !== 'history' || item.removed || item.pending) continue;",
+    "replace": "if (item.status !== 'history' || item.removed) continue;",
+    "why": "[her-paid] 9.3 a payment still pending counts"
+  },
+  {
+    "section": "cards",
+    "file": "packages/server/src/bank/paid-before-setup.ts",
+    "find": ".kind !== 'transfer-arrived') continue;",
+    "replace": ".kind === 'nothing') continue;",
+    "why": "[her-paid] 9.3 a refund or a purchase on the card counts as a payment"
+  },
+  {
+    "section": "cards",
+    "file": "packages/server/src/bank/paid-before-setup.ts",
+    "find": "amount: -read.item.amount,",
+    "replace": "amount: read.item.amount,",
+    "why": "[her-paid] 9.3 a payment counts with the wrong sign"
+  },
+  {
+    "section": "cards",
+    "file": "packages/server/src/bank/paid-before-setup.ts",
+    "find": "landedOn: read.item.date });",
+    "replace": "landedOn: null });",
+    "why": "[her-paid] 9.3 B28 a payment from before setup day counts as still on its way, toward any statement"
+  },
+  {
+    "section": "cards",
+    "file": "packages/server/src/bank/paid-before-setup.ts",
+    "find": "account === 'everyday-card' || account === 'old-card' || account === 'second-card';",
+    "replace": "account === 'everyday-card' || account === 'old-card';",
+    "why": "[her-paid] 9.3 the second card's payments from before setup day are not read"
+  },
+  {
+    "section": "cards",
+    "file": "packages/server/src/bank/paid-before-setup.ts",
+    "find": "account === 'everyday-card' || account === 'old-card' || account === 'second-card';",
+    "replace": "account === 'everyday-card' || account === 'second-card';",
+    "why": "[her-paid] 9.3 the old card's payments from before setup day are not read (upstream's setup)"
+  },
+  {
+    "section": "cards",
+    "file": "packages/server/src/bank/paid-before-setup.ts",
+    "find": "return [...book.cardPayments(card), ...(before?.[card] ?? [])]",
+    "replace": "return [...book.cardPayments(card)]",
+    "why": "[her-paid] 9.3 the payments seen leave out those from before setup day"
+  },
+  {
+    "section": "cards",
+    "file": "packages/server/src/bank/paid-before-setup.ts",
+    "find": "return [...book.cardPayments(card), ...(before?.[card] ?? [])]",
+    "replace": "return [...(before?.[card] ?? [])]",
+    "why": "[her-paid] 9.3 the payments seen leave out the books'"
+  },
+  {
+    "section": "alerts",
+    "file": "packages/server/src/alerts/plan.ts",
+    "find": "cardDue(today, statement, cardPaymentsSeen(world.book, statement.card, world.paidBeforeSetup), world.book.settings())",
+    "replace": "cardDue(today, statement, world.book.cardPayments(statement.card), world.book.settings())",
+    "why": "[her-paid] 10.9 a kept reminder stays true though it was paid before setup day"
+  },
+  {
+    "section": "cards",
+    "file": "packages/server/src/views/home.ts",
+    "find": "cardDue(today, statement, cardPaymentsSeen(book, statement.card, input.paidBeforeSetup), settings)",
+    "replace": "cardDue(today, statement, book.cardPayments(statement.card), settings)",
+    "why": "[her-paid] 9.6 Home's due line leaves out payments from before setup day"
+  },
+  {
+    "section": "cards",
+    "file": "packages/server/src/views/home-cards.ts",
+    "find": "const payments = cardPaymentsSeen(book, c.card, input.paidBeforeSetup);",
+    "replace": "const payments = book.cardPayments(c.card);",
+    "why": "[her-paid] 52.1 a card's row on Home leaves out payments from before setup day"
+  },
+  {
+    "section": "cards",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "      paidBeforeSetup: this.#bankNow().paidBeforeSetup,\n",
+    "replace": "",
+    "why": "[her-paid] 9.6 the keeper does not give Home the payments from before setup day"
+  },
+  {
+    "section": "cards",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "homeCards({ atSetup, paidBeforeSetup: this.#bankNow().paidBeforeSetup },",
+    "replace": "homeCards({ atSetup },",
+    "why": "[her-paid] 52.1 the keeper does not give her card rows the payments from before setup day"
+  },
+  {
+    "section": "alerts",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": ", paidBeforeSetup: this.#bankNow().paidBeforeSetup };",
+    "replace": " };",
+    "why": "[her-paid] 9.7 the keeper does not give the alerts the payments from before setup day"
+  },
+  {
+    "section": "cards",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "paidBeforeSetup: paidBeforeSetup(readItems(this.#db), rolesOf(readAccounts(this.#db)), readBankRules(this.#db))",
+    "replace": "paidBeforeSetup: paidBeforeSetup(readItems(this.#db), rolesOf(readAccounts(this.#db)), [])",
+    "why": "[her-paid] 9.3 the history is read with no bank rules, not today's"
   }
 ]

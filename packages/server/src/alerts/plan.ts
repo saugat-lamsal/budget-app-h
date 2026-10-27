@@ -1,4 +1,5 @@
 import { addDays, bucketLevel, cardDue, cardNotices, payoffCountdown, type BankBalances, type Book, type CardStatement, type Cents, type IsoDate } from '@budget-app/money';
+import { cardPaymentsSeen, type PaidBeforeSetup } from '../bank/paid-before-setup.js';
 import { ReplayFailed } from '../history/history.js';
 import { instantIn, timeIn, todayIn } from '../history/today.js';
 import { alertRecord, lastingKindOf, type AlertFacts, type AlertRecord, type LastingKind } from './alerts.js';
@@ -122,6 +123,9 @@ export interface AlertWorld {
   // Her rulebook, 50.4: the Wishlist money to move from savings to checking,
   // which the card reminders say too. Null or left out without Wishlist.
   readonly wishlistMove?: { readonly amount: Cents; readonly cards: readonly ('everyday-card' | 'second-card')[] } | null;
+  // 9.3 (her rulebook, 60i): each card's payments from before setup day, read
+  // from the bank history; left out, none.
+  readonly paidBeforeSetup?: PaidBeforeSetup;
 }
 
 // One of her banks, as the alerts know it.
@@ -356,7 +360,7 @@ function stillTrue(world: AlertWorld, today: IsoDate, f: AlertFacts): boolean {
   if (f.kind !== 'card-reminder' && f.kind !== 'card-overdue') return true;
   const statement = world.statements.find((s) => s.card === f.card);
   if (statement === undefined) return false;
-  const due = cardDue(today, statement, world.book.cardPayments(statement.card), world.book.settings());
+  const due = cardDue(today, statement, cardPaymentsSeen(world.book, statement.card, world.paidBeforeSetup), world.book.settings());
   return due !== null && due.dueDate === f.dueDate && due.kind === (f.kind === 'card-reminder' ? 'due' : 'overdue');
 }
 

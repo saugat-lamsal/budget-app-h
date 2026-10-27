@@ -17,7 +17,8 @@ import { BankRulesDesk } from '../bank-rules-desk.js';
 import { bankLinesIn, bankRuleLogIn, saveBankRuleLine } from '../bank-rules-db.js';
 import { RECENT_DAYS, bankLinesOf, misreadHints } from '../bank-rules.js';
 import { bankAtRead, bankView, postedSince, type BankView } from '../bank/balances.js';
-import type { StoredAccount } from '../bank/stored-account.js';
+import { paidBeforeSetup, type PaidBeforeSetup } from '../bank/paid-before-setup.js';
+import { rolesOf, type StoredAccount } from '../bank/stored-account.js';
 import { postingExamples, type PostingExample } from '../bank/posting-times.js';
 import { whyItDoesNotMatch } from '../bank/why.js';
 import { CARD_ORDER, cardStatement, closingDayOf } from '../bank/statements.js';
@@ -79,6 +80,8 @@ interface BankNow {
   readonly postingExamples: readonly PostingExample[];
   readonly statements: CardStatement[];
   readonly cardsOff: CardRemindersOff[];
+  // 9.3 (her rulebook, 60i): each card's payments from before setup day.
+  readonly paidBeforeSetup: PaidBeforeSetup;
 }
 
 // The real server's books (Step 1): everything he answers is kept in the
@@ -406,7 +409,7 @@ export class Keeper {
     const { changes } = statement(this.#db, 'SELECT total_changes() AS changes').get() as { changes: number };
     const { data_version: written } = statement(this.#db, 'PRAGMA data_version').get() as { data_version: number };
     const version = `${changes} ${written}`;
-    if (this.#bankRead?.version !== version) this.#bankRead = { version, ...this.#readBank(), ...this.#readStatements() };
+    if (this.#bankRead?.version !== version) this.#bankRead = { version, ...this.#readBank(), ...this.#readStatements(), paidBeforeSetup: paidBeforeSetup(readItems(this.#db), rolesOf(readAccounts(this.#db)), readBankRules(this.#db)) };
     return this.#bankRead;
   }
 
@@ -456,6 +459,7 @@ export class Keeper {
       ...(this.#banksInSetup() === 2 ? { banksToLogIn: connectionsOf(this.#db).flatMap((c) => (c.needsLogin ? [{ bank: c.bank, name: bankNameOf(c) }] : [])) } : {}),
       statements: this.#statements(),
       cardsOff: this.#cardsOff(),
+      paidBeforeSetup: this.#bankNow().paidBeforeSetup,
       madeUpData: false,
       seenTakeBacks: this.#state.seen,
       lastChecked: readLastChecked(this.#db),
@@ -494,7 +498,7 @@ export class Keeper {
     const setup = book === null || this.#switches().secondCard !== 'on' ? null : readSetupInput(this.#db);
     if (book === null || setup === null) return view;
     const atSetup = { 'everyday-card': owedAtSetup(setup, 'everyday-card'), 'second-card': owedAtSetup(setup, 'second-card') };
-    return withCards(view, homeCards({ atSetup }, this.today(), book, this.#bank(), this.#statements(), this.#cardsOff()));
+    return withCards(view, homeCards({ atSetup, paidBeforeSetup: this.#bankNow().paidBeforeSetup }, this.today(), book, this.#bank(), this.#statements(), this.#cardsOff()));
   }
 
   // Her rulebook, 52.4 and 52.5: a card's last statement, from the
@@ -936,7 +940,7 @@ export class Keeper {
     // Her setup (HB10): each bank's own; while the check waits for one (12.3,
     // HB9), the bank's numbers are not known to the alerts.
     const banks = this.#banksInSetup() === 2 ? connections.map((c) => ({ bank: c.bank, name: bankNameOf(c), needsLogin: c.needsLogin, lastRead: c.lastRead, permissionEnds: c.permissionEnds })) : null;
-    return { book, now: this.#now(), zone: this.timeZone(), bank: this.#waiting() ? null : this.#bank(), needsLogin: connection?.needsLogin ?? false, statements: this.#statements(), lastRead: this.lastRead(), permissionEnds: connection?.permissionEnds ?? null, mismatchSince: this.mismatchSince(), cardNames: this.cardNames(), banks, wishlistMove: this.#wishlistMove() };
+    return { book, now: this.#now(), zone: this.timeZone(), bank: this.#waiting() ? null : this.#bank(), needsLogin: connection?.needsLogin ?? false, statements: this.#statements(), lastRead: this.lastRead(), permissionEnds: connection?.permissionEnds ?? null, mismatchSince: this.mismatchSince(), cardNames: this.cardNames(), banks, wishlistMove: this.#wishlistMove(), paidBeforeSetup: this.#bankNow().paidBeforeSetup };
   }
 
   // Works out every alert due now (alerts/plan.ts) and keeps it: each

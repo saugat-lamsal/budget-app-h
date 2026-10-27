@@ -240,3 +240,38 @@ every description has, without what changes):
                 60.00 + 60.01 + 60.02 = 180.03
 
 Check: capital one side in all 750.03 | amex side in all 1,200.03 | paychecks in all 10,000.06 | green leaf in all 180.03
+
+
+========================================================================
+EXAMPLE 8. Statements she paid before setup day (9.3, 9.4, 9.6, 52.1,
+           60i)
+========================================================================
+
+Two statements closed before setup day (Oct 1), each due Oct 15, each
+with a minimum of 35.00:
+        The Capital One card: closed Sep 20, 450.00.
+        The Amex card: closed Sep 20, 250.00.
+
+Before setup day she paid from checking, and each payment reached its
+card the same day:
+        Sep 25: 450.00 to the Capital One card.
+        Sep 25: 100.00 to the Amex card.
+The app reads both from the bank history it keeps, by today's bank rules
+(9.3, 60i). Each reached its card after its statement date (Sep 20), so
+each counts toward that statement (B28).
+
+Oct 8, the first reminder day (7 days before Oct 15). Home's cards:
+        The Capital One card: 450.00 paid toward it.
+                Left to pay: 450.00 - 450.00 = 0.00. Paid: no due line
+                and no reminder.
+        The Amex card: 100.00 paid toward it.
+                Left to pay: 250.00 - 100.00 = 150.00. Still due in 7
+                days: reminders go on until the full statement balance
+                is paid (9.3).
+
+Oct 16, the day after the due date: the Amex card had more than its
+minimum paid (100.00 against 35.00), so it is not overdue (9.4).
+
+Before this was fixed, both said 0.00 paid: the books start on setup day.
+
+Check: capital one paid toward it 450.00 | capital one left to pay 0.00 | amex paid toward it 100.00 | amex left to pay 150.00
