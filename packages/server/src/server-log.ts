@@ -12,7 +12,10 @@ import type { ServerLogLine } from './views/server-log.js';
 
 export type { ServerLogLine };
 
-const WHAT: Readonly<Record<ServerLogLine['action'], string>> = {
+// Her setup's setup day line is read elsewhere (setup-day-log.ts).
+type ServerAction = Exclude<ServerLogLine['action'], 'setup-day'>;
+
+export const WHAT: Readonly<Record<ServerAction, string>> = {
   'history-retotaled': 'history took new totals',
   'logged-in': 'logged in',
   'logged-out': 'logged out',
@@ -30,14 +33,14 @@ const WHAT: Readonly<Record<ServerLogLine['action'], string>> = {
 type WithoutBankLines<T> = T extends unknown ? Omit<T, 'afterBankLines'> : never;
 
 // Keeps a line, noting how many bank rule lines came before it.
-export function saveServerLine(db: Db, line: WithoutBankLines<ServerLogLine>): void {
+export function saveServerLine(db: Db, line: WithoutBankLines<Extract<ServerLogLine, { action: ServerAction }>>): void {
   const { date, action, ...detail } = line;
   logChange(db, date, WHAT[action], { ...detail, afterBankLines: bankRuleLogIn(db).length });
 }
 
 // Every such line, in the order they were written.
 export function serverLinesIn(db: Db): ServerLogLine[] {
-  const actions = Object.keys(WHAT) as ServerLogLine['action'][];
+  const actions = Object.keys(WHAT) as ServerAction[];
   const rows = db.prepare(`SELECT date, what, detail FROM change_log WHERE what IN (${actions.map(() => '?').join(', ')}) ORDER BY id`).all(...actions.map((a) => WHAT[a])) as { date: string; what: string; detail: string }[];
   return rows.map((row) => {
     const action = actions.find((a) => WHAT[a] === row.what);

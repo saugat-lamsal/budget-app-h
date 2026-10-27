@@ -94,7 +94,11 @@ WHEN
       Watch for Notepad adding a byte order mark at the start (it did on
       his connection day): save as "UTF-8", not "UTF-8 with BOM".
    c. Send them to her app (this keeps them out of PowerShell's history):
-        Get-Content .env.fly | fly secrets import --app budget-app-h-lbwr
+        cmd /c "fly secrets import --app budget-app-h-lbwr < .env.fly"
+      Not "Get-Content .env.fly | fly secrets import": Windows PowerShell 5.1
+      puts a byte order mark in front of what it pipes to fly, even when the
+      file has none, and Fly refuses the first name (seen Oct 27, 2026;
+      nothing was imported).
    d. Delete .env.fly. Keep her BANK_TOKEN_KEY and R2 keys in the password
       manager, in entries of their own, named for her app. Without her
       BANK_TOKEN_KEY a rebuilt copy cannot open her bank connections.
@@ -128,6 +132,26 @@ WHEN
    b. New monitor: HTTP(s), https://budget-app-h-lbwr.fly.dev/health/backups,
       every 5 minutes, the same alerts.
    c. Name both for her app, so an alert says which app is down.
+
+7b. THE REHEARSAL (his PC, before her phone; done Oct 27, 2026)
+   In Chrome (or another browser), not the Claude app's own browser pane:
+   that pane blocks the bank's login window Plaid opens, so the second
+   bank never connects there.
+   a. https://budget-app-h-lbwr.fly.dev/bank. Bank 1, the test bank, is
+      connected by itself on the first start. Connect a bank > Yes,
+      connect. In Plaid's window: Continue without phone number, then a
+      test bank that is not First Platypus Bank (Bank 1), such as Platypus
+      OAuth Bank. Continue to log in opens the bank's own window: user_good
+      and pass_good, Error Selector left on None, then share all accounts.
+   b. Change which account is which: the second card is the new bank's
+      card. Yes, keep them.
+   c. Setup day, through to Start tracking; at the rules step, the rule
+      finder's suggestions and what each would have matched.
+   d. Home shows safe to spend and both cards under "Your cards";
+      Settings > Status shows both banks.
+   The test bank's made-up history has no repeating paycheck and no card
+   payments from checking, so the finder suggests no paycheck rule and no
+   card payment rules there; the tests cover those (worked example 7).
 
 8. ON HER IPHONE (hers; he reads her the code)
    a. In Safari open https://budget-app-h-lbwr.fly.dev. Share > Add to Home

@@ -182,6 +182,7 @@ export function Button({
   variant = 'primary',
   wide = false,
   disabled = false,
+  pressed,
   testId,
 }: {
   readonly children: ReactNode;
@@ -190,10 +191,13 @@ export function Button({
   readonly wide?: boolean;
   // Not while something is being saved.
   readonly disabled?: boolean;
+  // One of a few to pick from: whether it is the one picked (said to screen
+  // readers; the screen shows it in more than color too).
+  readonly pressed?: boolean | undefined;
   readonly testId?: string | undefined;
 }) {
   return (
-    <button type="button" className={`button button--${variant}${wide ? ' button--wide' : ''}`} onClick={onClick} disabled={disabled} data-testid={testId}>
+    <button type="button" className={`button button--${variant}${wide ? ' button--wide' : ''}`} onClick={onClick} disabled={disabled} aria-pressed={pressed} data-testid={testId}>
       {children}
     </button>
   );

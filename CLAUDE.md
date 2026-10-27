@@ -461,3 +461,15 @@ or "Due" on Wishlist items and cards, never color alone.
   Web: RuleFinder.tsx in place of the labels' suggestions on the rules
   step. Labels read Oct 26 on her test bank: the same labels as his
   (fixture her-test-bank-labels.json). Readings HB34 to HB37.
+- Screens fixed from her rehearsal (branch her-rehearsal-fixes, HA10,
+  HB38): Settings' change log shows setup day's line in her setup, with
+  the rules kept from the finder (setup-day-log.ts reads setup day's own
+  line and puts it among the server's lines; ServerLogLine 'setup-day',
+  LogRow 'setup-day', the WHAT names of server-log.ts and bank-rules-db.ts
+  exported for it); the finder's bucket picked has a check and
+  aria-pressed (Button's optional pressed), a kept place says what it was
+  kept as; the Bank page shows picks just kept before the bank is read.
+  her-setup.txt: the secrets import without PowerShell's pipe, and the
+  rehearsal in Chrome (7b). Tests: setup-day-log-her.test.ts,
+  rule-finder-text-her.test.ts, rule-finder-her and two-banks-her browser
+  tests, [her-rehearsal] breaks.

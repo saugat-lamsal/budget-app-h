@@ -34,6 +34,7 @@ import { HISTORY_DAYS, type PlaidClient } from '../plaid/client.js';
 import { PushDesk } from '../push/push-desk.js';
 import type { PushKeys } from '../push/push-keys.js';
 import { saveServerLine, serverLinesIn } from '../server-log.js';
+import { serverLinesWithSetupDay } from '../setup-day-log.js';
 import { SetupDesk } from '../setup-desk.js';
 import { NO_ANSWERS, SETUP_LOOK_BACK_DAYS, type SetupAnswers } from '../setup-view.js';
 import { FEWEST_MINUTES, MOST_MINUTES, markSetupRead, readGapSince, readLastMatchingRead, readLastRead, readSyncTimes, saveGapSince, saveSyncEveryMinutes, syncEveryMinutes } from '../sync/bank-reads.js';
@@ -565,7 +566,8 @@ export class Keeper {
       bank: this.#bank(),
       madeUpData: false,
       bankRules: { rules: rules.rules(), log: rules.log(), recentDays: RECENT_DAYS },
-      serverLog: serverLinesIn(this.#db),
+      // Her rulebook, 53.1 and 13.5 (HA10): with setup day's line in her setup.
+      serverLog: this.#start.ruleFinder === true ? serverLinesWithSetupDay(this.#db) : serverLinesIn(this.#db),
       ...(session === null ? {} : { login: loginViewOf(this.#auth, session) }),
       sync: { everyMinutes: this.syncEveryMinutes(), checkedAt: this.#checkedAt(), today: this.today() },
       alerts: outboxCounts(this.#db),

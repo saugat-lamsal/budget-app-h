@@ -27,12 +27,14 @@ export const GROUP_NOTES: Readonly<Record<FoundGroup, string>> = {
 const capital = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
 const isCard = (account: string): boolean => account === 'everyday-card' || account === 'second-card' || account === 'old-card';
 
-// What the rule would mean, in words.
-export function ruleMeaning(rule: FoundRule): string {
+// What the rule would mean, in words. A place she kept is no longer a
+// suggestion: its status says what it was kept as.
+export function ruleMeaning(rule: FoundRule, kept: boolean): string {
   switch (rule.kind) {
     case 'paycheck':
       return 'Your paycheck: a deposit with these words starts a new pay period, once you say yes.';
     case 'place':
+      if (kept) return 'A place you pay often.';
       return rule.bucket === null ? 'A place you pay often. Your bank gives it no category, so pick needs or wants.' : `A place you pay often. Suggested: ${capital(rule.bucket)}, from your bank’s category.`;
     case 'bank-rule': {
       const on = capital(accountPhrase(rule.account));
@@ -77,14 +79,16 @@ export function overlapText(o: FoundOverlap, found: readonly FoundLine[]): strin
   return `Your rule “${o.with.rule.contains}” reads ${o.count === 1 ? 'an item' : `${o.count} of the same items`}. Change its words or skip it.`;
 }
 
-export function statusWords(status: FoundLine['status']): string {
+// A place kept says the bucket it was kept as (rule is then what she kept).
+export function statusWords(status: FoundLine['status'], rule: FoundRule): string {
+  const as = rule.kind === 'place' && rule.bucket !== null ? ` as ${rule.bucket}` : '';
   switch (status) {
     case 'open':
       return 'Not answered yet';
     case 'added':
-      return 'Kept';
+      return `Kept${as}`;
     case 'changed':
-      return 'Kept, with your words';
+      return `Kept${as}, with your words`;
     case 'skipped':
       return 'Skipped';
     case 'covered':

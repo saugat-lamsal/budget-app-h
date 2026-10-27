@@ -11,7 +11,7 @@ import type { BankRuleLogLine } from './views/bank-rules.js';
 // one transaction. The sync reads the rules each time it runs, so a change
 // reads what the bank sends from then on; nothing already read is touched.
 
-const WHAT: Readonly<Record<BankRuleLogLine['action'], string>> = {
+export const WHAT: Readonly<Record<BankRuleLogLine['action'], string>> = {
   added: 'bank rule added',
   changed: 'bank rule changed',
   removed: 'bank rule removed',
