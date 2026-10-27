@@ -3820,5 +3820,19 @@
     "find": "detail={`${setupDayText(line)} · ${when}`}",
     "replace": "detail={when}",
     "why": "[her-rehearsal] 13.5 Settings shows setup day's line without what she kept"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Settings.tsx",
+    "find": "line.name !== undefined ? HER_BANK_WORDS.connectedThrough(line.name) : ",
+    "replace": "",
+    "why": "[her-bank-names] HB8 Settings shows upstream's \"Bank of America\" for her banks"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/bank-text.ts",
+    "find": "connectedThrough: (name: string): string => `${name}, through Plaid`,",
+    "replace": "connectedThrough: (name: string): string => name,",
+    "why": "[her-bank-names] HB8 her bank's line leaves out \"through Plaid\""
   }
 ]

@@ -36,6 +36,7 @@ import { PushDesk } from '../push/push-desk.js';
 import type { PushKeys } from '../push/push-keys.js';
 import { saveServerLine, serverLinesIn } from '../server-log.js';
 import { serverLinesWithSetupDay } from '../setup-day-log.js';
+import { withBankNames } from '../bank-names-log.js';
 import { SetupDesk } from '../setup-desk.js';
 import { NO_ANSWERS, SETUP_LOOK_BACK_DAYS, type SetupAnswers } from '../setup-view.js';
 import { FEWEST_MINUTES, MOST_MINUTES, markSetupRead, readGapSince, readLastMatchingRead, readLastRead, readSyncTimes, saveGapSince, saveSyncEveryMinutes, syncEveryMinutes } from '../sync/bank-reads.js';
@@ -564,14 +565,16 @@ export class Keeper {
   settings(request?: IncomingMessage): SettingsView {
     const rules = this.#state.bankRules;
     const session = request === undefined ? null : this.#auth.session(request.headers.cookie);
+    // Her rulebook, 53.1 and 13.5 (HA10): with setup day's line in her setup.
+    const serverLog = this.#start.ruleFinder === true ? serverLinesWithSetupDay(this.#db) : serverLinesIn(this.#db);
     return settingsView({
       today: this.today(),
       book: this.book(),
       bank: this.#bank(),
       madeUpData: false,
       bankRules: { rules: rules.rules(), log: rules.log(), recentDays: RECENT_DAYS },
-      // Her rulebook, 53.1 and 13.5 (HA10): with setup day's line in her setup.
-      serverLog: this.#start.ruleFinder === true ? serverLinesWithSetupDay(this.#db) : serverLinesIn(this.#db),
+      // HB8: her two banks by name.
+      serverLog: this.#banksInSetup() === 2 ? withBankNames(serverLog, connectionsOf(this.#db)) : serverLog,
       ...(session === null ? {} : { login: loginViewOf(this.#auth, session) }),
       sync: { everyMinutes: this.syncEveryMinutes(), checkedAt: this.#checkedAt(), today: this.today() },
       alerts: outboxCounts(this.#db),

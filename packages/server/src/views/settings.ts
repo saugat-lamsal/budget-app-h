@@ -119,7 +119,8 @@ export type LogRow =
   | { readonly key: string; readonly date: IsoDate; readonly kind: 'notifications-on' | 'notifications-off'; readonly device: string }
   | { readonly key: string; readonly date: IsoDate; readonly kind: 'notifications-stopped'; readonly device: string; readonly why: string }
   // 1.1 to 1.3: the bank connected, which account is which, a new login to the bank.
-  | { readonly key: string; readonly date: IsoDate; readonly kind: 'bank-connected'; readonly bank: 'test' | 'real' }
+  // Her setup: the bank as Plaid named it (HB8).
+  | { readonly key: string; readonly date: IsoDate; readonly kind: 'bank-connected'; readonly bank: 'test' | 'real'; readonly name?: string }
   | { readonly key: string; readonly date: IsoDate; readonly kind: 'bank-accounts'; readonly accounts: Readonly<Record<AccountId, string>> }
   | { readonly key: string; readonly date: IsoDate; readonly kind: 'bank-logged-in-again' }
   // Her rulebook, 53.1 and 13.5 (HA10): setup day, with the place rules and
@@ -315,7 +316,7 @@ function serverRow(line: ServerLogLine, key: string): LogRow {
     case 'notifications-stopped':
       return { key, date: line.date, kind: line.action, device: line.device, why: line.why };
     case 'bank-connected':
-      return { key, date: line.date, kind: line.action, bank: line.bank };
+      return { key, date: line.date, kind: line.action, bank: line.bank, ...(line.name === undefined ? {} : { name: line.name }) };
     case 'bank-accounts':
       return { key, date: line.date, kind: line.action, accounts: line.accounts };
     case 'bank-logged-in-again':

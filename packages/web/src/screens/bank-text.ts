@@ -96,4 +96,6 @@ export const HER_BANK_WORDS = {
   loginAgainDetail: 'The same connection: logging in again never uses another of the 10.',
   // A bank Plaid gave no name for.
   unnamed: (bank: 1 | 2): string => `Bank ${bank}`,
+  // Settings' change log: a bank she connected, by name (HB8).
+  connectedThrough: (name: string): string => `${name}, through Plaid`,
 } as const;
