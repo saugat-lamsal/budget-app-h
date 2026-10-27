@@ -97,6 +97,7 @@ function FoundDecision({ line, found, sender }: { readonly line: FoundLine; read
     <>
       {(['needs', 'wants'] as const).map((b) => (
         <Button key={b} variant={line.rule.kind === 'place' && line.rule.bucket === b ? 'primary' : 'secondary'} disabled={sender.sending || kept || clash} testId={`found-keep-${b}`} onClick={() => void sender.send({ found: { id: line.id, answer: 'add', bucket: b } })}>
+          {kept && line.rule.kind === 'place' && line.rule.bucket === b && <Icon name="check" size={16} />}
           {b === 'needs' ? 'Keep as needs' : 'Keep as wants'}
         </Button>
       ))}
@@ -110,7 +111,7 @@ function FoundDecision({ line, found, sender }: { readonly line: FoundLine; read
   return (
     <Decision
       title={`“${line.rule.contains}”`}
-      detail={ruleMeaning(line.rule)}
+      detail={ruleMeaning(line.rule, kept)}
       testId={`found-${line.id}`}
       actions={
         line.status === 'covered' ? null : (
@@ -168,7 +169,7 @@ function FoundDecision({ line, found, sender }: { readonly line: FoundLine; read
         </p>
       ))}
       <p className="decision__detail" data-testid="found-status">
-        <strong>{statusWords(line.status)}</strong>
+        <strong>{statusWords(line.status, line.rule)}</strong>
       </p>
       {words !== null && (
         <div style={{ display: 'grid', gap: '12px' }} data-testid="found-edit">
@@ -176,7 +177,8 @@ function FoundDecision({ line, found, sender }: { readonly line: FoundLine; read
           {place && (
             <ButtonRow>
               {(['needs', 'wants'] as const).map((b) => (
-                <Button key={b} variant={bucket === b ? 'primary' : 'secondary'} testId={`found-bucket-${b}`} onClick={() => { setBucket(b); setPreview(null); }}>
+                <Button key={b} variant={bucket === b ? 'primary' : 'secondary'} pressed={bucket === b} testId={`found-bucket-${b}`} onClick={() => { setBucket(b); setPreview(null); }}>
+                  {bucket === b && <Icon name="check" size={16} />}
                   {b === 'needs' ? 'Needs' : 'Wants'}
                 </Button>
               ))}

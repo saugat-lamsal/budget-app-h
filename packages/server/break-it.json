@@ -7613,5 +7613,61 @@
     "find": "paidBeforeSetup: paidBeforeSetup(readItems(this.#db), rolesOf(readAccounts(this.#db)), readBankRules(this.#db))",
     "replace": "paidBeforeSetup: paidBeforeSetup(readItems(this.#db), rolesOf(readAccounts(this.#db)), [])",
     "why": "[her-paid] 9.3 the history is read with no bank rules, not today's"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/setup-day-log.ts",
+    "find": "afterBankLines: before(Object.values(BANK_RULE_WHAT))",
+    "replace": "afterBankLines: 0",
+    "why": "[her-rehearsal] 13.5 setup day's line goes before the bank rules kept ahead of it"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/setup-day-log.ts",
+    "find": "return [...lines.slice(0, serverBefore), line, ...lines.slice(serverBefore)];",
+    "replace": "return [line, ...lines];",
+    "why": "[her-rehearsal] 13.5 setup day's line goes before the server's lines written ahead of it"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/setup-day-log.ts",
+    "find": "return [...lines.slice(0, serverBefore), line, ...lines.slice(serverBefore)];",
+    "replace": "return [...lines, line];",
+    "why": "[her-rehearsal] 13.5 setup day's line goes after the server's lines written after it"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/setup-day-log.ts",
+    "find": "rules: found?.rules ?? []",
+    "replace": "rules: []",
+    "why": "[her-rehearsal] 53.1 setup day's line leaves out the place rules she kept"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/setup-day-log.ts",
+    "find": "paycheckRule: found?.paycheckRule ?? null",
+    "replace": "paycheckRule: null",
+    "why": "[her-rehearsal] 53.1 setup day's line leaves out the paycheck rule she kept"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/views/settings.ts",
+    "find": "rules: line.rules.map(ruleViewOf), paycheckRule: line.paycheckRule };",
+    "replace": "rules: [], paycheckRule: line.paycheckRule };",
+    "why": "[her-rehearsal] 13.5 Settings' setup day row drops the rules"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "serverLog: this.#start.ruleFinder === true ? serverLinesWithSetupDay(this.#db) : serverLinesIn(this.#db),",
+    "replace": "serverLog: serverLinesWithSetupDay(this.#db),",
+    "why": "[her-rehearsal] 13.5 upstream's change log shows setup day's line too"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "serverLog: this.#start.ruleFinder === true ? serverLinesWithSetupDay(this.#db) : serverLinesIn(this.#db),",
+    "replace": "serverLog: serverLinesIn(this.#db),",
+    "why": "[her-rehearsal] 13.5 her change log has no setup day line"
   }
 ]

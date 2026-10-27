@@ -192,4 +192,51 @@ window.Plaid = { create(config) { return { open() {
       await done(r);
     }
   });
+
+  // Found in her rehearsal: after "Yes, keep them" the screen said Saved, but
+  // the list above still showed the old pick until the bank had been read,
+  // which with two banks and their history takes a while.
+  it('1.2 a changed pick shows in the list as soon as it is kept, while the bank is still being read', async () => {
+    const r = await realServer();
+    try {
+      const desk = r.keeper.bankDesk(r.bank);
+      for (const fake of [r.first, r.second]) {
+        await desk.link({ mode: 'connect', yes: true });
+        await desk.connected({ publicToken: fake.publicToken, institution: { id: fake.institutionId, name: fake === r.first ? FIRST_NAME : SECOND_NAME } });
+      }
+      desk.roles({ roles: { checking: ACCOUNT_IDS.checking, savings: ACCOUNT_IDS.savings, 'everyday-card': ACCOUNT_IDS.everyday, 'second-card': ACCOUNT_IDS.second }, yes: true });
+      const page = await open(r, '/bank');
+      expect(await textAt(page, 'bank-role-second-card')).toContain('Made-up Second Card ••5555');
+      // The bank's read is held back until the list has been looked at.
+      let release = (): void => undefined;
+      const held = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      await page.route('**/api/bank/read', async (route) => {
+        await held;
+        await route.continue();
+      });
+      try {
+        await page.getByTestId('bank-change-picks').click();
+        for (const [role, id] of [['everyday-card', ACCOUNT_IDS.second], ['second-card', ACCOUNT_IDS.everyday]] as const) {
+          await page.getByTestId(`bank-pick-${role}`).click();
+          await waitOrReport(page, '[data-testid="bank-pick-sheet"]');
+          await page.getByTestId(`bank-pick-account-${id}`).click();
+          await page.getByTestId('bank-pick-sheet').waitFor({ state: 'detached' });
+        }
+        await page.getByTestId('bank-pick-save').click();
+        await waitOrReport(page, '[data-testid="bank-keep"]');
+        await page.getByTestId('bank-keep-yes').click();
+        await expect.poll(() => textAt(page, 'bank-said'), { timeout: 5_000 }).toContain('Saved.');
+        await expect.poll(() => textAt(page, 'bank-role-second-card'), { timeout: 5_000 }).toContain('Made-up Everyday Card ••3333');
+        expect(await textAt(page, 'bank-role-everyday-card')).toContain('Made-up Second Card ••5555');
+      } finally {
+        release();
+      }
+      await untilQuiet(page);
+      expect(await textAt(page, 'bank-role-second-card')).toContain('Made-up Everyday Card ••3333');
+    } finally {
+      await done(r);
+    }
+  });
 });

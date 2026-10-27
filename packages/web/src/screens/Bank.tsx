@@ -271,6 +271,9 @@ function PickCard({
         }
         onSaid({ tone: 'ok', text: answer.said });
         onDone();
+        // The list shows the picks just kept at once: reading the bank can
+        // take a while (her two banks, with their history).
+        reload('after');
         // The bank is read once all four are picked.
         const read = await bankSend('/api/bank/read', {});
         if (!read.ok) onSaid({ tone: 'danger', text: read.why });

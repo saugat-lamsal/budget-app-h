@@ -561,3 +561,28 @@ HB37 (PR 13, 53.1, section 2, 40.1). Keeping, and what changed elsewhere:
     - Speed: on a long made-up history (about 3,900 items, 730 days on the
       Amex card), finding and the overlaps take about 0.7 seconds each time
       the step is shown. Setup day is used once, so it is left at that.
+
+HB38 (her rehearsal, Oct 27, 2026; 1.2, 13.5, 53.1, HA10). Screens fixed
+    from the rehearsal (branch her-rehearsal-fixes):
+    - 13.5 (HA10): setup day's line in her change log, "Setup day", says
+      "Tracking started." and, when she kept any, "Kept from your history:"
+      each place's rule as Settings writes rules (“GREEN LEAF MARKET” →
+      Needs) and "the paycheck rule" with its words. The bank rules she
+      kept have their own lines already, so they are not repeated. It sits
+      where setup day happened among the server's lines and the bank
+      rules' lines; the book's lines all come after it. Read from the line
+      setup day already writes (HB37): nothing new is kept.
+    - 53.1: while she changes a place's words, the bucket picked has a
+      check and is "pressed" for screen readers, not only its color. A
+      place she kept says what it was kept as ("Kept as needs", "Kept as
+      wants, with your words"), the button of that bucket has the check,
+      and its line no longer says "Suggested".
+    - 1.2: after "Yes, keep them", the list of her four shows the picks
+      just kept at once; before, it waited for the bank to be read, which
+      with two banks and their history took several seconds after "Saved."
+    - Not done: naming each account's bank in the "Which is your ..."
+      sheet. Which connection an account came from is not kept (both
+      banks' accounts are in one table), so it needs a database step of
+      hers, and accounts read before it would have none. Her real
+      accounts have names of their own (the test bank's two "••3333" were
+      a made-up coincidence). Ask if wanted.

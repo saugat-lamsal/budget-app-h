@@ -3743,5 +3743,82 @@
     "find": "${split.wishlist === undefined ? '' : `, Wishlist ${split.wishlist}`}",
     "replace": "",
     "why": "[her-end] 13.5 the change log leaves Wishlist out of the split"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/rule-finder-text.ts",
+    "find": "const as = rule.kind === 'place' && rule.bucket !== null ? ` as ${rule.bucket}` : '';",
+    "replace": "const as = '';",
+    "why": "[her-rehearsal] 53.1 a kept place does not say what it was kept as"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/rule-finder-text.ts",
+    "find": "      if (kept) return 'A place you pay often.';\n",
+    "replace": "",
+    "why": "[her-rehearsal] 53.1 a kept place still says Suggested"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/RuleFinder.tsx",
+    "find": "pressed={bucket === b} ",
+    "replace": "",
+    "why": "[her-rehearsal] 53.1 the bucket picked is not pressed for screen readers"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/RuleFinder.tsx",
+    "find": "                  {bucket === b && <Icon name=\"check\" size={16} />}\n",
+    "replace": "",
+    "why": "[her-rehearsal] 53.1 the bucket picked is shown by color only"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/RuleFinder.tsx",
+    "find": "          {kept && line.rule.kind === 'place' && line.rule.bucket === b && <Icon name=\"check\" size={16} />}\n",
+    "replace": "",
+    "why": "[her-rehearsal] 53.1 the bucket a place was kept as has no check"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/RuleFinder.tsx",
+    "find": "detail={ruleMeaning(line.rule, kept)}",
+    "replace": "detail={ruleMeaning(line.rule, false)}",
+    "why": "[her-rehearsal] 53.1 the screen still calls a kept place a suggestion"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/ui/blocks.tsx",
+    "find": " aria-pressed={pressed}",
+    "replace": "",
+    "why": "[her-rehearsal] 53.1 a button never says it is pressed"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Bank.tsx",
+    "find": "        reload('after');\n        // The bank is read once all four are picked.",
+    "replace": "        // The bank is read once all four are picked.",
+    "why": "[her-rehearsal] 1.2 the list shows the old picks until the bank has been read"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/setup-day-log-text.ts",
+    "find": "kept.join('; ')",
+    "replace": "kept.join(', ')",
+    "why": "[her-rehearsal] 13.5 setup day's line runs the rules together"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/setup-day-log-text.ts",
+    "find": "...(line.paycheckRule === null ? [] : [`the paycheck rule “${line.paycheckRule.contains}”`])",
+    "replace": "",
+    "why": "[her-rehearsal] 13.5 setup day's line leaves out the paycheck rule"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Settings.tsx",
+    "find": "detail={`${setupDayText(line)} · ${when}`}",
+    "replace": "detail={when}",
+    "why": "[her-rehearsal] 13.5 Settings shows setup day's line without what she kept"
   }
 ]

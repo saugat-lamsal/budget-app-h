@@ -13,6 +13,7 @@ import {
   type Settings,
   type SortingRule,
   type SplitSettings,
+  type TextRule,
 } from '@budget-app/money';
 import type { BankRule } from '../bank/reading.js';
 import type { HerTotals } from '../history/history.js';
@@ -120,7 +121,10 @@ export type LogRow =
   // 1.1 to 1.3: the bank connected, which account is which, a new login to the bank.
   | { readonly key: string; readonly date: IsoDate; readonly kind: 'bank-connected'; readonly bank: 'test' | 'real' }
   | { readonly key: string; readonly date: IsoDate; readonly kind: 'bank-accounts'; readonly accounts: Readonly<Record<AccountId, string>> }
-  | { readonly key: string; readonly date: IsoDate; readonly kind: 'bank-logged-in-again' };
+  | { readonly key: string; readonly date: IsoDate; readonly kind: 'bank-logged-in-again' }
+  // Her rulebook, 53.1 and 13.5 (HA10): setup day, with the place rules and
+  // the paycheck rule she kept from the rule finder; her setup only.
+  | { readonly key: string; readonly date: IsoDate; readonly kind: 'setup-day'; readonly rules: readonly RuleView[]; readonly paycheckRule: TextRule | null };
 
 export type SettingsView =
   // Before setup day there are no settings yet, but he can still log out.
@@ -316,6 +320,8 @@ function serverRow(line: ServerLogLine, key: string): LogRow {
       return { key, date: line.date, kind: line.action, accounts: line.accounts };
     case 'bank-logged-in-again':
       return { key, date: line.date, kind: line.action };
+    case 'setup-day':
+      return { key, date: line.date, kind: line.action, rules: line.rules.map(ruleViewOf), paycheckRule: line.paycheckRule };
     default:
       return { key, date: line.date, kind: line.action, device: line.device };
   }

@@ -13,6 +13,7 @@ import { SaidNotice, type Said } from './choose.js';
 import { LoginCard } from './login-card.js';
 import { NotificationsCard } from './notifications-card.js';
 import { SyncCard } from './sync-card.js';
+import { setupDayText } from './setup-day-log-text.js';
 import { bankRuleText } from './setup-text.js';
 import { cardsOffText } from './home-text.js';
 import {
@@ -498,6 +499,8 @@ function LogLine({ line }: { readonly line: LogRow }) {
       return <ListRow icon="bank" title="Which account is which" detail={`${bankAccountsText(line.accounts)} · ${when}`} testId={testId} />;
     case 'bank-logged-in-again':
       return <ListRow icon="bank" title="Logged in to the bank again" detail={when} testId={testId} />;
+    case 'setup-day':
+      return <ListRow icon="check" title="Setup day" detail={`${setupDayText(line)} · ${when}`} testId={testId} />;
   }
 }
 

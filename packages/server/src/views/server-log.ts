@@ -1,4 +1,4 @@
-import type { AccountId, IsoDate } from '@budget-app/money';
+import type { AccountId, IsoDate, SortingRule, TextRule } from '@budget-app/money';
 import type { Totals } from '../history/history.js';
 
 // A line of the change log (13.5) that the server keeps, not the book: the
@@ -28,4 +28,8 @@ export type ServerLogLine =
   | { readonly date: IsoDate; readonly action: 'bank-accounts'; readonly accounts: Readonly<Record<AccountId, string>>; readonly afterBookLines: number; readonly afterBankLines: number }
   | { readonly date: IsoDate; readonly action: 'bank-logged-in-again'; readonly afterBookLines: number; readonly afterBankLines: number }
   // The device's push service said its subscription is gone, and it was removed.
-  | { readonly date: IsoDate; readonly action: 'notifications-stopped'; readonly device: string; readonly why: string; readonly afterBookLines: number; readonly afterBankLines: number };
+  | { readonly date: IsoDate; readonly action: 'notifications-stopped'; readonly device: string; readonly why: string; readonly afterBookLines: number; readonly afterBankLines: number }
+  // Her rulebook, 53.1 and 13.5 (HA10): setup day, with the rules she kept
+  // from the rule finder. Read from setup day's own line, in her setup only
+  // (setup-day-log.ts); never written as a server line.
+  | { readonly date: IsoDate; readonly action: 'setup-day'; readonly rules: readonly SortingRule[]; readonly paycheckRule: TextRule | null; readonly afterBookLines: number; readonly afterBankLines: number };
