@@ -110,7 +110,7 @@ export function itemsReadDifferently(now: readonly BankRule[], after: readonly B
 // Whether a rule fits money going this way (bank/reading.ts says the same
 // for a whole rule). A transfer whose other account is not known yet fits
 // whatever the other account turns out to be.
-function fits(spec: BankRuleSpec, out: boolean): boolean {
+export function fits(spec: BankRuleSpec, out: boolean): boolean {
   switch (spec.means) {
     case 'transfer':
       if (out) return !isCard(spec.account);
@@ -158,9 +158,9 @@ export interface BankRuleSuggestion {
 // the app has not seen it send for that kind of item suggests nothing.
 // 'pair-card' and 'pair-bank': the other account is the one the history
 // shows the other side on, a card or checking or savings.
-type LabelMeaning = { readonly means: 'transfer'; readonly other: AccountId | 'pair-card' | 'pair-bank' } | { readonly means: 'payment-to-person' | 'card-fee' | 'card-interest' };
+export type LabelMeaning = { readonly means: 'transfer'; readonly other: AccountId | 'pair-card' | 'pair-bank' } | { readonly means: 'payment-to-person' | 'card-fee' | 'card-interest' };
 
-function meaningOfLabel(l: BankLine): LabelMeaning | null {
+export function meaningOfLabel(l: BankLine): LabelMeaning | null {
   const label = l.label?.detailed;
   if (label === undefined) return null;
   const out = l.amount > 0;

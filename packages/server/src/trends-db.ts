@@ -16,7 +16,10 @@ import type { BeforeSetup, HistoryLine } from './trends.js';
 // later is in the books only as the difference (A10); one pending that day
 // that was not a purchase went to the books once it posted (status waiting,
 // then sent), so it is not here. It only reads.
-export function beforeSetupOf(db: Db): BeforeSetup | null {
+// Her rulebook, 40.1: historyDays is how many days the bank was asked for.
+// Asked for more than 90 (her setup's 730), Trends still reads only the 90
+// days before the bank was connected; the older history is the rule finder's.
+export function beforeSetupOf(db: Db, options: { readonly historyDays?: number } = {}): BeforeSetup | null {
   const connection = readConnection(db);
   const setup = readSetupInput(db);
   if (connection === null || setup === null) return null;
@@ -36,6 +39,7 @@ export function beforeSetupOf(db: Db): BeforeSetup | null {
   for (const charge of setup.pendingCharges) lines.push({ id: charge.id, account: charge.account, amount: charge.amount, date: charge.date, description: charge.description });
   // Section 2: the 90 days asked for at connection; an item older than that (a bank's own lag) moves it back.
   let historyFrom: IsoDate = addDays(connection.connectedOn.slice(0, 10), -HISTORY_DAYS);
-  for (const line of lines) if (daysBetween(line.date, historyFrom) > 0) historyFrom = line.date;
-  return { setupDay: setup.date, lastPaycheckDate: setup.lastPaycheckDate, historyFrom, lines, bankRules };
+  const read = (options.historyDays ?? HISTORY_DAYS) > HISTORY_DAYS ? lines.filter((line) => daysBetween(historyFrom, line.date) >= 0) : lines;
+  for (const line of read) if (daysBetween(line.date, historyFrom) > 0) historyFrom = line.date;
+  return { setupDay: setup.date, lastPaycheckDate: setup.lastPaycheckDate, historyFrom, lines: read, bankRules };
 }

@@ -37,9 +37,11 @@ async function her(): Promise<Life> {
 describe('Off in this setup: what setup day starts from', () => {
   it('Off in this setup: BUDGET_SETUP=her starts from her setup; unset or upstream, from upstream\'s', () => {
     expect(setupStartOf('her')).toBe(HER_START);
-    expect(HER_START).toEqual({ settings: HER_SETTINGS, switches: HER_SWITCHES });
+    // PR 13: 730 days of history (section 2) and the rule finder (section 53).
+    expect(HER_START).toEqual({ settings: HER_SETTINGS, switches: HER_SWITCHES, historyDays: 730, ruleFinder: true });
     for (const value of [undefined, '', 'upstream']) expect(setupStartOf(value)).toBe(UPSTREAM_START);
     expect(UPSTREAM_START.switches).toEqual(UPSTREAM_SWITCHES);
+    expect(UPSTREAM_START).toMatchObject({ historyDays: 90, ruleFinder: false });
     expect(() => setupStartOf('hers')).toThrow(/BUDGET_SETUP/);
   });
 

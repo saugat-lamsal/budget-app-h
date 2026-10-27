@@ -421,7 +421,10 @@ describe('the demo is made-up data only', () => {
       // An item's key as a screen shows it (Step 3): no Node, no database.
       'item-key.ts',
       'plaid/types.ts',
+      // Her rulebook, section 53: the rule finder, worked out from a bank history handed to it; no database.
+      'rule-finder.ts',
       'setup-desk.ts',
+      'setup-finder.ts',
       'setup-history.ts',
       'setup-view.ts',
       'sync/plan.ts',
@@ -447,6 +450,8 @@ describe('the demo is made-up data only', () => {
       // What Settings shows about notifications (Phase 5): types only; the demo has none.
       'views/push.ts',
       'views/review.ts',
+      // Her rulebook, section 53: the rule finder's types.
+      'views/rule-finder.ts',
       // The change log's lines the server keeps (A28, logins): a type only.
       'views/server-log.ts',
       'views/settings.ts',

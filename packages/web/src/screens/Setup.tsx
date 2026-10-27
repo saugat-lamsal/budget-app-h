@@ -9,6 +9,7 @@ import { Icon } from '../ui/Icon.js';
 import { POT_NAMES } from '../ui/names.js';
 import { BankRuleRows, BankRuleSheet, Matches, type Editing, type Send } from './bank-rules.js';
 import { pendingMisreadText, statusText, suggestionText } from './bank-rules-text.js';
+import { RuleFinder } from './RuleFinder.js';
 import { paydayText } from './home-text.js';
 import { ACCOUNT_NAMES, answerText, bankRuleText, effectLead, halfText, lookBackText, missingText, readDays, stepCount } from './setup-text.js';
 
@@ -273,26 +274,12 @@ function RulesStep({ view, sender, reload }: { readonly view: SetupReadyView; re
   const left = view.unansweredSuggestions;
   return (
     <>
-      <Hero label="Suggestions to answer" sub={view.suggestions.length === 0 ? 'Nothing to suggest.' : left === 0 ? 'Every suggestion is answered.' : 'Add, change, or skip each one.'} testId="setup-hero">
-        <HeroCount count={left} testId="suggestions-left" />
-      </Hero>
-      <Card title="Suggested from your bank’s labels" testId="suggestions">
-        <p className="card__note">Your bank labels each item. From those labels, these rules would tell your transfers, payments to people, and card fees from purchases. Nothing is assumed: each one is yours to add, change, or skip.</p>
-        {view.suggestions.length === 0 ? (
-          <p className="card__note" data-testid="suggestions-none">
-            Nothing in your history has a label to suggest a rule from.
-          </p>
-        ) : (
-          view.suggestions.map((s) => (
-            <SuggestionDecision
-              key={s.id}
-              s={s}
-              sender={sender}
-              onChange={() => open({ editing: { start: { account: s.account, contains: s.contains, means: s.means, ...(s.other === null ? {} : { other: s.other }) }, title: 'Change it first' }, suggestion: s.id })}
-            />
-          ))
-        )}
-      </Card>
+      {/* Her rulebook, section 53: the rule finder takes their place. */}
+      {view.found !== undefined ? (
+        <RuleFinder found={view.found} sender={sender} />
+      ) : (
+        <SuggestionsFromLabels view={view} sender={sender} left={left} open={open} />
+      )}
       <Card title="Your bank rules" testId="setup-bank-rules">
         {view.bankRules.length === 0 ? (
           <p className="card__note" data-testid="bank-rules-none">
@@ -318,6 +305,34 @@ function RulesStep({ view, sender, reload }: { readonly view: SetupReadyView; re
           }}
         />
       )}
+    </>
+  );
+}
+
+// Step 2, 20a: the bank rules suggested from the bank's labels (upstream's setup).
+function SuggestionsFromLabels({ view, sender, left, open }: { readonly view: SetupReadyView; readonly sender: Sender; readonly left: number; readonly open: (e: { readonly editing: Editing; readonly suggestion: string | null }) => void }) {
+  return (
+    <>
+      <Hero label="Suggestions to answer" sub={view.suggestions.length === 0 ? 'Nothing to suggest.' : left === 0 ? 'Every suggestion is answered.' : 'Add, change, or skip each one.'} testId="setup-hero">
+        <HeroCount count={left} testId="suggestions-left" />
+      </Hero>
+      <Card title="Suggested from your bank’s labels" testId="suggestions">
+        <p className="card__note">Your bank labels each item. From those labels, these rules would tell your transfers, payments to people, and card fees from purchases. Nothing is assumed: each one is yours to add, change, or skip.</p>
+        {view.suggestions.length === 0 ? (
+          <p className="card__note" data-testid="suggestions-none">
+            Nothing in your history has a label to suggest a rule from.
+          </p>
+        ) : (
+          view.suggestions.map((s) => (
+            <SuggestionDecision
+              key={s.id}
+              s={s}
+              sender={sender}
+              onChange={() => open({ editing: { start: { account: s.account, contains: s.contains, means: s.means, ...(s.other === null ? {} : { other: s.other }) }, title: 'Change it first' }, suggestion: s.id })}
+            />
+          ))
+        )}
+      </Card>
     </>
   );
 }

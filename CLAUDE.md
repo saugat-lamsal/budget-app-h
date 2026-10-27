@@ -448,3 +448,16 @@ or "Due" on Wishlist items and cards, never color alone.
   example 6, and her simulated life through the bank connection with
   Capital One listing no pending charges (holdAvailable stands for what
   it holds). Reading HB33.
+- PR 12b merged (Oct 26, 2026).
+- PR 13, the rule finder (branch her-rule-finder-build): section 53 in
+  place, section 2 (730 days in her setup: SetupStart.historyDays, passed
+  to the bank desk and Plaid's link token) and 40.1 (Trends keeps to the
+  90 days before connecting, beforeSetupOf). Server: rule-finder.ts (53.2
+  to 53.8 as a function of the history, overlapsOf for 53.9),
+  setup-finder.ts (her answers, statuses, overlaps, the preview of a
+  changed one, the rules tracking starts with), small hooks in
+  setup-view.ts, setup-desk.ts, keeper.ts, choices.ts and bank-rules.ts
+  (fits and meaningOfLabel exported). SetupStart.ruleFinder turns it on.
+  Web: RuleFinder.tsx in place of the labels' suggestions on the rules
+  step. Labels read Oct 26 on her test bank: the same labels as his
+  (fixture her-test-bank-labels.json). Readings HB34 to HB37.

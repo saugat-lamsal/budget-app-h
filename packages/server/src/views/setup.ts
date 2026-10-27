@@ -1,6 +1,7 @@
 import type { AccountId, Cents, IsoDate, PaySchedule, SelfCheck, StartingPots } from '@budget-app/money';
 import type { BankRule } from '../bank/reading.js';
 import type { SuggestionLine } from './bank-rules.js';
+import type { FoundLine } from './rule-finder.js';
 
 export type { BankRule } from '../bank/reading.js';
 
@@ -76,6 +77,10 @@ export interface SetupReadyView {
   // answers, and how many still wait for one.
   readonly suggestions: readonly SuggestionLine[];
   readonly unansweredSuggestions: number;
+  // Her rulebook, section 53: the rule finder's suggestions, with her answers,
+  // in her setup only (suggestions is then empty). Nothing here stops
+  // tracking from starting.
+  readonly found?: readonly FoundLine[];
   // Step 3, B48: halves of transfers from the last halvesWithinDays days.
   readonly halves: readonly HalfLine[];
   readonly halvesWithinDays: number;

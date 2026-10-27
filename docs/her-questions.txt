@@ -462,3 +462,65 @@ HB33 (PR 12b, 12.1, 12.6, HA8). How the posted balance is read. With the
     pending charges, only lowering the available balance until they post.
     On setup day both banks still list theirs, so setup day counts what
     the simulator's did.
+
+HB34 (PR 13, 53.5, HA7). The labels read. Run Oct 26 on her Plaid team's
+    test bank (live/labels.live.ts, the keys from .env, never printed): all
+    24 made-up items carry the same detailed labels as his team's on Oct 9,
+    so the finder reads the label names upstream's suggestions already know
+    (TRANSFER_OUT_TRANSFER_OUT_FROM_APPS for a payment to a person,
+    BANK_FEES_LATE_FEES, BANK_FEES_FOREIGN_TRANSACTION_FEES,
+    BANK_FEES_OTHER_BANK_FEES and BANK_FEES_INTEREST_CHARGE on a card).
+    What it answered is kept as her own file,
+    packages/server/test/fixtures/her-test-bank-labels.json (reads only: no
+    keys, no tokens, every name made up); upstream's file is untouched. A
+    test runs the finder on it.
+
+HB35 (PR 13, 53.7). The categories behind "needs": Plaid's primary
+    RENT_AND_UTILITIES, MEDICAL, TRANSPORTATION and LOAN_PAYMENTS, and its
+    detailed FOOD_AND_DRINK_GROCERIES, GENERAL_SERVICES_INSURANCE,
+    GENERAL_SERVICES_CHILDCARE, GENERAL_SERVICES_EDUCATION,
+    GOVERNMENT_AND_NON_PROFIT_TAX_PAYMENT and
+    GOVERNMENT_AND_NON_PROFIT_GOVERNMENT_DEPARTMENTS_AND_AGENCIES. Any other
+    category is wants; no category, no bucket suggested. "Most of its
+    purchases" is the detailed category on the most of them, the newest
+    one's when two are as many. Taxi and ride share fall under
+    TRANSPORTATION, so needs: it is only a suggestion, and she picks.
+
+HB36 (PR 13, 53.2 to 53.9). Readings made while building:
+    - Pairs: card payments first (each card from checking, then from
+      savings), then transfers between checking and savings, from what is
+      not paired yet; an item is in one pair at most.
+    - A pending wording is from items the app saw pending: one still
+      pending, or one Plaid removed when it posted (the posted one names
+      it). One that fell off without posting is not used.
+    - Places are purchases on checking or a card (money leaving savings
+      always waits in review, 4.9) that no card payment, transfer, payment
+      to a person or fee was found from, and that the bank rules as they
+      are read as purchases. The text is the name 13.8 finds for the newest
+      of them.
+    - 53.8 shows the newest 50 items it was found from and the newest 50
+      it also matches, each with how many in all; 53.9 shows the newest 5
+      items two rules both read, with how many.
+    - Short shared words can reach other items. On her test bank's history
+      the two card fees share only "FEE", which "COFFEE SHOP 5" holds too:
+      "Also matches" lists it, so she can change the words first.
+    - A suggestion she has the same rule for already is "You have this rule
+      already" (covered). One she skipped can still be kept. A bank rule
+      she kept and then removed in its list makes its suggestion open again.
+    - Nothing in the finder stops tracking from starting; in her setup it
+      takes the place of 20a's suggestions, which upstream's setup keeps.
+
+HB37 (PR 13, 53.1, section 2, 40.1). Keeping, and what changed elsewhere:
+    - A bank rule she keeps goes to her bank rules at once, at the end, with
+      its log line, as one added in Settings. A place's sorting rule and the
+      paycheck rule wait with her setup day answers (kept in the history,
+      so a restart keeps them) and are the book's starting rules when
+      tracking starts, at the end of the list; setup day's change log line
+      names them.
+    - Section 2: each new connection asks Plaid for 730 days in her setup
+      (the second bank's too); upstream's 90 is unchanged.
+    - 40.1: in her setup Trends drops history from before the 90 days
+      before the first bank was connected, so it shows what it did.
+    - Speed: on a long made-up history (about 3,900 items, 730 days on the
+      Amex card), finding and the overlaps take about 0.7 seconds each time
+      the step is shown. Setup day is used once, so it is left at that.

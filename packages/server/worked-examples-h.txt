@@ -208,3 +208,35 @@ unsorted spending (4.3).
         Difference: 0.00.
 
 Check: bank side while held 7,550.00 | difference while held 0.00 | difference by the available balance while held -42.10 | bank side after it posts 7,507.90 | difference after it posts 0.00
+
+
+========================================================================
+EXAMPLE 7. The rule finder on her setup day (53.2, 53.3, 53.6, 53.7)
+========================================================================
+
+Made-up history, before setup day on Oct 1, in two wording styles. Card
+payments, each a pair: money leaving checking and the same amount reaching
+the card a day or two later.
+        To the Capital One card: 250.00, 250.01, 250.02
+          checking says "ONLINE PMT 1047 TO CRD 0412" (1048, 1049);
+          the card says "CAPITAL ONE PYMT RECEIVED"
+        To the Amex card: 400.00, 400.01, 400.02
+          checking says "EPAY TO AMEX ACH W4800" (W4801, W4802);
+          the card says "Online Payment Received - Thank You"
+Paychecks into checking, 14 days apart: 2,500.00, 2,500.01, 2,500.02,
+2,500.03, each "MADEUP CORP PAYROLL PPD ID 4455 R0" (R1, R2, R3).
+Groceries at "GREEN LEAF MARKET 0450" (0451, 0452) on the Capital One
+card: 60.00, 60.01, 60.02, which the bank labels groceries.
+
+What it suggests, and what each was found from (53.2: the longest piece
+every description has, without what changes):
+        Checking, to the Capital One card: "TO CRD 0412"
+                250.00 + 250.01 + 250.02 = 750.03
+        Checking, to the Amex card: "EPAY TO AMEX ACH"
+                400.00 + 400.01 + 400.02 = 1,200.03
+        The paycheck rule: "MADEUP CORP PAYROLL PPD ID 4455"
+                2,500.00 + 2,500.01 + 2,500.02 + 2,500.03 = 10,000.06
+        A place: "GREEN LEAF MARKET", suggested needs (groceries)
+                60.00 + 60.01 + 60.02 = 180.03
+
+Check: capital one side in all 750.03 | amex side in all 1,200.03 | paychecks in all 10,000.06 | green leaf in all 180.03

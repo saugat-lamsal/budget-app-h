@@ -30,7 +30,7 @@ import { bankNameOf, connectionOfItem, connectionsOf, noteBankFailing, setupConn
 import { createAppServer, type Seen, type WebhookHandler } from '../http/server.js';
 import { WEBHOOK_PATH } from '../plaid/webhook.js';
 import { memoryLog, type Log } from '../log.js';
-import type { PlaidClient } from '../plaid/client.js';
+import { HISTORY_DAYS, type PlaidClient } from '../plaid/client.js';
 import { PushDesk } from '../push/push-desk.js';
 import type { PushKeys } from '../push/push-keys.js';
 import { saveServerLine, serverLinesIn } from '../server-log.js';
@@ -338,6 +338,8 @@ export class Keeper {
         madeUpData: false,
         bankRules,
         answers: replayed.setupAnswers === null ? NO_ANSWERS : setupAnswersOf(replayed.setupAnswers),
+        // Her rulebook, section 53: setup day's rule finder.
+        ruleFinder: this.#start.ruleFinder === true,
       });
     }
     this.#state = { recorder, seen: replayed.seen, bankRules, choices: book === null ? null : new ChoiceDesk(book, today), setup, alerts: replayed.alerts, wishlist: replayed.wishlist };
@@ -529,7 +531,7 @@ export class Keeper {
   // Section 40: the Trends tab, from the books and the bank history kept from
   // before setup day. It only reads: nothing is saved.
   trends(): TrendsView {
-    return trendsView({ today: this.today(), book: this.book(), bank: this.#bank(), madeUpData: false, catchingUp: this.#catchingUp(), why: this.#whyNow(), before: beforeSetupOf(this.#db) });
+    return trendsView({ today: this.today(), book: this.book(), bank: this.#bank(), madeUpData: false, catchingUp: this.#catchingUp(), why: this.#whyNow(), before: beforeSetupOf(this.#db, { historyDays: this.#start.historyDays ?? HISTORY_DAYS }) });
   }
 
   review(): ReviewView {
@@ -670,7 +672,8 @@ export class Keeper {
     this.#write(() => {
       const seq = appendEvent(this.#db, { event: { kind: 'setup', input: started.input }, date: today, sync: null, totals: totalsOf(started.book) });
       for (const item of started.items) saveItem(this.#db, item);
-      logChange(this.#db, today, 'setup day', { startingMoney: started.startingMoney, assignment: started.input.assignment, inTransit: (started.input.transfersInTransit ?? []).map((h) => h.id) });
+      // Her rulebook, 53.1: with the rules she kept from the rule finder (13.5).
+      logChange(this.#db, today, 'setup day', { startingMoney: started.startingMoney, assignment: started.input.assignment, inTransit: (started.input.transfersInTransit ?? []).map((h) => h.id), ...(started.found === undefined ? {} : { found: started.found }) });
       saveDecision(this.#db, { ...decision, seq });
       // 12.6: the books start out matching the bank as the last read left it.
       markSetupRead(this.#db);
@@ -725,6 +728,8 @@ export class Keeper {
       sync: () => this.sync(bank),
       webhook: () => this.webhookAddress(),
       banks: () => this.#banksInSetup(),
+      // Her rulebook, section 2: her setup asks for 730 days (60g).
+      ...(this.#start.historyDays === undefined ? {} : { historyDays: () => this.#start.historyDays ?? HISTORY_DAYS }),
       changed: () => {
         this.reload();
         this.#changed();
@@ -1285,7 +1290,7 @@ export class Keeper {
 // ----- Setup day answers, kept as lists -----
 
 function savedSetupAnswers(a: SetupAnswers): SavedSetupAnswers {
-  return { onItsWay: [...a.onItsWay], halvesWithinDays: a.halvesWithinDays, lastPaycheckDate: a.lastPaycheckDate, assignment: { ...a.assignment }, suggestions: [...a.suggestions] };
+  return { onItsWay: [...a.onItsWay], halvesWithinDays: a.halvesWithinDays, lastPaycheckDate: a.lastPaycheckDate, assignment: { ...a.assignment }, suggestions: [...a.suggestions], ...(a.found === undefined ? {} : { found: [...a.found] }) };
 }
 
 function setupAnswersOf(s: SavedSetupAnswers): SetupAnswers {
@@ -1295,5 +1300,6 @@ function setupAnswersOf(s: SavedSetupAnswers): SetupAnswers {
     lastPaycheckDate: s.lastPaycheckDate,
     assignment: s.assignment as unknown as SetupAnswers['assignment'],
     suggestions: new Map(s.suggestions) as SetupAnswers['suggestions'],
+    ...(s.found === undefined ? {} : { found: new Map(s.found) }),
   };
 }

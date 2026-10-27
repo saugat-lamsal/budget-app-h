@@ -7284,5 +7284,215 @@
     "find": "  const view = bankView(bank.accounts, reread, { postedBalance: bank.switches?.postedBalance === 'on' });",
     "replace": "  const view = bankView(bank.accounts, reread, { postedBalance: bank.switches?.postedBalance !== 'off' });",
     "why": "[her-posted] 12.1 14.2 upstream's setup day (no switches given) counts the posted balance"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/rule-finder.ts",
+    "find": "export const PAIR_DAYS = 5;",
+    "replace": "export const PAIR_DAYS = 6;",
+    "why": "[her-finder] 53.3 an arrival 6 days later pairs"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/rule-finder.ts",
+    "find": "daysBetween(out.date, a.date) >= 0 &&",
+    "replace": "daysBetween(out.date, a.date) >= -1 &&",
+    "why": "[her-finder] 53.3 an arrival the day before the money left pairs"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/rule-finder.ts",
+    "find": "a.amount === -out.amount",
+    "replace": "Math.abs(a.amount + out.amount) <= 1",
+    "why": "[her-finder] 53.3 one cent different pairs"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/rule-finder.ts",
+    "find": "        .toSorted(oldestFirst)[0];",
+    "replace": "        .toSorted(newestFirst)[0];",
+    "why": "[her-finder] 53.3 each leaving item pairs with the latest arrival, not the earliest"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/rule-finder.ts",
+    "find": "Object.freeze({ least: 12, most: 16 })",
+    "replace": "Object.freeze({ least: 13, most: 16 })",
+    "why": "[her-finder] 53.6 a gap of exactly 12 days breaks a run"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/rule-finder.ts",
+    "find": "Object.freeze({ least: 12, most: 16 })",
+    "replace": "Object.freeze({ least: 12, most: 15 })",
+    "why": "[her-finder] 53.6 a gap of exactly 16 days breaks a run"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/rule-finder.ts",
+    "find": "export const PAYCHECK_RUN = 3;",
+    "replace": "export const PAYCHECK_RUN = 2;",
+    "why": "[her-finder] 53.6 two deposits are a run"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/rule-finder.ts",
+    "find": "export const PLACE_PURCHASES = 3;",
+    "replace": "export const PLACE_PURCHASES = 4;",
+    "why": "[her-finder] 53.7 a place needs 4 purchases"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/rule-finder.ts",
+    "find": "if (sorted.length === 1) return [{ contains: wordingOf(sorted[0]!.description), ids }];",
+    "replace": "if (sorted.length === 1) return [{ contains: sorted[0]!.description, ids }];",
+    "why": "[her-finder] 53.2 one item alone is worded by its whole description"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/rule-finder.ts",
+    "find": "(best !== null && piece.length <= best.length)",
+    "replace": "(best !== null && piece.length < best.length)",
+    "why": "[her-finder] 53.2 of two pieces as long, the later one wins"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/rule-finder.ts",
+    "find": "const before = at === 0 || /\\s/.test(text[at - 1]!);",
+    "replace": "const before = true;",
+    "why": "[her-finder] 53.2 a piece may start inside a word"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/rule-finder.ts",
+    "find": "if (!/[a-z]/i.test(piece) || (best !== null",
+    "replace": "if ((best !== null",
+    "why": "[her-finder] 53.2 a piece with no letter is taken"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/rule-finder.ts",
+    "find": "wordsThatStay(all.filter((l) => l.pending === pending))",
+    "replace": "wordsThatStay(pending ? [] : all)",
+    "why": "[her-finder] 53.3 B226 pending items are worded with the posted ones"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/rule-finder.ts",
+    "find": "const current = lines.filter((l) => l.postedAs === null);",
+    "replace": "const current = lines;",
+    "why": "[her-finder] 53.3 a pending item seen before it posted is paired as well"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/rule-finder.ts",
+    "find": "current.filter((l) => l.account === from && l.amount > 0 && unpaired(l)),\n      current.filter((l) => l.account === to &&",
+    "replace": "current.filter((l) => l.account === from && l.amount > 0),\n      current.filter((l) => l.account === to &&",
+    "why": "[her-finder] 53.4 money paired as a card payment is paired again as a transfer"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/rule-finder.ts",
+    "find": "if (meaning === null || meaning.means === 'transfer') continue;",
+    "replace": "if (meaning === null) continue;",
+    "why": "[her-finder] 53.5 a transfer is suggested from its label alone"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/rule-finder.ts",
+    "find": "l.amount < 0 && !l.pending && unpaired(l))) {",
+    "replace": "l.amount < 0 && !l.pending)) {",
+    "why": "[her-finder] 53.6 money in a transfer pairs counts as a paycheck"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/rule-finder.ts",
+    "find": "NEEDS_PRIMARY.has(label.primary) || NEEDS_DETAILED.has(label.detailed) ? 'needs' : 'wants'",
+    "replace": "NEEDS_PRIMARY.has(label.primary) || NEEDS_DETAILED.has(label.detailed) ? 'wants' : 'needs'",
+    "why": "[her-finder] 53.7 the buckets suggested are the other way round"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/rule-finder.ts",
+    "find": "  if (labels.length === 0) return null;",
+    "replace": "  if (labels.length === 0) return 'wants';",
+    "why": "[her-finder] 53.7 a place with no category is suggested wants"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/rule-finder.ts",
+    "find": ".toSorted((a, b) => b.items.length - a.items.length ||",
+    "replace": ".toSorted((a, b) => a.items.length - b.items.length ||",
+    "why": "[her-finder] 53.7 places with fewest purchases first"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/rule-finder.ts",
+    "find": "from: matched.at(-1)?.date ?? null,",
+    "replace": "from: matched[0]?.date ?? null,",
+    "why": "[her-finder] 53.8 from what day is the newest day"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/rule-finder.ts",
+    "find": "items: fromIt.slice(0, SHOWN).map(itemOf),",
+    "replace": "items: fromIt.map(itemOf),",
+    "why": "[her-finder] 53.8 every item is shown, not the newest 50"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/rule-finder.ts",
+    "find": "const both = few.lines.filter((l) => many.ids.has(l.id))",
+    "replace": "const both = few.lines.filter((l) => !many.ids.has(l.id))",
+    "why": "[her-finder] 53.9 an overlap is the items the other does not read"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/rule-finder.ts",
+    "find": "if (end === null || daysBetween(deposits[end]!.date, deposits[k]!.date) > 0",
+    "replace": "if (end === null || daysBetween(deposits[end]!.date, deposits[k]!.date) < 0",
+    "why": "[her-finder] 53.6 the run that ended first, not last"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/setup-finder.ts",
+    "find": "const clash = overlapWithRule(overlaps);",
+    "replace": "const clash = null as ReturnType<typeof overlapWithRule>;",
+    "why": "[her-finder] 53.9 a suggestion that overlaps a rule she has can be kept"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/setup-finder.ts",
+    "find": "if (paycheck !== undefined) return no(",
+    "replace": "if (paycheck === undefined && paycheck !== undefined) return no(",
+    "why": "[her-finder] 53.6 a second paycheck rule is kept"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/setup-finder.ts",
+    "find": "    if (bucket === null) return no('Pick needs or wants first');\n",
+    "replace": "",
+    "why": "[her-finder] 53.7 a place with no bucket is kept"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/plaid/client.ts",
+    "find": "days_requested: input.historyDays ?? HISTORY_DAYS",
+    "replace": "days_requested: HISTORY_DAYS",
+    "why": "[her-finder] section 2 her setup asks for 90 days"
+  },
+  {
+    "section": "trends",
+    "file": "packages/server/src/trends-db.ts",
+    "find": "const read = (options.historyDays ?? HISTORY_DAYS) > HISTORY_DAYS ? lines.filter((line) => daysBetween(historyFrom, line.date) >= 0) : lines;",
+    "replace": "const read = lines;",
+    "why": "[her-finder] 40.1 Trends reads all of her 730 days"
+  },
+  {
+    "section": "setup",
+    "file": "packages/server/src/setup-desk.ts",
+    "find": "...startingRules({ settings: this.#input.settings, rules: this.#input.rules ?? [], answers: this.#answers }),",
+    "replace": "settings: this.#input.settings,\n        rules: this.#input.rules ?? [],",
+    "why": "[her-finder] 53.1 tracking starts without the place and the paycheck rule she kept"
   }
 ]
