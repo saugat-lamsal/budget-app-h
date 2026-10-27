@@ -67,8 +67,8 @@ describe('safety: no test reaches a real bucket', () => {
       ['path', '${BUDGET_DB}'],
       ['endpoint', '${R2_ENDPOINT}'],
       ['bucket', '${R2_BUCKET}'],
-      // Her plan, PR 2: her books in a folder of their own.
-      ['path', 'budget-h'],
+      // Her connection day: her real books in a folder of their own.
+      ['path', 'budget-h-real'],
       ['access-key-id', '${R2_ACCESS_KEY_ID}'],
       ['secret-access-key', '${R2_SECRET_ACCESS_KEY}'],
     ]);

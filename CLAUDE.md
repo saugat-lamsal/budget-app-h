@@ -493,3 +493,17 @@ or "Due" on Wishlist items and cards, never color alone.
   rehearsal in Chrome (7b). Tests: setup-day-log-her.test.ts,
   rule-finder-text-her.test.ts, rule-finder-her and two-banks-her browser
   tests, [her-rehearsal] breaks.
+- PR #19, the screens fixed from her rehearsal, merged and deployed (Oct
+  27, 2026). Her Plaid team checked the same day: Trial, 0 of 10, Capital
+  One and American Express take new connections (OAuth, transactions and
+  liabilities). Her Production secret is in .env.prod (gitignored), checked
+  by shape only.
+- Her connection day's switch (branch her-connection-day-switch): fly.toml
+  PLAID_ENV production and the volume budget_h_real; litestream.yml path
+  budget-h-real (the test bank's books stay on budget_h_data and in
+  budget-h, the way back); test/sandbox-only.test.ts back to upstream's
+  text word for word (fly.toml says production); hosting-config,
+  backup-only-here and backup-litestream expect the real books' volume
+  and folder, and never the test bank's. Her day's steps:
+  docs/her-connection-day.txt. Nothing deployed, imported or connected by
+  it.

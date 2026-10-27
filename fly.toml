@@ -36,18 +36,20 @@ swap_size_mb = 512
   APP_ORIGIN = "https://budget-app-h-lbwr.fly.dev"
   BUDGET_DB = "/data/budget.sqlite"
   PORT = "8080"
-  # Plaid's test bank until her connection day (her roadmap, Phase 3), when
-  # the switch PR makes it production, with her own Plaid team's key.
-  PLAID_ENV = "sandbox"
+  # Her connection day (her roadmap, Phase 3): Plaid's real bank. The lock
+  # lets it in only here, on the hosted server (APP_ORIGIN https), never
+  # under the tests; the key is her own Plaid team's, a Fly secret.
+  PLAID_ENV = "production"
   # Her setup (her rulebook, "Off in this setup"): no mom reserve and no old
   # card, fixed on her setup day.
   BUDGET_SETUP = "her"
 
-# The volume: the books, and Litestream's own notes beside them. The test
-# bank's books are on budget_h_data. On connection day her real books get a
-# volume of their own (budget_h_real), and this one is kept as the way back.
+# The volume: the books, and Litestream's own notes beside them. Her real
+# books are on budget_h_real, from her connection day. The test bank's books
+# stay on budget_h_data, untouched, as the way back
+# (docs/her-connection-day.txt).
 [mounts]
-  source = "budget_h_data"
+  source = "budget_h_real"
   destination = "/data"
   initial_size = "1gb"
 

@@ -28,7 +28,7 @@ WHEN
   connects one made-up bank by itself on the first start; the rehearsal
   with two made-up banks waits for PR 6.
 - Her real banks: only on connection day (her roadmap, Phase 3), after
-  PR 12.
+  PR 12. Its steps: docs/her-connection-day.txt.
 
 
 0. A FOLDER OF ITS OWN FOR HER REPO, ON THIS PC

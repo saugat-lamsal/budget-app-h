@@ -14,12 +14,13 @@ dbs:
       type: s3
       endpoint: ${R2_ENDPOINT}
       bucket: ${R2_BUCKET}
-      # Her books, in her own bucket (never upstream's). The test bank's
-      # books are in "budget-h". On connection day her real books get a
-      # folder of their own (budget-h-real), so a new machine with an empty
-      # volume never brings the test bank's back. This file is always hers
-      # in a merge from upstream (.gitattributes).
-      path: budget-h
+      # Her books, in her own bucket (never upstream's). Her real books, from
+      # her connection day, in a folder of their own (budget-h-real), so a
+      # new machine with an empty volume never brings the test bank's back.
+      # The test bank's books stay in "budget-h", untouched, as the way
+      # back. This file is always hers in a merge from upstream
+      # (.gitattributes).
+      path: budget-h-real
       region: auto
       access-key-id: ${R2_ACCESS_KEY_ID}
       secret-access-key: ${R2_SECRET_ACCESS_KEY}
