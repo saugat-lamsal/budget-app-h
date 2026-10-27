@@ -475,7 +475,8 @@ or "Due" on Wishlist items and cards, never color alone.
   bank/paid-before-setup.ts reads each card's payments from the kept
   history (status history) by today's bank rules, and cardPaymentsSeen
   adds them to the books' for Home's due line (views/home.ts), her card
-  rows (views/home-cards.ts) and the alerts (alerts/plan.ts: the evening
-  and 10.9's still-true), from the keeper's #bankNow. Both setups.
+  rows (views/home-cards.ts) and the alerts (alerts/plan.ts: 10.9's
+  still-true check, which every evening's alert passes, so the evening's
+  own list stays upstream's), from the keeper's #bankNow. Both setups.
   Tests: paid-before-setup-her.test.ts, worked example 8 (server), and
   [her-paid] breaks.

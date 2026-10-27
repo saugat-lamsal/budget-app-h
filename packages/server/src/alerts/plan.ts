@@ -304,7 +304,7 @@ function eveningAlerts(world: AlertWorld, ledger: AlertLedger, date: IsoDate): A
   // 9.1 to 9.4, for that day, with the payments seen by then.
   const settings = book.settings();
   for (const statement of world.statements) {
-    for (const notice of cardNotices(date, statement, cardPaymentsSeen(book, statement.card, world.paidBeforeSetup), settings)) {
+    for (const notice of cardNotices(date, statement, book.cardPayments(statement.card), settings)) {
       const name = notice.card === 'old-card' ? undefined : world.cardNames?.[notice.card];
       const named = name === undefined ? {} : { name };
       if (notice.kind === 'overdue') {

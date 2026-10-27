@@ -7568,13 +7568,6 @@
   {
     "section": "alerts",
     "file": "packages/server/src/alerts/plan.ts",
-    "find": "cardNotices(date, statement, cardPaymentsSeen(book, statement.card, world.paidBeforeSetup), settings)",
-    "replace": "cardNotices(date, statement, book.cardPayments(statement.card), settings)",
-    "why": "[her-paid] 9.3 9.4 the evening reminders and overdue alert leave out payments from before setup day"
-  },
-  {
-    "section": "alerts",
-    "file": "packages/server/src/alerts/plan.ts",
     "find": "cardDue(today, statement, cardPaymentsSeen(world.book, statement.card, world.paidBeforeSetup), world.book.settings())",
     "replace": "cardDue(today, statement, world.book.cardPayments(statement.card), world.book.settings())",
     "why": "[her-paid] 10.9 a kept reminder stays true though it was paid before setup day"
