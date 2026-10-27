@@ -315,6 +315,48 @@ examples[7] = async () => {
   }
 };
 
+// From her rehearsal: statements she paid before setup day (9.3, 60i).
+examples[8] = async () => {
+  const statement = (balance: number) => ({ is_overdue: false, last_payment_amount: null, last_payment_date: null, last_statement_issue_date: '2026-09-20', last_statement_balance: balance, minimum_payment_amount: 35, next_payment_due_date: '2026-10-15' });
+  const life = await lifeInAFile({
+    herSetup: true,
+    secondCard: 25_000,
+    rules: checkBankRules([...HER_BANK_RULES, ...SECOND_CARD_RULES]),
+    start: HER_START,
+    history: (fake) => {
+      fake.setStatement(ACCOUNT_IDS.everyday, statement(450));
+      fake.setStatement(ACCOUNT_IDS.second, statement(250));
+      fake.addPosted({ id: 'pay-cap', account: ACCOUNT_IDS.checking, amount: parseDollars('450.00'), date: '2026-09-25', description: 'payment to CRD 3333' });
+      fake.addPosted({ id: 'paid-cap', account: ACCOUNT_IDS.everyday, amount: -parseDollars('450.00'), date: '2026-09-25', description: 'PAYMENT - THANK YOU' });
+      fake.addPosted({ id: 'pay-amex', account: ACCOUNT_IDS.checking, amount: parseDollars('100.00'), date: '2026-09-25', description: 'payment to CRD 5555' });
+      fake.addPosted({ id: 'paid-amex', account: ACCOUNT_IDS.second, amount: -parseDollars('100.00'), date: '2026-09-25', description: 'PAYMENT - THANK YOU' });
+    },
+  });
+  try {
+    setUpHer(life);
+    life.now = noonInNewYork('2026-10-08');
+    await life.sync();
+    const home = life.keeper.home();
+    if (home.state !== 'tracking' || home.cards === undefined) throw new Error('no cards on Home');
+    const [cap, amex] = home.cards.cards.map((c) => c.statement);
+    if (cap === undefined || amex === undefined || !cap.shown || !amex.shown) throw new Error('a statement is not shown');
+    if (cap.state.kind !== 'paid' || amex.state.kind !== 'due' || amex.state.daysLeft !== 7) throw new Error(`not as the example says: ${cap.state.kind}, ${amex.state.kind}`);
+    if (home.attention.some((a) => a.kind === 'card-due' && a.card === 'everyday-card')) throw new Error('a due line for the paid card');
+    life.now = noonInNewYork('2026-10-16');
+    await life.sync();
+    const after = life.keeper.home();
+    if (after.state !== 'tracking' || after.attention.some((a) => a.kind === 'card-overdue')) throw new Error('overdue after the due date');
+    return {
+      'capital one paid toward it': cap.paid,
+      'capital one left to pay': cap.statementBalance - cap.paid,
+      'amex paid toward it': amex.paid,
+      'amex left to pay': amex.statementBalance - amex.paid,
+    };
+  } finally {
+    life.done();
+  }
+};
+
 // The self-check against each bank's latest good read, as saved (12.3).
 function bankStatusOf(life: Life): { readonly bankSide: Cents; readonly difference: Cents } {
   const check = bankStatus(life.h.db).selfCheck;

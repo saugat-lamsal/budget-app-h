@@ -1,4 +1,5 @@
 import { assertCents, bucketLevel, cardDue, matchesTextRule, type BankBalances, type Book, type BucketLevel, type CardStatement, type Cents, type IsoDate, type SelfCheck, type TextRule } from '@budget-app/money';
+import { cardPaymentsSeen, type PaidBeforeSetup } from '../bank/paid-before-setup.js';
 import { usuallyPostsWithin, type PostingExample } from '../bank/posting-times.js';
 import { onItsWayToSavings } from './payday.js';
 
@@ -24,6 +25,9 @@ export interface HomeInput {
   // 9.8 (A52): the cards whose statement the bank sent but the app cannot
   // read, so their reminders are off. None when left out (the demo).
   readonly cardsOff?: readonly CardRemindersOff[];
+  // 9.3 (her rulebook, 60i): each card's payments from before setup day,
+  // read from the bank history. None when left out (the demo).
+  readonly paidBeforeSetup?: PaidBeforeSetup;
   // True only for the demo's made-up numbers, so the screen can say so.
   readonly madeUpData: boolean;
   // 10.6: the take-backs he has marked as seen, by the id in the change log.
@@ -253,7 +257,7 @@ export function homeView(input: HomeInput): HomeView {
     safeToSpend = checked.ok ? { shown: true, amount: checked.safeToSpend.amount } : { shown: false, why: 'totals-do-not-match', check: book.selfCheck(bank), catchingUp: input.catchingUp ?? false, detail: input.bankDetail ?? null };
   }
 
-  const cards = input.statements.flatMap((statement) => cardDue(today, statement, book.cardPayments(statement.card), settings) ?? []);
+  const cards = input.statements.flatMap((statement) => cardDue(today, statement, cardPaymentsSeen(book, statement.card, input.paidBeforeSetup), settings) ?? []);
   const attention: Attention[] = [];
   if (input.banksToLogIn !== undefined) for (const b of input.banksToLogIn) attention.push({ kind: 'bank-login', bank: b.bank, name: b.name });
   else if (input.needsLogin) attention.push({ kind: 'bank-login' });

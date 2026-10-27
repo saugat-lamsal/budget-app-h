@@ -393,6 +393,9 @@ describe('the demo is made-up data only', () => {
       'bank-rules.ts',
       'bank/amounts.ts',
       'bank/balances.ts',
+      // 9.3 (her rulebook, 60i): Home and the alerts count a card's payments
+      // from before setup day, read from Plaid's format like the rest of bank/.
+      'bank/paid-before-setup.ts',
       'bank/plaid-item.ts',
       'bank/posting-times.ts',
       'bank/reading.ts',

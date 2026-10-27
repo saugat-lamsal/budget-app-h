@@ -20,8 +20,10 @@ section "H. Approved for her setup, not built yet" at the end was empty
 after PR 12 (Oct 25, 2026). He approved two more on Oct 26, 2026, now in
 place too: PR 12b, 12.1's posted balance for her Capital One accounts
 (60h); PR 13, the rule finder (60g, docs/her-rule-finder.txt): section
-2's history, paycheck rule and bank rules lines, 40.1 and section 53. So
-section H is empty again: every rule here is in force. Unchanged for her setup: the pay schedule (section 2),
+2's history, paycheck rule and bank rules lines, 40.1 and section 53. On
+Oct 27, 2026 he approved one more, found in her rehearsal and built at
+once: 9.3's payments from before setup day (60i). So section H is empty
+again: every rule here is in force. Unchanged for her setup: the pay schedule (section 2),
 sorting rules (4.2, 6.2, 13.2, 13.6, 13.8) and bank rules (section 2) stay
 exactly as upstream's; bank rules are per account, so they cover both
 banks without a change. "You" is the
@@ -359,6 +361,9 @@ offered anywhere.
      landing on the statement date counts toward the one before (B28). It
      counts from the day it leaves checking or savings, even while still on
      its way (B47).
+     A payment that reached the card before setup day counts too: the app
+     reads it from the bank history it keeps, by today's bank rules, as
+     the statement does (52.4), from the day it reached the card (60i).
 9.4  If the due date passes and the payments the app sees since the
      statement add up to less than the minimum, you get an overdue alert.
      It stays due every day after the due date until enough is paid (B30).
@@ -1442,6 +1447,13 @@ h.  Her checking and savings are at Capital One, which sends Plaid no
     charges, not the available balance (12.1; Oct 26, 2026,
     docs/her-questions.txt HA8). Built in PR 12b, before PR 13, and
     checked in the rehearsal and her first days as HA8 says.
+i.  A card payment made before setup day counts toward the statement it
+    reached the card after, for Home, the reminders and the overdue alert:
+    the app reads it from the bank history it keeps, by today's bank rules
+    (9.3; Oct 27, 2026, docs/her-questions.txt HA9). Found in her
+    rehearsal: the books start on setup day, so a statement she had
+    already paid showed $0.00 paid, and its overdue alert would have come
+    after the due date. Both setups: upstream's has the same gap.
 
 
 ## H. Approved for her setup, not built yet
