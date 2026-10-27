@@ -17,13 +17,14 @@ split, 3.3, 3.4, 3.8, 4.2, 4.4, 11.3, 12.2, 13.1, 13.4, 14.2, 50.4 and
 52.4's buckets; PR 10+11: 40.2, 40.4, 40.5, 40.11 and 50.1 to 50.3). Those
 are all the texts he approved on Oct 23, 2026 (docs/her-plan.txt), so
 section "H. Approved for her setup, not built yet" at the end was empty
-after PR 12 (Oct 25, 2026). It now holds two texts he approved on Oct 26,
-2026, not built yet: 12.1's posted balance for her Capital One accounts
-(60h, PR 12b) and the rule finder (section 53, docs/her-rule-finder.txt,
-60g, PR 13). Every rule above it is in force as written. Unchanged for her
-setup: the pay schedule (section 2), sorting rules (4.2, 6.2, 13.2, 13.6,
-13.8) and bank rules (section 2) stay exactly as upstream's; bank rules are
-per account, so they cover both banks without a change. "You" is the
+after PR 12 (Oct 25, 2026). PR 12b put 12.1's posted balance for her
+Capital One accounts in place (60h, Oct 26). Section H now holds only the
+rule finder he approved on Oct 26, 2026 (section 53,
+docs/her-rule-finder.txt, 60g), for PR 13. Every rule above it is in
+force as written. Unchanged for her setup: the pay schedule (section 2),
+sorting rules (4.2, 6.2, 13.2, 13.6, 13.8) and bank rules (section 2) stay
+exactly as upstream's; bank rules are per account, so they cover both
+banks without a change. "You" is the
 owner. New rules are numbered from 50, and her answers are sections from
 60.
 
@@ -490,7 +491,10 @@ offered anywhere.
       your accounts, a payment to a person, money leaving savings), and
       money coming in taken out (a paycheck or other deposit, a refund, a
       transfer arriving). If the bank gives no available balance, its
-      posted balance less pending charges. For each card, what it owes, including pending charges
+      posted balance less pending charges. In this setup checking and
+      savings are at Capital One, which sends Plaid no pending items, so
+      for them the bank side is always the posted balance less pending
+      charges. For each card, what it owes, including pending charges
       (they already count in the buckets under 4.6).
 12.2  App side: savings + needs + wants + Wishlist + held for others
       + unsorted money in - unsorted spending.
@@ -1310,15 +1314,6 @@ moved each one are listed at the top of this rulebook. A text he approves
 later that is not built yet goes here, indented so it is not yet counted
 as a rule (test/every-rule-has-a-test.test.ts), and names the pull request
 that will move it into place.
-
-### PR 12b. The posted balance for her Capital One accounts (60h, his OK Oct 26, 2026)
-
-  In place: 12.1. Until then 12.1 stands as it is.
-
-  12.1, after "If the bank gives no available balance, its posted balance
-  less pending charges.": "In this setup checking and savings are at
-  Capital One, which sends Plaid no pending items, so for them the bank
-  side is always the posted balance less pending charges."
 
 ### PR 13. The rule finder (60g, his OK Oct 26, 2026)
 

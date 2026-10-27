@@ -296,7 +296,7 @@ function save(input: SyncInput, startCursor: string | null, fetched: Fetched): S
 // 12.6 (A57): the bank as this read leaves it, and the check after it, with
 // the book as the sync leaves it (the plan gave it what the bank sent).
 function whatTheReadFound(db: Db, book: Book | null, syncs: number): { readonly bank: BankAtRead | null; readonly difference: Cents | null } {
-  const view = bankView(readAccounts(db), readItems(db));
+  const view = bankView(readAccounts(db), readItems(db), { postedBalance: book?.switches().postedBalance === 'on' });
   if (!view.ok) return { bank: null, difference: null };
   return { bank: bankAtRead(view.view, syncs), difference: book === null ? null : book.selfCheck(view.view.withPending).difference };
 }

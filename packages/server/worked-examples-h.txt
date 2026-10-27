@@ -178,3 +178,33 @@ Beside savings (40.5), Wishlist on its own: 300.00 when tracking started,
 70.00 + 12.50 = 82.50.
 
 Check: needs part 70.00 | wants part 12.50 | wishlist part 65.00 | spent in all 147.50 | wishlist at the start 300.00 | wishlist now 235.00 | spent so far against your usual 82.50
+
+
+========================================================================
+EXAMPLE 6. Capital One holds a purchase that Plaid does not list
+           (12.1, HA8: the posted balance for her checking and savings)
+========================================================================
+
+Setup day as in example 1: checking 3,000.00, savings 5,000.00, the
+Capital One card owes 450.00 and the Amex card 0.00. The starting money is
+7,550.00, all of it assigned.
+
+Oct 2: she buys groceries for 42.10 with her debit card. Capital One holds
+it: checking's available balance goes down to 3,000.00 - 42.10 = 2,957.90.
+Plaid lists nothing (Capital One sends no pending items), so the books do
+not count it yet, and checking's posted balance is still 3,000.00.
+        Bank side, by the posted balance (her setup):
+                3,000.00 + 5,000.00 - 450.00 - 0.00 = 7,550.00
+        App side: 7,550.00, nothing new counted
+        Difference: 7,550.00 - 7,550.00 = 0.00. The totals match.
+        By the available balance (upstream's way) it would be
+                2,957.90 + 5,000.00 - 450.00 - 0.00 = 7,507.90,
+        a difference of 7,507.90 - 7,550.00 = -42.10 until it posts.
+
+Oct 4: it posts. Plaid sends it as posted, and the books take 42.10 out as
+unsorted spending (4.3).
+        Bank side: 2,957.90 + 5,000.00 - 450.00 - 0.00 = 7,507.90
+        App side: 7,550.00 - 42.10 = 7,507.90
+        Difference: 0.00.
+
+Check: bank side while held 7,550.00 | difference while held 0.00 | difference by the available balance while held -42.10 | bank side after it posts 7,507.90 | difference after it posts 0.00

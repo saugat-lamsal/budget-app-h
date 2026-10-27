@@ -51,8 +51,9 @@ function sortOptions(detail: ReviewDetail | undefined): Extract<ReviewOptions, {
 describe('Off in this setup: her setup day starts with both switched off', () => {
   it('Off in this setup: her switches are both off, and upstream keeps both on', () => {
     // PR 5: her second card is on (her rulebook, section 1). PR 9: so is Wishlist (section 2).
-    expect(HER_SWITCHES).toEqual({ momReserve: 'off', oldCard: 'off', secondCard: 'on', wishlist: 'on' });
-    expect(UPSTREAM_SWITCHES).toEqual({ momReserve: 'on', oldCard: 'on', secondCard: 'off', wishlist: 'off' });
+    // PR 12b: so is the posted balance for her checking and savings (12.1, HA8).
+    expect(HER_SWITCHES).toEqual({ momReserve: 'off', oldCard: 'off', secondCard: 'on', wishlist: 'on', postedBalance: 'on' });
+    expect(UPSTREAM_SWITCHES).toEqual({ momReserve: 'on', oldCard: 'on', secondCard: 'off', wishlist: 'off', postedBalance: 'off' });
     expect(Object.isFrozen(HER_SWITCHES)).toBe(true);
   });
 
@@ -519,5 +520,29 @@ describe('Off in this setup: off is not zero (a twin test, 500 random lives)', (
       fc.property(fc.array(stepArb, { minLength: 1, maxLength: 60 }), (steps) => liveTwins(steps)),
       { numRuns: runs(500) },
     );
+  });
+});
+
+// Her rulebook, 12.1 (HA8, his OK Oct 26, 2026, 60h): her checking and
+// savings are at Capital One, which sends Plaid no pending items, so her
+// bank side starts them from the posted balance. A switch, fixed on setup
+// day like the others; the server reads it (bank/balances.ts), and the money
+// math only keeps it.
+describe('12.1 the posted balance for her checking and savings is a switch (HA8)', () => {
+  it('12.1 the posted balance is on in her setup, and off in upstream\'s', () => {
+    expect(HER_SWITCHES.postedBalance).toBe('on');
+    expect(UPSTREAM_SWITCHES.postedBalance).toBe('off');
+    expect(herBook().switches().postedBalance).toBe('on');
+  });
+
+  it('12.1 a book saved before the switch existed keeps the available balance (B242)', () => {
+    expect(checkSwitches({ momReserve: 'off', oldCard: 'off', secondCard: 'on', wishlist: 'on' } as Switches).postedBalance).toBe('off');
+    expect(checkSwitches(undefined).postedBalance).toBe('off');
+    expect(herBook({ switches: { momReserve: 'off', oldCard: 'off', secondCard: 'on', wishlist: 'on' } as Switches }).switches().postedBalance).toBe('off');
+  });
+
+  it('12.1 the posted balance is on or off, nothing else', () => {
+    expect(codeOf(() => checkSwitches({ ...HER_SWITCHES, postedBalance: 'yes' } as unknown as Switches))).toBe('bad-switch');
+    expect(codeOf(() => checkSwitches({ ...HER_SWITCHES, postedBalance: null } as unknown as Switches))).toBe('bad-switch');
   });
 });

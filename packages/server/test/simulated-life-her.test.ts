@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { HER_SWITCHES, bankSide, type BankTransaction, type SetupInput } from '@budget-app/money';
+import { HER_SWITCHES, bankSide, type AccountId, type BankTransaction, type Cents, type SetupInput } from '@budget-app/money';
 import { describe, expect, it } from 'vitest';
 import type { Posted } from '../../money/test/sim/bank.js';
 import { liveALife, type BookTotals, type RecordedAnswer, type RecordedBankDay } from '../../money/test/sim/life.js';
@@ -14,6 +14,7 @@ import { setUpTracking } from '../src/setup-day.js';
 import { bankStatus } from '../src/status.js';
 import { ACCOUNT, inPlaidFormat, simBankRules } from './sim-bank.js';
 import { bothBanks, connected } from './harness.js';
+import type { FakePlaid } from './fake-plaid.js';
 import { lives as count } from './slow.js';
 
 // Her rulebook, "Off in this setup": the simulated life shaped like hers (no
@@ -32,6 +33,58 @@ import { lives as count } from './slow.js';
 
 // PR 5: her second card's rules too (her rulebook, section 1).
 const HER_SIM_BANK_RULES = simBankRules(['checking', 'savings', 'everyday-card', 'second-card'], ['everyday-card', 'second-card']);
+
+// PR 12b (her rulebook, 12.1, HA8): Capital One sends Plaid no pending items
+// (Plaid's build kit). Her checking, savings and Capital One card are at the
+// first made-up bank: from setup day on, a charge it holds is not listed. It
+// only lowers checking's or savings' available balance (holdAvailable) until
+// it posts, and then comes as a posted item of its own. Her Amex card, at the
+// second bank, lists its pending charges as before, and so do both banks on
+// setup day, so setup day counts what the simulator's did. Held is what
+// Capital One holds now, by the pending charge's id: the books count none of
+// it yet, so the app side and the bank side are each that much above the
+// simulator's, and the self-check still matches.
+const AT_CAPITAL_ONE: ReadonlySet<AccountId> = new Set(['checking', 'savings', 'everyday-card']);
+type Held = Map<string, { readonly account: AccountId; readonly amount: Cents }>;
+
+function inHerBanksFormat(banks: FakePlaid, capitalOne: FakePlaid, held: Held, txn: BankTransaction): void {
+  const holdBack = (): void => {
+    for (const account of ['checking', 'savings'] as const) {
+      capitalOne.holdAvailable(ACCOUNT[account], [...held.values()].filter((h) => h.account === account).reduce((sum, h) => sum + h.amount, 0));
+    }
+  };
+  switch (txn.kind) {
+    case 'purchase':
+    case 'savings-withdrawal': {
+      if (!AT_CAPITAL_ONE.has(txn.account)) break;
+      if (txn.pending) {
+        held.set(txn.id, { account: txn.account, amount: txn.amount });
+        holdBack();
+        return;
+      }
+      if (txn.pendingId === undefined || !held.delete(txn.pendingId)) break;
+      holdBack();
+      banks.addPosted({ id: txn.id, account: ACCOUNT[txn.account], amount: txn.amount, date: txn.date, description: txn.description });
+      return;
+    }
+    case 'pending-changed': {
+      const was = held.get(txn.pendingId);
+      if (was === undefined) break;
+      held.set(txn.pendingId, { ...was, amount: txn.amount });
+      holdBack();
+      return;
+    }
+    case 'pending-dropped':
+      if (!held.delete(txn.pendingId)) break;
+      holdBack();
+      return;
+    default:
+      break;
+  }
+  inPlaidFormat(banks, txn);
+}
+
+const heldTotal = (held: Held): Cents => [...held.values()].reduce((sum, h) => sum + h.amount, 0);
 
 interface Day extends RecordedBankDay {
   readonly answers: readonly RecordedAnswer[];
@@ -67,7 +120,7 @@ function liveHerLife(seed: number, years: number): Recorded {
   return { setup, days };
 }
 
-async function throughTheBankConnection(seed: number, years: number): Promise<{ days: number; unread: number }> {
+async function throughTheBankConnection(seed: number, years: number): Promise<{ days: number; unread: number; heldAtOnce: number }> {
   const { setup, days } = liveHerLife(seed, years);
   const h = await connected({
     posted: { checking: setup.start.checking, savings: setup.start.savings, everyday: setup.start.everydayCard, old: 123_456 },
@@ -98,8 +151,12 @@ async function throughTheBankConnection(seed: number, years: number): Promise<{ 
   );
   expect(outcome, `seed ${seed}: setup day`).toEqual({ ok: true, startingMoney: setup.totals.appSide });
   let unread = 0;
+  const held: Held = new Map();
+  let heldAtOnce = 0;
   for (const [i, day] of days.entries()) {
-    for (const txn of day.feed) inPlaidFormat(banks, txn);
+    for (const txn of day.feed) inHerBanksFormat(banks, h.fake, held, txn);
+    const atCapitalOne = heldTotal(held);
+    heldAtOnce = Math.max(heldAtOnce, atCapitalOne);
     // Made-up activity on the account she never picked.
     if (i % 9 === 0) {
       h.fake.addPosted({ id: `unread-${i}`, account: ACCOUNT['old-card'], amount: 1_000 + i, date: day.date, description: 'MADE UP SHOP ON THE OTHER CARD' });
@@ -112,15 +169,15 @@ async function throughTheBankConnection(seed: number, years: number): Promise<{ 
     expect(status.selfCheck, `${where}: the self-check`).toMatchObject({ ok: true, difference: 0 });
     const check = status.selfCheck;
     if (check === null) throw new Error(`${where}: no self-check`);
-    expect(bankSide(day.balances) + check.inTransit - check.appSide, `${where}: the self-check against the simulator's own bank`).toBe(0);
-    expect({ appSide: check.appSide, inTransit: check.inTransit, oldCardDebt: status.oldCard?.book }, `${where}: the same money as the simulator's book`).toEqual(day.totals);
+    expect(bankSide(day.balances) + atCapitalOne + check.inTransit - check.appSide, `${where}: the self-check against the simulator's own bank`).toBe(0);
+    expect({ appSide: check.appSide - atCapitalOne, inTransit: check.inTransit, oldCardDebt: status.oldCard?.book }, `${where}: the same money as the simulator's book, less what Capital One holds`).toEqual(day.totals);
     expect(status.inTransit?.items.map((i) => `${i.from} ${i.to} ${i.amount} ${i.seen}`).sort(), `${where}: money in transit`).toEqual(day.halvesShowing);
     expect(status.oldCard, `${where}: no old card, and nothing of the account she never picked`).toEqual({ book: 0, bank: 0, difference: 0 });
     expect(status.pots?.momReserve, `${where}: no mom reserve`).toBe(0);
     expect(status.statements.map((s) => s.card), `${where}: statements`).not.toContain('old-card');
     expect(status.attention, `${where}: nothing waits for a decision`).toEqual([]);
   }
-  return { days: days.length, unread };
+  return { days: days.length, unread, heldAtOnce };
 }
 
 function throughTheDatabase(seed: number, years: number): { days: number; answers: number; restarts: number } {
@@ -185,11 +242,13 @@ const DB_YEARS = Number(process.env['SIM_HER_DB_YEARS'] ?? count(1, 0.1));
 
 describe('her simulated life, through the bank connection in Plaid\'s format', () => {
   it.each(seeds('SIM_HER_BANK_FIRST_SEED', 'SIM_HER_BANK_SEEDS', 1, 1))(
-    "Off in this setup: her setup: seed %i, every day the self-check passes, the money matches the simulator's book, and the account she never picked is never read",
+    "Off in this setup: 12.1 her setup: seed %i, every day the self-check passes (Capital One listing no pending charges), the money matches the simulator's book, and the account she never picked is never read",
     async (seed) => {
-      const { days, unread } = await throughTheBankConnection(seed, BANK_YEARS);
+      const { days, unread, heldAtOnce } = await throughTheBankConnection(seed, BANK_YEARS);
       expect(days).toBe(Math.round(BANK_YEARS * 365));
       expect(unread).toBeGreaterThan(0);
+      // PR 12b: Capital One held charges Plaid did not list (12.1, HA8).
+      expect(heldAtOnce).toBeGreaterThan(0);
     },
     1_800_000,
   );

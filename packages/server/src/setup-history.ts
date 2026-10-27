@@ -93,7 +93,8 @@ function readHistory(bank: BankHistory): History {
     const kind = readBankItem(role, read.item.amount, read.item.description, rules).kind;
     reread.set(item.transactionId, { ...item, kind });
   }
-  const view = bankView(bank.accounts, reread);
+  // Her rulebook, 12.1 (HA8): her setup day counts the posted balance, as the check will.
+  const view = bankView(bank.accounts, reread, { postedBalance: bank.switches?.postedBalance === 'on' });
   if (!view.ok) throw new SetupNotReady(view.why);
   const pendingCharges: (Purchase | SavingsWithdrawal)[] = [];
   for (const item of reread.values()) {

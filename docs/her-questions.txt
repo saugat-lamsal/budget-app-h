@@ -444,3 +444,21 @@ HB32 (PR 12, 0.7, 12.3, HB9). Status while one bank cannot be read. Found
     already is, so "needs a look" counts it once. A difference that began
     before still says since when (10.4). Upstream's one-bank words are as
     they were.
+
+HB33 (PR 12b, 12.1, 12.6, HA8). How the posted balance is read. With the
+    switch on (postedBalance, her setup only, fixed on setup day), her
+    checking and savings are read as giving no available balance, exactly
+    as 12.1 says ("as when the bank gives no available balance"):
+    everywhere the bank side is worked out (Home and Buckets, the Status
+    page, setup day's starting money, and each kept read). So each read
+    keeps her posted balance, what the check counted and whether it
+    matched, but not Capital One's available balance, and 12.6 explains a
+    difference on checking or savings by the posted balance. HA8's
+    first-days check needs only that: the posted balance taking each item
+    in the read that brings it. Reads kept before setup day are read
+    upstream's way; no check runs then, so none of them is ever "the last
+    read that matched". Her simulated life through the bank connection: from
+    setup day on, the first made-up bank (her Capital One) lists no
+    pending charges, only lowering the available balance until they post.
+    On setup day both banks still list theirs, so setup day counts what
+    the simulator's did.
