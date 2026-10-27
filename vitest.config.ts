@@ -31,7 +31,11 @@ export const SLOW_FILES = {
     'test/trends-random.test.ts',
   ],
   webBrowser: ['test/browser/random-*.test.ts'],
-  repo: ['test/break-it.test.ts', 'test/break-it-lists.test.ts'],
+  // Not test/break-it-lists.test.ts: it only reads the lists and the files,
+  // and a break that no longer matches the code must fail every npm test, as
+  // upstream's does. Left out of the default run, nine breaks went stale
+  // unnoticed (Oct 27, 2026).
+  repo: ['test/break-it.test.ts'],
 } as const;
 
 const left = (files: readonly string[]): string[] => (slow ? [] : [...files]);

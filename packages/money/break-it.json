@@ -4230,15 +4230,15 @@
   {
     "section": "1",
     "file": "packages/money/src/her-setup.ts",
-    "find": "checkSwitches({ momReserve: 'off', oldCard: 'off', secondCard: 'on', wishlist: 'on' })",
-    "replace": "checkSwitches({ momReserve: 'off', oldCard: 'on', secondCard: 'on', wishlist: 'on' })",
+    "find": "checkSwitches({ momReserve: 'off', oldCard: 'off', secondCard: 'on', wishlist: 'on', postedBalance: 'on' })",
+    "replace": "checkSwitches({ momReserve: 'off', oldCard: 'on', secondCard: 'on', wishlist: 'on', postedBalance: 'on' })",
     "why": "[her-switches] Off in this setup: her setup has the old card"
   },
   {
     "section": "1",
     "file": "packages/money/src/her-setup.ts",
-    "find": "checkSwitches({ momReserve: 'off', oldCard: 'off', secondCard: 'on', wishlist: 'on' })",
-    "replace": "checkSwitches({ momReserve: 'on', oldCard: 'off', secondCard: 'on', wishlist: 'on' })",
+    "find": "checkSwitches({ momReserve: 'off', oldCard: 'off', secondCard: 'on', wishlist: 'on', postedBalance: 'on' })",
+    "replace": "checkSwitches({ momReserve: 'on', oldCard: 'off', secondCard: 'on', wishlist: 'on', postedBalance: 'on' })",
     "why": "[her-switches] Off in this setup: her setup has the mom reserve"
   },
   {
@@ -4447,8 +4447,8 @@
   {
     "section": "1",
     "file": "packages/money/src/switches.ts",
-    "find": "export const UPSTREAM_SWITCHES: Switches = Object.freeze({ momReserve: 'on', oldCard: 'on', secondCard: 'off', wishlist: 'off' });",
-    "replace": "export const UPSTREAM_SWITCHES: Switches = Object.freeze({ momReserve: 'on', oldCard: 'on', secondCard: 'on', wishlist: 'off' });",
+    "find": "export const UPSTREAM_SWITCHES: Switches = Object.freeze({ momReserve: 'on', oldCard: 'on', secondCard: 'off', wishlist: 'off', postedBalance: 'off' });",
+    "replace": "export const UPSTREAM_SWITCHES: Switches = Object.freeze({ momReserve: 'on', oldCard: 'on', secondCard: 'on', wishlist: 'off', postedBalance: 'off' });",
     "why": "[her-second-card] 1 upstream's setup has the second card"
   },
   {
@@ -4461,8 +4461,8 @@
   {
     "section": "1",
     "file": "packages/money/src/switches.ts",
-    "find": "|| !isSwitch(secondCard) || !isSwitch(wishlist)) {",
-    "replace": "|| !isSwitch(wishlist)) {",
+    "find": "|| !isSwitch(secondCard) || !isSwitch(wishlist) || !isSwitch(postedBalance)) {",
+    "replace": "|| !isSwitch(wishlist) || !isSwitch(postedBalance)) {",
     "why": "[her-second-card] 1 a second card switch that is neither on nor off is let through"
   },
   {
@@ -4594,8 +4594,8 @@
   {
     "section": "1",
     "file": "packages/money/src/her-setup.ts",
-    "find": "checkSwitches({ momReserve: 'off', oldCard: 'off', secondCard: 'on', wishlist: 'on' })",
-    "replace": "checkSwitches({ momReserve: 'off', oldCard: 'off', secondCard: 'off', wishlist: 'on' })",
+    "find": "checkSwitches({ momReserve: 'off', oldCard: 'off', secondCard: 'on', wishlist: 'on', postedBalance: 'on' })",
+    "replace": "checkSwitches({ momReserve: 'off', oldCard: 'off', secondCard: 'off', wishlist: 'on', postedBalance: 'on' })",
     "why": "[her-second-card] her setup has no second card"
   },
   {

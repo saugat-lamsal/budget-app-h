@@ -4069,8 +4069,8 @@
   {
     "section": "sync",
     "file": "packages/server/src/history/keeper.ts",
-    "find": "permissionEnds: connection?.permissionEnds ?? null, mismatchSince: this.mismatchSince(), cardNames: this.cardNames(), banks, wishlistMove: this.#wishlistMove() };",
-    "replace": "permissionEnds: null, mismatchSince: this.mismatchSince(), cardNames: this.cardNames(), banks, wishlistMove: this.#wishlistMove() };",
+    "find": "permissionEnds: connection?.permissionEnds ?? null, mismatchSince: this.mismatchSince(), cardNames: this.cardNames(), banks,",
+    "replace": "permissionEnds: null, mismatchSince: this.mismatchSince(), cardNames: this.cardNames(), banks,",
     "why": "[a45] 10.13 the alerts never see the date"
   },
   {
@@ -4720,8 +4720,8 @@
   {
     "section": "webhooks",
     "file": "packages/server/src/bank-desk.ts",
-    "find": "{ webhook: this.#input.webhook?.() ?? null }",
-    "replace": "{}",
+    "find": "{ webhook: this.#input.webhook?.() ?? null, ...(days",
+    "replace": "{ ...(days",
     "why": "[webhooks] A47 1.1 a new connection gets no webhook address"
   },
   {
@@ -6575,8 +6575,8 @@
   {
     "section": "alerts",
     "file": "packages/server/src/history/keeper.ts",
-    "find": ", mismatchSince: this.mismatchSince(), cardNames: this.cardNames(), banks, wishlistMove: this.#wishlistMove() };",
-    "replace": ", mismatchSince: this.mismatchSince(), banks, wishlistMove: this.#wishlistMove() };",
+    "find": "permissionEnds: connection?.permissionEnds ?? null, mismatchSince: this.mismatchSince(), cardNames: this.cardNames(), banks,",
+    "replace": "permissionEnds: connection?.permissionEnds ?? null, mismatchSince: this.mismatchSince(), banks,",
     "why": "[her-second-card] 9.1 the alerts never get the cards' names"
   },
   {
