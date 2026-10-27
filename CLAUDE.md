@@ -430,3 +430,21 @@ or "Due" on Wishlist items and cards, never color alone.
   the change log; the rest settled in agent-pay-period-h/settled.txt.
   HB31 waits on his answer. BREAK_IT_BAIL=1 makes a test run stop at its
   first failure (break-it over hundreds of breaks; same verdicts).
+- Oct 26, 2026: his ask for a rule finder on her setup day (730 days of
+  history, rules suggested from both banks), approved with HA7's five
+  recommendations (rulebook 60g; docs/her-rule-finder.txt). The texts
+  (section 53, section 2, 40.1) are in section H for PR 13, not built
+  yet (branch her-rule-finder). Before PR 13: a live read of her team's
+  test bank labels. HA8 agreed (Oct 26, 60h): the bank side uses the
+  posted balance for her checking and savings (Capital One sends no
+  pending items), built first as PR 12b.
+- PR 12b, the posted balance (branch her-posted-balance, on top of
+  her-rule-finder's docs commit): a fifth switch, postedBalance (off is
+  upstream's and any book saved before it, B242; on is hers), read by the
+  server only: bankView(..., { postedBalance }) reads her checking and
+  savings as giving no available balance, from the keeper, sync's kept
+  reads, the Status page and setup day. 12.1's sentence in place. Tests:
+  posted-balance-her.test.ts, the switch in switches-her.test.ts, worked
+  example 6, and her simulated life through the bank connection with
+  Capital One listing no pending charges (holdAvailable stands for what
+  it holds). Reading HB33.

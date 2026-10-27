@@ -32,7 +32,7 @@ export function bankStatus(db: Db): BankStatus {
   const connections = connectionsOf(db);
   const book = loadBook(db);
   const accounts = readAccounts(db);
-  const bank = connections.length === 0 || accounts.length === 0 ? null : bankView(accounts, readItems(db));
+  const bank = connections.length === 0 || accounts.length === 0 ? null : bankView(accounts, readItems(db), { postedBalance: book?.switches().postedBalance === 'on' });
   const stored = readStatements(db);
   const statements = accounts.flatMap((a) => {
     const raw = stored.get(a.plaidAccountId)?.raw;

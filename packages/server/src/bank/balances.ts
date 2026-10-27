@@ -65,7 +65,10 @@ export interface BankView {
 
 export type BankViewResult = { readonly ok: true; readonly view: BankView } | { readonly ok: false; readonly why: string };
 
-export function bankView(accounts: readonly StoredAccount[], items: ReadonlyMap<string, StoredItem>): BankViewResult {
+// Her rulebook, 12.1 (HA8): with postedBalance (her switch on), checking and
+// savings are read as giving no available balance, so the bank side is their
+// posted balance less pending charges, and 12.6 reads them the same way.
+export function bankView(accounts: readonly StoredAccount[], items: ReadonlyMap<string, StoredItem>, options: { readonly postedBalance?: boolean } = {}): BankViewResult {
   try {
     const roles = new Map<string, AccountId>();
     const posted = (role: AccountId): Cents => {
@@ -108,6 +111,7 @@ export function bankView(accounts: readonly StoredAccount[], items: ReadonlyMap<
     }
     // 12.1 (A47): checking and savings from the available balance, when the bank gives one.
     const availableOf = (role: 'checking' | 'savings'): Cents | null => {
+      if (options.postedBalance === true) return null;
       const available = accounts.find((a) => a.role === role)?.raw.balances.available ?? null;
       return available === null ? null : centsFromPlaid(available, `the ${role} available balance`);
     };

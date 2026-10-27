@@ -125,7 +125,7 @@ describe('Off in this setup: setup day and after, through the real server', () =
   });
 
   it('Off in this setup: each switch is its own: with only the mom reserve off, a bank rule on the old card is taken', async () => {
-    const switches = { momReserve: 'off', oldCard: 'on', secondCard: 'off', wishlist: 'off' } as const;
+    const switches = { momReserve: 'off', oldCard: 'on', secondCard: 'off', wishlist: 'off', postedBalance: 'off' } as const;
     const life = await lifeInAFile({ start: { settings: validateSettings({ ...DEFAULT_SETTINGS, ...settingsWhenOff(switches) }), switches } });
     lives.push(life);
     const rule = { account: 'old-card' as const, contains: 'MADE UP LATE FEE', means: 'card-fee' as const };

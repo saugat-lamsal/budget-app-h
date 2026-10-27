@@ -8,8 +8,9 @@ import { checkSwitches, settingsWhenOff, type Switches } from './switches.js';
 
 // "Off in this setup": no mom reserve and no old card, fixed on setup day.
 // Her second card is on (her rulebook, section 1), and so is her Wishlist
-// bucket (section 2's split).
-export const HER_SWITCHES: Switches = checkSwitches({ momReserve: 'off', oldCard: 'off', secondCard: 'on', wishlist: 'on' });
+// bucket (section 2's split), and so is the posted balance for her checking
+// and savings, at Capital One, which sends Plaid no pending items (12.1, HA8).
+export const HER_SWITCHES: Switches = checkSwitches({ momReserve: 'off', oldCard: 'off', secondCard: 'on', wishlist: 'on', postedBalance: 'on' });
 
 // Section 2 without the mom reserve, the mom monthly target, the mom rule, the
 // old card promo end date and the old card's closing day, with "Ask before

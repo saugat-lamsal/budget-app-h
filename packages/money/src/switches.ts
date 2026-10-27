@@ -17,6 +17,12 @@ import type { BankTransaction } from './transactions.js';
 // others, nothing on it is read or offered. So is her Wishlist bucket (her
 // rulebook, section 2's split): while it is off there is no Wishlist share,
 // nothing is sorted or moved to it, and no screen shows it.
+//
+// Her rulebook, 12.1 (HA8): her checking and savings are at Capital One,
+// which sends Plaid no pending items, so with postedBalance on the bank side
+// starts them from the posted balance less pending charges, never the
+// available balance. The server reads it (bank/balances.ts); the money math
+// only keeps it.
 
 export type Switch = 'on' | 'off';
 
@@ -25,13 +31,15 @@ export interface Switches {
   readonly oldCard: Switch;
   readonly secondCard: Switch;
   readonly wishlist: Switch;
+  readonly postedBalance: Switch;
 }
 
 // Upstream's setup. A book saved before the switches existed opens with these
 // (B242: a new setting means "as upstream" for history saved before it), and
-// one saved before the second card's switch opens with one card, and one
-// saved before Wishlist's with no Wishlist.
-export const UPSTREAM_SWITCHES: Switches = Object.freeze({ momReserve: 'on', oldCard: 'on', secondCard: 'off', wishlist: 'off' });
+// one saved before the second card's switch opens with one card, one saved
+// before Wishlist's with no Wishlist, and one saved before the posted
+// balance's with the available balance (12.1, A47).
+export const UPSTREAM_SWITCHES: Switches = Object.freeze({ momReserve: 'on', oldCard: 'on', secondCard: 'off', wishlist: 'off', postedBalance: 'off' });
 
 // The settings that are about the mom reserve and the old card, and what each
 // holds while its switch is off: nothing.
@@ -51,17 +59,18 @@ export function rolesFor(switches: Switches): readonly AccountId[] {
 }
 
 // Returns a frozen copy; none given is upstream's. Switches saved before the
-// second card's or Wishlist's existed have it off (B242).
+// second card's, Wishlist's or the posted balance's existed have it off (B242).
 export function checkSwitches(switches: Switches | undefined): Switches {
   if (switches === undefined) return UPSTREAM_SWITCHES;
   const isSwitch = (value: unknown): value is Switch => value === 'on' || value === 'off';
   if (typeof switches !== 'object' || switches === null) throw new MoneyError('bad-switch', `the switches are each on or off: ${JSON.stringify(switches)}`);
   const secondCard: unknown = switches.secondCard === undefined ? 'off' : switches.secondCard;
   const wishlist: unknown = switches.wishlist === undefined ? 'off' : switches.wishlist;
-  if (!isSwitch(switches.momReserve) || !isSwitch(switches.oldCard) || !isSwitch(secondCard) || !isSwitch(wishlist)) {
-    throw new MoneyError('bad-switch', `the mom reserve, the old card, the second card and Wishlist are each on or off: ${JSON.stringify(switches)}`);
+  const postedBalance: unknown = switches.postedBalance === undefined ? 'off' : switches.postedBalance;
+  if (!isSwitch(switches.momReserve) || !isSwitch(switches.oldCard) || !isSwitch(secondCard) || !isSwitch(wishlist) || !isSwitch(postedBalance)) {
+    throw new MoneyError('bad-switch', `the mom reserve, the old card, the second card, Wishlist and the posted balance are each on or off: ${JSON.stringify(switches)}`);
   }
-  return Object.freeze({ momReserve: switches.momReserve, oldCard: switches.oldCard, secondCard, wishlist });
+  return Object.freeze({ momReserve: switches.momReserve, oldCard: switches.oldCard, secondCard, wishlist, postedBalance });
 }
 
 function refuse(why: string): never {

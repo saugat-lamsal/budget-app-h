@@ -7172,5 +7172,117 @@
     "find": "  if (left === 0 && typed.length >= 2) return typed;",
     "replace": "  if (left === 0 && typed.length >= 1) return typed;",
     "why": "[her-end] HB30 B95 one typed part that is the whole purchase is taken, not refused"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank/balances.ts",
+    "find": "      if (options.postedBalance === true) return null;\n",
+    "replace": "",
+    "why": "[her-posted] 12.1 her checking and savings read by the available balance again"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank/balances.ts",
+    "find": "      if (options.postedBalance === true) return null;",
+    "replace": "      if (options.postedBalance === false) return null;",
+    "why": "[her-posted] 12.1 the posted balance for upstream, the available one for her"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank/balances.ts",
+    "find": "      if (options.postedBalance === true) return null;",
+    "replace": "      if (options.postedBalance === true) return 0;",
+    "why": "[her-posted] 12.1 her checking and savings start from $0.00 instead of the posted balance"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank/balances.ts",
+    "find": "      if (options.postedBalance === true) return null;",
+    "replace": "      if (options.postedBalance !== undefined) return null;",
+    "why": "[her-posted] 12.1 upstream too reads the posted balance once the keeper says no"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank/balances.ts",
+    "find": "options: { readonly postedBalance?: boolean } = {}): BankViewResult {",
+    "replace": "options: { readonly postedBalance?: boolean } = { postedBalance: true }): BankViewResult {",
+    "why": "[her-posted] 12.1 the posted balance whenever nothing is said, upstream included"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/bank/balances.ts",
+    "find": "      if (options.postedBalance === true) return null;",
+    "replace": "      if (options.postedBalance === true && role === 'checking') return null;",
+    "why": "[her-posted] 12.1 only her checking by the posted balance; savings by the available one"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "    return { postedBalance: this.#switches().postedBalance === 'on' };",
+    "replace": "    return { postedBalance: this.#switches().postedBalance === 'off' };",
+    "why": "[her-posted] 12.1 the keeper reads the switch backwards"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "    return { postedBalance: this.#switches().postedBalance === 'on' };",
+    "replace": "    return { postedBalance: false };",
+    "why": "[her-posted] 12.1 the keeper never reads her posted balance"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "    const view = bankView(accounts, items, this.#bankOptions());\n    if (!view.ok) return null;",
+    "replace": "    const view = bankView(accounts, items);\n    if (!view.ok) return null;",
+    "why": "[her-posted] 12.1 12.6 the check sheet's accounts and why from the available balance"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "    const view = bankView(accounts, items, this.#bankOptions());\n    if (!view.ok) return { bank: null,",
+    "replace": "    const view = bankView(accounts, items);\n    if (!view.ok) return { bank: null,",
+    "why": "[her-posted] 12.1 Home's check and safe to spend from the available balance"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/sync/sync.ts",
+    "find": "  const view = bankView(readAccounts(db), readItems(db), { postedBalance: book?.switches().postedBalance === 'on' });",
+    "replace": "  const view = bankView(readAccounts(db), readItems(db));",
+    "why": "[her-posted] 12.1 12.6 each kept read counts her checking and savings by the available balance"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/sync/sync.ts",
+    "find": "  const view = bankView(readAccounts(db), readItems(db), { postedBalance: book?.switches().postedBalance === 'on' });",
+    "replace": "  const view = bankView(readAccounts(db), readItems(db), { postedBalance: book?.switches().postedBalance !== 'on' });",
+    "why": "[her-posted] 12.1 12.6 the kept reads read the switch backwards"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/status.ts",
+    "find": "bankView(accounts, readItems(db), { postedBalance: book?.switches().postedBalance === 'on' })",
+    "replace": "bankView(accounts, readItems(db))",
+    "why": "[her-posted] 12.1 0.7 the Status page checks her by the available balance"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/status.ts",
+    "find": "bankView(accounts, readItems(db), { postedBalance: book?.switches().postedBalance === 'on' })",
+    "replace": "bankView(accounts, readItems(db), { postedBalance: book?.switches().postedBalance !== 'on' })",
+    "why": "[her-posted] 12.1 0.7 the Status page reads the switch backwards"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/setup-history.ts",
+    "find": "  const view = bankView(bank.accounts, reread, { postedBalance: bank.switches?.postedBalance === 'on' });",
+    "replace": "  const view = bankView(bank.accounts, reread);",
+    "why": "[her-posted] 12.1 14.2 her setup day's starting money from the available balance"
+  },
+  {
+    "section": "bank",
+    "file": "packages/server/src/setup-history.ts",
+    "find": "  const view = bankView(bank.accounts, reread, { postedBalance: bank.switches?.postedBalance === 'on' });",
+    "replace": "  const view = bankView(bank.accounts, reread, { postedBalance: bank.switches?.postedBalance !== 'off' });",
+    "why": "[her-posted] 12.1 14.2 upstream's setup day (no switches given) counts the posted balance"
   }
 ]

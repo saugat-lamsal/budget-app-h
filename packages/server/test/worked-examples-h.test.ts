@@ -7,6 +7,8 @@ import { describe, expect, it } from 'vitest';
 import { ACCOUNT_IDS, type FakePlaid } from './fake-plaid.js';
 import { checkBankRules } from '../src/bank/reading.js';
 import { HER_START } from '../src/setup-start.js';
+import { bankView } from '../src/bank/balances.js';
+import { readAccounts, readItems } from '../src/db/store.js';
 import { bankStatus } from '../src/status.js';
 import { HER_BANK_RULES, herLife, setUpHer } from './her-harness.js';
 import { choose, decision, lifeInAFile, noonInNewYork, type Life } from './keeper-harness.js';
@@ -253,6 +255,37 @@ examples[5] = async () => {
       'wishlist at the start': trends.savings[0]?.wishlist ?? -1,
       'wishlist now': trends.savings[trends.savings.length - 1]?.wishlist ?? -1,
       'spent so far against your usual': trends.now.spentSoFar,
+    };
+  } finally {
+    life.done();
+  }
+};
+
+// PR 12b: Capital One holds a purchase Plaid does not list (12.1, HA8).
+examples[6] = async () => {
+  const life = await herLife();
+  try {
+    setUpHer(life);
+    life.h.fake.holdAvailable(ACCOUNT_IDS.checking, parseDollars('42.10'));
+    life.now = noonInNewYork('2026-10-02');
+    await life.sync();
+    const held = bankStatusOf(life);
+    // Upstream's way: the same bank read by the available balance.
+    const book = life.keeper.book();
+    const available = bankView(readAccounts(life.h.db), readItems(life.h.db));
+    if (book === null || !available.ok) throw new Error('no book, or the bank cannot be read');
+    const byAvailable = book.selfCheck(available.view.withPending).difference;
+    life.h.fake.holdAvailable(ACCOUNT_IDS.checking, 0);
+    life.h.fake.addPosted({ id: 'groceries', account: ACCOUNT_IDS.checking, amount: parseDollars('42.10'), date: '2026-10-02', description: 'MADE UP GROCER' });
+    life.now = noonInNewYork('2026-10-04');
+    await life.sync();
+    const posted = bankStatusOf(life);
+    return {
+      'bank side while held': held.bankSide,
+      'difference while held': held.difference,
+      'difference by the available balance while held': byAvailable,
+      'bank side after it posts': posted.bankSide,
+      'difference after it posts': posted.difference,
     };
   } finally {
     life.done();

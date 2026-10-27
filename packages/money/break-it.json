@@ -5003,5 +5003,40 @@
     "find": "    return this.#spentIn(['wishlist'], period);",
     "replace": "    return this.#spentIn(['needs', 'wishlist'], period);",
     "why": "[her-trends] 40.2 Wishlist's part also holds needs"
+  },
+  {
+    "section": "12",
+    "file": "packages/money/src/switches.ts",
+    "find": "  const postedBalance: unknown = switches.postedBalance === undefined ? 'off' : switches.postedBalance;",
+    "replace": "  const postedBalance: unknown = switches.postedBalance === undefined ? 'on' : switches.postedBalance;",
+    "why": "[her-posted] 12.1 B242 a book saved before the switch opens with the posted balance"
+  },
+  {
+    "section": "12",
+    "file": "packages/money/src/switches.ts",
+    "find": " || !isSwitch(postedBalance)) {",
+    "replace": ") {",
+    "why": "[her-posted] 12.1 the posted balance takes anything, not only on or off"
+  },
+  {
+    "section": "12",
+    "file": "packages/money/src/switches.ts",
+    "find": "  return Object.freeze({ momReserve: switches.momReserve, oldCard: switches.oldCard, secondCard, wishlist, postedBalance });",
+    "replace": "  return Object.freeze({ momReserve: switches.momReserve, oldCard: switches.oldCard, secondCard, wishlist, postedBalance: 'off' });",
+    "why": "[her-posted] 12.1 the posted balance is dropped when the switches are checked"
+  },
+  {
+    "section": "12",
+    "file": "packages/money/src/switches.ts",
+    "find": "secondCard: 'off', wishlist: 'off', postedBalance: 'off' });",
+    "replace": "secondCard: 'off', wishlist: 'off', postedBalance: 'on' });",
+    "why": "[her-posted] 12.1 upstream's setup reads the posted balance"
+  },
+  {
+    "section": "12",
+    "file": "packages/money/src/her-setup.ts",
+    "find": "secondCard: 'on', wishlist: 'on', postedBalance: 'on' });",
+    "replace": "secondCard: 'on', wishlist: 'on', postedBalance: 'off' });",
+    "why": "[her-posted] 12.1 her setup reads the available balance"
   }
 ]

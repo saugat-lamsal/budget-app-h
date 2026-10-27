@@ -80,12 +80,12 @@ describe('1 her accounts: two banks, and both cards used day to day', () => {
   });
 
   it('1 the second card is a switch, on in her setup and off in upstream\'s', () => {
-    expect(HER_SWITCHES).toEqual({ momReserve: 'off', oldCard: 'off', secondCard: 'on', wishlist: 'on' });
-    expect(UPSTREAM_SWITCHES).toEqual({ momReserve: 'on', oldCard: 'on', secondCard: 'off', wishlist: 'off' });
+    expect(HER_SWITCHES).toEqual({ momReserve: 'off', oldCard: 'off', secondCard: 'on', wishlist: 'on', postedBalance: 'on' });
+    expect(UPSTREAM_SWITCHES).toEqual({ momReserve: 'on', oldCard: 'on', secondCard: 'off', wishlist: 'off', postedBalance: 'off' });
   });
 
   it('1 a book saved before the second card existed opens with one card (B242)', () => {
-    expect(checkSwitches({ momReserve: 'off', oldCard: 'off' } as Switches)).toEqual({ momReserve: 'off', oldCard: 'off', secondCard: 'off', wishlist: 'off' });
+    expect(checkSwitches({ momReserve: 'off', oldCard: 'off' } as Switches)).toEqual({ momReserve: 'off', oldCard: 'off', secondCard: 'off', wishlist: 'off', postedBalance: 'off' });
     expect(upstreamBook().switches().secondCard).toBe('off');
   });
 

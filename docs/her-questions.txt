@@ -15,6 +15,104 @@ PART A. WAITING FOR AN ANSWER
 
 PART A, ANSWERED
 
+HA8 (12.1). ANSWERED Oct 26: OK as written, the posted balance for her
+    checking and savings, built as its own small PR (PR 12b) before PR 13.
+    Rulebook 60h; the text is in section H under PR 12b. As asked:
+    The bank side for her Capital One accounts. Plaid's build kit says Capital One sends no pending items, and her checking
+    and savings are at Capital One.
+    Today 12.1 starts checking and savings from the available balance,
+    with the pending items Plaid lists put back (A47, made for Bank of
+    America, B231). With no pending items listed, nothing can be put
+    back. A debit card purchase usually leaves the available balance the
+    day she makes it, but the books count it only when Plaid sends it
+    posted, a day or more later. Until then the bank side is low by it,
+    and after
+    12 hours she is told the totals do not match (10.4), with most
+    purchases. Money in that the bank makes available before it posts
+    (an early paycheck) does the same, the other way.
+    Recommended (his): in this setup, checking and savings use the posted
+    balance (Plaid's "current") less pending charges, as 12.1 already
+    does when the bank gives no available balance. The posted balance and
+    the books then move together, when a purchase posts. There are no
+    pending charges while Capital One sends none; if it ever sends some,
+    they still count once (4.6). Setup day's starting money (14.1, 14.2)
+    uses the check's own numbers, so it changes the same way. 12.6's lines
+    for "when the bank gives no available balance" then apply to her
+    checking and savings. The cards are as now: what each owes, posted,
+    with its pending charges.
+    The text, for his OK, added to 12.1: "In this setup checking and
+    savings are at Capital One, which sends Plaid no pending items, so for
+    them the bank side is always the posted balance less pending charges."
+    The other option: keep the available balance, as upstream. A gap with
+    most debit purchases until they post, told after 12 hours. Not
+    recommended.
+    The risk, from B231: Bank of America's posted balance took an item in
+    only in its overnight run, after Plaid had already sent it as posted.
+    If Capital One does the same, the bank side is high by it until that
+    run: "still catching up", told only if it lasts past 12 hours (10.4).
+    Only her real accounts can show this; the test bank is not Capital One.
+    What she sees either way (no change from this): a Capital One purchase
+    shows up in the app when it posts, a day or two after she makes it,
+    dated the day she made it. Until then it is in no bucket and not in
+    safe to spend. "Paycheck on its way" (11.4) never shows for Capital
+    One.
+    How we confirm it:
+    - In the build: tests with a made-up Capital One that sends no pending
+      items and an available balance below the posted one. The check and
+      setup day use the posted balance for checking and savings and match
+      to the cent; upstream's setup still uses available, its tests
+      unchanged. Her simulated life's Capital One sends no pending items.
+    - In the rehearsal (Phase 2, Plaid's test bank): a made-up test user
+      (user_custom) whose checking and savings give an available balance
+      different from the posted one, with no pending items. Setup day's
+      starting money and the daily check both use the posted balance and
+      match. This proves the app's side only.
+    - Her first days (Phase 3 and the trial), read-only, with his OK, and
+      reported without her numbers:
+      (1) Connection day: Plaid lists no pending items on her Capital One
+          accounts, and does on the Amex card. If Capital One does send
+          pending items, this question comes back to him.
+      (2) Her first debit purchase, first paycheck and first card payment
+          from checking: the app's kept reads (12.6 keeps each account's
+          posted and available balances and whether the check matched)
+          show the posted balance taking each item in the same read that
+          brings it as posted, and the check matching.
+      (3) The first full pay period: no difference on checking or savings
+          lasts past 12 hours. One that lasts until the bank's overnight
+          run is B231 again, and a new question before the trial's 30
+          days start counting.
+    To build: a switch in her setup (her-setup.ts), off (the available
+    balance, as upstream) for upstream and for any book saved before it
+    (B242). It is the self-check, so its own small PR, his review, no
+    auto-merge: tests first, break-it about 25 on the bank side, her lives
+    200 x 2 years, and the run through the bank connection, which reads
+    the bank side. Recommended before PR 13, so both are in before the
+    rehearsal and her connection day.
+
+HA7 (the rule finder). ANSWERED Oct 26: OK to the draft, and all five
+    recommendations: (1) a place's rule picks needs or wants only; Wishlist
+    stays a choice made by hand in Review (HB21 stands); (2) a paycheck
+    every 12 to 16 days; (3) places over the whole history, most first;
+    (4) a card that words payments from checking and from savings alike
+    gets one rule, for the account she picks (53.9); (5) the finder's
+    numbers are not settings. History at connection stays 730 days in her
+    setup, though Capital One sends 90. Rulebook 60g; the texts are in
+    section H under PR 13 (docs/her-rule-finder.txt).
+    Found while drafting, from Plaid's build kit: Capital One sends 90 days
+    of history whatever is asked, and no pending items (HA8). Her Plaid
+    team is new, so Plaid gives it only the newer list of categories (v2),
+    while upstream's label list (20a, B241) was read from his team's test
+    bank on Oct 9. So before building PR 13: one live read of the labels
+    her team's test bank sends (live/labels.live.ts, with her sandbox keys,
+    saved to a file of hers so upstream's stays as it is), and the exact
+    Plaid categories behind 53.7's needs go in a reading for his check.
+    Plaid's paid add-on for finding repeats is not used: it is billed
+    apart, wants 180 days of history, and the app finds repeats itself
+    (40.16). PR 13 comes before her connection day, since Plaid takes the
+    730 days only when a bank is first connected. Its bar, as he gave it:
+    tests first for every rule, break-it about 25, no long runs, his review
+    before merging.
+
 HA6 (PR 9). ANSWERED Oct 24: option 1, in PR 10+11 with the rest of her
     Trends. Rulebook 60f; the four texts are under PR 10+11 in section H.
     Was: the rulebook's section H lists, under PR 9, 40.2 and 40.4 (Wishlist spending its own part of each
@@ -346,3 +444,21 @@ HB32 (PR 12, 0.7, 12.3, HB9). Status while one bank cannot be read. Found
     already is, so "needs a look" counts it once. A difference that began
     before still says since when (10.4). Upstream's one-bank words are as
     they were.
+
+HB33 (PR 12b, 12.1, 12.6, HA8). How the posted balance is read. With the
+    switch on (postedBalance, her setup only, fixed on setup day), her
+    checking and savings are read as giving no available balance, exactly
+    as 12.1 says ("as when the bank gives no available balance"):
+    everywhere the bank side is worked out (Home and Buckets, the Status
+    page, setup day's starting money, and each kept read). So each read
+    keeps her posted balance, what the check counted and whether it
+    matched, but not Capital One's available balance, and 12.6 explains a
+    difference on checking or savings by the posted balance. HA8's
+    first-days check needs only that: the posted balance taking each item
+    in the read that brings it. Reads kept before setup day are read
+    upstream's way; no check runs then, so none of them is ever "the last
+    read that matched". Her simulated life through the bank connection: from
+    setup day on, the first made-up bank (her Capital One) lists no
+    pending charges, only lowering the available balance until they post.
+    On setup day both banks still list theirs, so setup day counts what
+    the simulator's did.

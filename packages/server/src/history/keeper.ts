@@ -250,7 +250,7 @@ export class Keeper {
     if (this.#cannotRead()) return null;
     const accounts = readAccounts(this.#db);
     const items = readItems(this.#db);
-    const view = bankView(accounts, items);
+    const view = bankView(accounts, items, this.#bankOptions());
     if (!view.ok) return null;
     const v = view.view;
     const since = readGapSince(this.#db);
@@ -360,6 +360,11 @@ export class Keeper {
     return this.book()?.switches() ?? this.#start.switches;
   }
 
+  // Her rulebook, 12.1 (HA8): her checking and savings by their posted balance.
+  #bankOptions(): { readonly postedBalance: boolean } {
+    return { postedBalance: this.#switches().postedBalance === 'on' };
+  }
+
   // 1.2: the accounts picked, each once, before the bank is read.
   #roles(): readonly AccountId[] {
     return rolesFor(this.#switches());
@@ -407,7 +412,7 @@ export class Keeper {
     if (this.#cannotRead()) return { bank: null, pendingIn: [], postingExamples: [] };
     const accounts = readAccounts(this.#db);
     const items = readItems(this.#db);
-    const view = bankView(accounts, items);
+    const view = bankView(accounts, items, this.#bankOptions());
     if (!view.ok) return { bank: null, pendingIn: [], postingExamples: [] };
     // 11.4 (A57): when each was first seen pending, from the read that saved its sync.
     const times = readSyncTimes(this.#db);
