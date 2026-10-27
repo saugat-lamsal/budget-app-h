@@ -1,4 +1,5 @@
 import { cardDue, daysBetween, paidAgainst, setAside, type BankBalances, type Book, type CardStatement, type Cents, type EverydayCard, type IsoDate } from '@budget-app/money';
+import { cardPaymentsSeen, type PaidBeforeSetup } from '../bank/paid-before-setup.js';
 import type { CardRemindersOff, HomeView } from './home.js';
 
 // Her rulebook, 52.1 to 52.3 (PR 7+8): each card on Home. Its statement
@@ -11,6 +12,8 @@ import type { CardRemindersOff, HomeView } from './home.js';
 export interface HomeCardsInput {
   // What each card owed on setup day (52.2, owedAtSetup).
   readonly atSetup: Readonly<Partial<Record<EverydayCard, Cents>>>;
+  // 9.3 (her rulebook, 60i): each card's payments from before setup day.
+  readonly paidBeforeSetup?: PaidBeforeSetup;
 }
 
 type Tracking = Extract<HomeView, { state: 'tracking' }>;
@@ -71,7 +74,7 @@ export function homeCards(input: HomeCardsInput, today: IsoDate, book: Book, ban
     const statement = statements.find((s) => s.card === c.card);
     const off = cardsOff.find((o) => o.card === c.card);
     if (statement === undefined || off !== undefined) return { ...c, statement: { shown: false, why: off?.why ?? 'none-yet' } };
-    const payments = book.cardPayments(c.card);
+    const payments = cardPaymentsSeen(book, c.card, input.paidBeforeSetup);
     const { paid } = paidAgainst(today, statement, payments);
     const due = cardDue(today, statement, payments, settings);
     const state: HomeCardState =

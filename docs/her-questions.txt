@@ -15,6 +15,43 @@ PART A. WAITING FOR AN ANSWER
 
 PART A, ANSWERED
 
+HA9 to HA11: from her rehearsal on the test bank (Oct 27, 2026), asked and
+answered the same day.
+
+HA9 (9.3, 9.4, 9.6, 52.1). ANSWERED Oct 27: count them, in both setups.
+    Rulebook 9.3 and 60i, built in its own PR (her-paid-before-setup). As
+    asked: the books start on setup day, so the payments seen toward a
+    card's statement (book.cardPayments) were only those from setup day
+    on. If her statement closed before connection day and she had already
+    paid it, Home would say "$0.00 paid", the reminders would keep coming,
+    and after the due date the overdue alert would come every evening
+    until the next statement. The statement screen already reads those
+    earlier payments from the kept bank history (HB18). The answer: a
+    payment that reached the card after the statement date and before
+    setup day counts, read from the history by today's bank rules (a
+    credit on the card a bank rule reads as a transfer from checking or
+    savings), for Home, the reminders and the overdue alert. Upstream has
+    the same gap; he ports the fix, as B264 was.
+    So a payment to a card is counted only through a bank rule on the
+    card's side; her rule finder suggests that rule from both sides
+    (53.3). Without it, a credit on the card before setup day reads as a
+    refund and is not counted, as the statement reads it.
+
+HA10 (13.5, 53.1, HB37). ANSWERED Oct 27: show it, in her setup. As asked:
+    the rule finder's place rules and paycheck rule are logged with setup
+    day (HB37), but Settings' change log never shows setup day's line, so
+    she cannot see them there; the bank rules she keeps do show. The
+    answer: in her setup, Settings' change log shows setup day's line,
+    naming the rules she kept from the finder. Upstream's screen is
+    unchanged.
+
+HA11 (53.7, dates). ANSWERED Oct 27: leave both. As asked: two things
+    seen only because of Plaid's test data. "AUTOMATIC PAYMENT - THANK"
+    was offered as a place she pays often (the test bank sends a card
+    payment as a charge; real banks send it as money in), and a 2020 due
+    date showed without its year (real statements are current). No
+    change.
+
 HA8 (12.1). ANSWERED Oct 26: OK as written, the posted balance for her
     checking and savings, built as its own small PR (PR 12b) before PR 13.
     Rulebook 60h; the text is in section H under PR 12b. As asked:

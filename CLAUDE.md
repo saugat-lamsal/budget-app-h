@@ -461,3 +461,21 @@ or "Due" on Wishlist items and cards, never color alone.
   Web: RuleFinder.tsx in place of the labels' suggestions on the rules
   step. Labels read Oct 26 on her test bank: the same labels as his
   (fixture her-test-bank-labels.json). Readings HB34 to HB37.
+- PR 13 merged (Oct 27, 2026).
+- Oct 27, 2026: her roadmap's Phase 2 on his Fly account: her app
+  budget-app-h-lbwr made with its volume, her ten secrets imported (her
+  own bank key, push keys, her Plaid team's sandbox keys, her R2 token),
+  first deploy on one machine, /health and /health/backups ok, the restore
+  check "The backup works." The rehearsal on the test bank: a second
+  made-up bank (Platypus OAuth Bank) connected in Chrome (the Claude app's
+  browser pane blocks Plaid's login window), the four accounts, setup day
+  with the rule finder, tracking started, Status all working. Its
+  findings: HA9 to HA11, his answers the same day.
+- Payments before setup day (branch her-paid-before-setup, HA9, 60i):
+  bank/paid-before-setup.ts reads each card's payments from the kept
+  history (status history) by today's bank rules, and cardPaymentsSeen
+  adds them to the books' for Home's due line (views/home.ts), her card
+  rows (views/home-cards.ts) and the alerts (alerts/plan.ts: the evening
+  and 10.9's still-true), from the keeper's #bankNow. Both setups.
+  Tests: paid-before-setup-her.test.ts, worked example 8 (server), and
+  [her-paid] breaks.
