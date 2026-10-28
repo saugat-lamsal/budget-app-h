@@ -9,6 +9,7 @@ import { POT_NAMES } from '../ui/names.js';
 import { alertsRowText } from './alerts-text.js';
 import { BankRuleRows, BankRuleSheet, type Editing as BankEditing } from './bank-rules.js';
 import { bankRuleDoneText } from './bank-rules-text.js';
+import { HER_BANK_WORDS } from './bank-text.js';
 import { SaidNotice, type Said } from './choose.js';
 import { LoginCard } from './login-card.js';
 import { NotificationsCard } from './notifications-card.js';
@@ -494,7 +495,8 @@ function LogLine({ line }: { readonly line: LogRow }) {
     case 'notifications-stopped':
       return <ListRow icon="bell" title={NOTIFICATION_LINES[line.kind]} detail={`${line.device}: its push service would not take them any more · ${when}`} testId={testId} />;
     case 'bank-connected':
-      return <ListRow icon="bank" title="Bank connected" detail={`${line.bank === 'test' ? "Plaid's test bank" : 'Bank of America, through Plaid'} · ${when}`} testId={testId} />;
+      // Her setup names her bank (HB8).
+      return <ListRow icon="bank" title="Bank connected" detail={`${line.name !== undefined ? HER_BANK_WORDS.connectedThrough(line.name) : line.bank === 'test' ? "Plaid's test bank" : 'Bank of America, through Plaid'} · ${when}`} testId={testId} />;
     case 'bank-accounts':
       return <ListRow icon="bank" title="Which account is which" detail={`${bankAccountsText(line.accounts)} · ${when}`} testId={testId} />;
     case 'bank-logged-in-again':

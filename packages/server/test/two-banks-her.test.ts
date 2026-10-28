@@ -27,7 +27,8 @@ import { ACCOUNT_IDS, FakePlaid, SECOND_BANK, secondCardAccount, twoBanks, type 
 import { HER_BANK_RULES, setUpHer } from './her-harness.js';
 import { serveBooks } from '../src/serve/serving.js';
 import { FakePhone } from './fake-phone.js';
-import { lifeInAFile } from './keeper-harness.js';
+import { lifeInAFile, setUpThroughTheDesk } from './keeper-harness.js';
+import { saveServerLine } from '../src/server-log.js';
 import { TOKEN_KEY } from './harness.js';
 import { decision, noonInNewYork } from './keeper-harness.js';
 
@@ -206,6 +207,40 @@ describe('1.1 connecting the banks: two connections, Capital One then American E
     expect(hasHerSteps(t.db)).toBe(true);
     expect((t.db.prepare('SELECT COUNT(*) AS n FROM connection').get() as { n: number }).n).toBe(1);
     expect((t.db.prepare('SELECT item_id FROM her_connections').all() as { item_id: string }[]).map((r) => r.item_id)).toEqual([t.second.itemId]);
+  });
+});
+
+// HB8 13.5: Settings' change log names each of her banks (bank-names-log-her.test.ts
+// has the cases). Under the tests Plaid is always its test bank (the lock),
+// so the lines the desk wrote say 'test'; on her real books the same lines
+// say 'real', and here they are made to.
+describe('HB8 13.5 her change log names each bank it connected', () => {
+  const connectedRows = (t: Two) => {
+    const view = t.keeper.settings();
+    if (view.state !== 'tracking') throw new Error('not tracking');
+    return view.log.filter((r) => r.kind === 'bank-connected');
+  };
+
+  it('HB8 13.5 on the real bank, each "Bank connected" line names its bank as Plaid named it, newest first; the test bank\'s keep their words', async () => {
+    const t = await tracking();
+    expect(connectedRows(t)).toEqual([expect.objectContaining({ bank: 'test' }), expect.objectContaining({ bank: 'test' })]);
+    expect(connectedRows(t).some((r) => 'name' in r)).toBe(false);
+    t.db.prepare("UPDATE change_log SET detail = json_set(detail, '$.bank', 'real') WHERE what = 'bank connected'").run();
+    expect(connectedRows(t)).toEqual([expect.objectContaining({ bank: 'real', name: SECOND_NAME }), expect.objectContaining({ bank: 'real', name: FIRST_NAME })]);
+  });
+
+  it("HB8 upstream's setup (one bank) keeps upstream's line, with no name", async () => {
+    const life = await lifeInAFile();
+    try {
+      setUpThroughTheDesk(life);
+      saveServerLine(life.h.db, { date: '2026-10-01', action: 'bank-connected', bank: 'real', afterBookLines: 0 });
+      const view = life.keeper.settings();
+      if (view.state !== 'tracking') throw new Error('not tracking');
+      expect(view.log.filter((r) => r.kind === 'bank-connected')).toEqual([expect.objectContaining({ bank: 'real' })]);
+      expect(view.log.some((r) => r.kind === 'bank-connected' && 'name' in r)).toBe(false);
+    } finally {
+      life.done();
+    }
   });
 });
 

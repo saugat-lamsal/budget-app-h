@@ -157,23 +157,27 @@ window.Plaid = { create(config) { return { open() {
     }
   });
 
+  // Both banks connected, her four picked and setup day done, on the server, as the screens would.
+  async function tracking(r: Running): Promise<void> {
+    const desk = r.keeper.bankDesk(r.bank);
+    for (const fake of [r.first, r.second]) {
+      await desk.link({ mode: 'connect', yes: true });
+      await desk.connected({ publicToken: fake.publicToken, institution: { id: fake.institutionId, name: fake === r.first ? FIRST_NAME : SECOND_NAME } });
+    }
+    setBankRules(r.db, HER_BANK_RULES, '2026-10-01');
+    r.keeper.reload();
+    desk.roles({ roles: { checking: ACCOUNT_IDS.checking, savings: ACCOUNT_IDS.savings, 'everyday-card': ACCOUNT_IDS.everyday, 'second-card': ACCOUNT_IDS.second }, yes: true });
+    await r.keeper.sync(r.bank);
+    for (const setup of [{ lastPaycheck: '2026-09-25' }, { assign: { pot: 'savings' as const, amount: 400_000 } }, { assign: { pot: 'wants' as const, amount: 20_000 } }, { assign: { pot: 'needs' as const, rest: true as const } }]) r.keeper.setup({ id: decision(), setup });
+    const view = r.keeper.setupView();
+    if (view.state !== 'not-set-up' || !view.ready) throw new Error('setup day is not ready');
+    r.keeper.setup({ id: decision(), setup: { start: true }, confirmed: true, seen: view.key });
+  }
+
   it('0.5 10.5 the second bank wants a new login: Home greys the last checked safe to spend and names the bank, and the Bank page says so', async () => {
     const r = await realServer();
     try {
-      // Connected, picked and set up on the server, as the screens would.
-      const desk = r.keeper.bankDesk(r.bank);
-      for (const fake of [r.first, r.second]) {
-        await desk.link({ mode: 'connect', yes: true });
-        await desk.connected({ publicToken: fake.publicToken, institution: { id: fake.institutionId, name: fake === r.first ? FIRST_NAME : SECOND_NAME } });
-      }
-      setBankRules(r.db, HER_BANK_RULES, '2026-10-01');
-      r.keeper.reload();
-      desk.roles({ roles: { checking: ACCOUNT_IDS.checking, savings: ACCOUNT_IDS.savings, 'everyday-card': ACCOUNT_IDS.everyday, 'second-card': ACCOUNT_IDS.second }, yes: true });
-      await r.keeper.sync(r.bank);
-      for (const setup of [{ lastPaycheck: '2026-09-25' }, { assign: { pot: 'savings' as const, amount: 400_000 } }, { assign: { pot: 'wants' as const, amount: 20_000 } }, { assign: { pot: 'needs' as const, rest: true as const } }]) r.keeper.setup({ id: decision(), setup });
-      const view = r.keeper.setupView();
-      if (view.state !== 'not-set-up' || !view.ready) throw new Error('setup day is not ready');
-      r.keeper.setup({ id: decision(), setup: { start: true }, confirmed: true, seen: view.key });
+      await tracking(r);
       r.clock.now = noonInNewYork('2026-10-02');
       await r.keeper.sync(r.bank);
       // Home on the 2nd keeps the safe to spend both banks backed up (0.5).
@@ -188,6 +192,24 @@ window.Plaid = { create(config) { return { open() {
       const bank = await open(r, '/bank');
       expect(await textAt(bank, 'bank-needs-login-2')).toContain(`${SECOND_NAME} wants you to log in again.`);
       expect(await bank.getByTestId('bank-needs-login-1').count()).toBe(0);
+    } finally {
+      await done(r);
+    }
+  });
+
+  // HB8 13.5, found while writing her connection-day sheet: the change log
+  // said "Bank of America, through Plaid" for every real connection.
+  it('HB8 13.5 Settings\' change log names each bank she connected, as Plaid named it, and never Bank of America', async () => {
+    const r = await realServer();
+    try {
+      await tracking(r);
+      // Under the tests Plaid is always its test bank (the lock); on her real books the desk's lines say 'real'.
+      r.db.prepare("UPDATE change_log SET detail = json_set(detail, '$.bank', 'real') WHERE what = 'bank connected'").run();
+      const page = await open(r, '/settings');
+      const log = await textAt(page, 'log');
+      expect(log).toContain(`Bank connected ${FIRST_NAME}, through Plaid`);
+      expect(log).toContain(`Bank connected ${SECOND_NAME}, through Plaid`);
+      expect(log).not.toContain('Bank of America');
     } finally {
       await done(r);
     }

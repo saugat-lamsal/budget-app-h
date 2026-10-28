@@ -7659,15 +7659,78 @@
   {
     "section": "settings",
     "file": "packages/server/src/history/keeper.ts",
-    "find": "serverLog: this.#start.ruleFinder === true ? serverLinesWithSetupDay(this.#db) : serverLinesIn(this.#db),",
-    "replace": "serverLog: serverLinesWithSetupDay(this.#db),",
+    "find": "const serverLog = this.#start.ruleFinder === true ? serverLinesWithSetupDay(this.#db) : serverLinesIn(this.#db);",
+    "replace": "const serverLog = serverLinesWithSetupDay(this.#db);",
     "why": "[her-rehearsal] 13.5 upstream's change log shows setup day's line too"
   },
   {
     "section": "settings",
     "file": "packages/server/src/history/keeper.ts",
-    "find": "serverLog: this.#start.ruleFinder === true ? serverLinesWithSetupDay(this.#db) : serverLinesIn(this.#db),",
-    "replace": "serverLog: serverLinesIn(this.#db),",
+    "find": "const serverLog = this.#start.ruleFinder === true ? serverLinesWithSetupDay(this.#db) : serverLinesIn(this.#db);",
+    "replace": "const serverLog = serverLinesIn(this.#db);",
     "why": "[her-rehearsal] 13.5 her change log has no setup day line"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/bank-names-log.ts",
+    "find": "if (line.action !== 'bank-connected' || line.bank !== 'real') return line;",
+    "replace": "if (line.action !== 'bank-connected') return line;",
+    "why": "[her-bank-names] HB8 the test bank's lines are named too"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/bank-names-log.ts",
+    "find": "    real += 1;\n",
+    "replace": "",
+    "why": "[her-bank-names] HB8 no line is ever counted, so none is named"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/bank-names-log.ts",
+    "find": "const bank = banks.find((b) => b.bank === real);",
+    "replace": "const bank = banks[real - 1];",
+    "why": "[her-bank-names] HB8 the banks are named in the order they are listed, not by number"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/bank-names-log.ts",
+    "find": "const bank = banks.find((b) => b.bank === real);",
+    "replace": "const bank = banks.find((b) => b.bank === real + 1);",
+    "why": "[her-bank-names] HB8 each line is named for the bank after it"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/bank-names-log.ts",
+    "find": "const bank = banks.find((b) => b.bank === real);",
+    "replace": "const bank = banks.find((b) => b.bank === real) ?? banks[0];",
+    "why": "[her-bank-names] HB8 a line with no bank is given another bank's name"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/bank-names-log.ts",
+    "find": "{ ...line, name: bankNameOf(bank) }",
+    "replace": "{ ...line, name: bank.name ?? '' }",
+    "why": "[her-bank-names] HB8 a bank Plaid gave no name is named with nothing"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "serverLog: this.#banksInSetup() === 2 ? withBankNames(serverLog, connectionsOf(this.#db)) : serverLog,",
+    "replace": "serverLog,",
+    "why": "[her-bank-names] HB8 her change log never names her banks"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "serverLog: this.#banksInSetup() === 2 ? withBankNames(serverLog, connectionsOf(this.#db)) : serverLog,",
+    "replace": "serverLog: withBankNames(serverLog, connectionsOf(this.#db)),",
+    "why": "[her-bank-names] HB8 upstream's one bank is named too"
+  },
+  {
+    "section": "settings",
+    "file": "packages/server/src/views/settings.ts",
+    "find": ", ...(line.name === undefined ? {} : { name: line.name }) };",
+    "replace": " };",
+    "why": "[her-bank-names] HB8 Settings' row drops the bank's name"
   }
 ]
