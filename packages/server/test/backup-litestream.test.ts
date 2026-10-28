@@ -66,7 +66,7 @@ describe('Phase 6 Litestream copies the books to the bucket', { timeout: 60_000 
     watch(replicate(life.path, backupOf(r2)));
     await copied(r2, 0);
     expect(r2.keys().length).toBeGreaterThan(0);
-    for (const key of r2.keys()) expect(key).toMatch(/^budget-h\/\d{4}\/[0-9a-f]{16}-[0-9a-f]{16}\.ltx$/);
+    for (const key of r2.keys()) expect(key).toMatch(/^budget-h-real\/\d{4}\/[0-9a-f]{16}-[0-9a-f]{16}\.ltx$/);
     // A change: a new purchase read by a sync.
     const before = r2.requests.length;
     const keys = r2.keys().length;

@@ -1,0 +1,179 @@
+HER CONNECTION DAY (plain steps)
+
+Her roadmap, Phase 3. The first time her real money comes near the app:
+two of her Plaid team's 10 connections get used (Capital One, then
+American Express), and her hosted books start fresh for her real accounts.
+Nothing here happens until he says so. Anything odd: we stop.
+
+Her app: budget-app-h-lbwr, at https://budget-app-h-lbwr.fly.dev
+Her real books: volume budget_h_real (ewr, 1 GB), backups in her own R2
+bucket, folder budget-h-real.
+The test bank's books stay on budget_h_data and in folder budget-h,
+untouched: the way back (below).
+
+Every fly command names --app budget-app-h-lbwr, so none can reach his
+app (budget-app-x7q2). Claude can run steps 1 to 6 at his word, and never
+prints a key: each is checked by its shape only.
+
+Her logins to Capital One and American Express are typed by her, in
+Plaid's window. Never by him, never by Claude. Nothing from her screens
+(amounts, names, account digits) goes in the repo or in a chat; anything
+odd is reported as "nnnn" with no amounts.
+
+
+ALREADY DONE (Oct 27, 2026)
+
+- Her Plaid team (dashboard.plaid.com, her team, not his): Trial plan,
+  0 of 10 connections, "Automatic bank access". Capital One and American
+  Express both take new connections, both through the bank's own window
+  (OAuth), with transactions and liabilities. The dashboard says Capital
+  One is "migrating" (old connections moving to Plaid's new API); new
+  ones are not affected.
+- Her Production secret is in .env.prod in her folder (git never takes
+  it: .gitignore has .env.*), checked by shape: one line, the right
+  length, not the Sandbox secret.
+- The rehearsal on his PC and the test on his phone (docs/her-setup.txt,
+  7b and 8): the test bank's books, through to Home.
+- Never submit a Production application in Plaid (one-way, ends the
+  Trial). Never use Plaid's own Quickstart or test tools with Production
+  keys: every connection made there counts against the 10, even if
+  removed.
+
+
+BEFORE SHE COMES (his, with Claude; about 20 minutes; connects nothing)
+
+1. The switch pull request (branch her-connection-day-switch): fly.toml
+   says PLAID_ENV "production" and mounts budget_h_real; litestream.yml
+   copies to budget-h-real. He reviews it, CI is green, he merges it.
+   From then on main is for her real books: the test bank's books can no
+   longer be deployed from main (the way back is below).
+
+2. A new bank key for the new books (the old one sealed only the test
+   bank's connections), made without printing it:
+        node -e "console.log(require('node:crypto').randomBytes(32).toString('base64'))"
+   written to a file outside the repo, for example
+   C:\Users\sauga\Documents\budget-app-h-real-BANK_TOKEN_KEY.txt, then
+   into the password manager, in an entry named for her app and "real
+   books". Without it a rebuilt copy cannot open her bank connections.
+   Keep the old one's file too (budget-app-h-BANK_TOKEN_KEY.txt): the way
+   back needs it.
+
+3. The two secrets, staged (nothing restarts yet). A file .env.fly in her
+   folder with two lines:
+        PLAID_SECRET=      (from .env.prod)
+        BANK_TOKEN_KEY=    (from step 2)
+   UTF-8 without a byte order mark. Then, in PowerShell:
+        cmd /c "fly secrets import --stage --app budget-app-h-lbwr < .env.fly"
+   (Not "Get-Content .env.fly | fly secrets import": PowerShell 5.1 adds a
+   byte order mark and Fly refuses the first name.) Delete .env.fly and
+   .env.prod. PLAID_CLIENT_ID (the same for both of Plaid's environments),
+   the push keys and the R2 keys stay as they are.
+        fly secrets list --app budget-app-h-lbwr
+   still shows the ten names, two of them staged.
+
+4. The new volume, and the machine moved onto it:
+        fly volumes create budget_h_real --app budget-app-h-lbwr --region ewr --size 1 --yes
+        fly machine list --app budget-app-h-lbwr          (the one machine's id)
+        fly machine destroy <id> --app budget-app-h-lbwr --force
+        fly deploy --app budget-app-h-lbwr --ha=false --remote-only
+   From main, after step 1. No deploy check this once: the new folder has
+   no backup yet to check against (step 12 is the check). The app is down
+   for a few minutes between destroy and deploy, so UptimeRobot may send
+   an alert; that is expected. The old volume (budget_h_data) and folder
+   (budget-h) are not touched. Delete them yourself after her first weeks
+   (about $0.15 a month until then).
+
+5. Checks:
+        fly status --app budget-app-h-lbwr          one machine, started
+        fly volumes list --app budget-app-h-lbwr    budget_h_real attached,
+                                                    budget_h_data not
+        fly logs --app budget-app-h-lbwr            "starting with empty books",
+                                                    "Budget app: the real bank, through Plaid, hosted.",
+                                                    "No bank is connected yet"
+   https://budget-app-h-lbwr.fly.dev/health says ok, and /health/backups
+   says ok within a few minutes. In Cloudflare, budget-h-backups now has
+   files under budget-h-real/. The UptimeRobot monitors stay as they are
+   (same addresses).
+
+6. Log in on the PC, in Chrome (not the Claude app's browser pane: it
+   blocks the bank's login window). Open https://budget-app-h-lbwr.fly.dev.
+   The passkey from the test books will not work on the new books: tap
+   "Use a one-time code", and
+        fly ssh console --app budget-app-h-lbwr -C "node /app/serve/login-code.mjs"
+   gives 12 digits (good once, for 15 minutes). Make a passkey (Windows
+   Hello). Home says Start setup day.
+
+
+WITH HER (together, in this order)
+
+7. Capital One first, on the PC, in Chrome: the Bank page, Connect a bank.
+   It asks first (1 of the 10): Yes, connect. In Plaid's window: Continue
+   without phone number (or as guest), search "Capital One", and pick the
+   plain "Capital One" entry. Capital One's own login opens in a window of
+   its own: she types her login there, and ticks checking, savings and her
+   Capital One card. Plaid's window closes; the Bank page shows one bank.
+   If Plaid's window says something went wrong, or the Bank page does not
+   show the bank, stop and look (the Bank page after a reload, and fly
+   logs) before trying again: a connection that went through counts
+   against the 10 even if the page did not show it.
+
+8. American Express, the same way: Connect a bank, Yes, connect, the plain
+   "American Express" entry, her login in Amex's own window, tick the Amex
+   card. The Bank page shows two banks. The app never makes a third.
+
+9. Which account is which: Checking, Savings, Everyday card (her Capital
+   One card), Second card (her Amex card). Save, then "Yes, keep them".
+   If an account is missing: Log in to that bank again (no new
+   connection) and tick it. If the Bank page says Plaid is still sending
+   the history, "Look again" in a few minutes: setup day and the rule
+   finder wait for both banks' whole history (Capital One sends about 90
+   days; American Express may send more).
+
+10. What each bank sends, checked without her numbers: Home's "Your
+    cards" shows each card with a statement balance and a due date; if a
+    card says "the bank did not send its statement date", she enters that
+    card's closing day in Settings (from a statement). Settings > Status
+    shows both banks read. Anything missing becomes a question before the
+    trial starts (her roadmap, Phase 3). Claude can look at the logs, at
+    his word, and report only which fields came (no amounts, no digits).
+
+11. Setup day, with her real balances, on the PC or her phone, her
+    choice: the rule finder (keep, change or skip each suggestion), the
+    transfers still on their way, her last paycheck, her split (savings,
+    needs, wants, Wishlist), Start tracking. The self-check must pass
+    before tracking starts (14.3).
+
+12. The restore check on the machine:
+        fly ssh console --app budget-app-h-lbwr -C "node /app/serve/restore-check.mjs"
+    The last line must be: The backup works.
+
+13. Her iPhone (hers; he reads her the code). In Safari open
+    https://budget-app-h-lbwr.fly.dev, Share > Add to Home Screen > Add,
+    and from now on open it from the home screen only. "Use a one-time
+    code": a new code from step 6's command; Face ID makes her passkey.
+    Settings > Notifications > Turn on, Allow; Send a test alert with the
+    phone locked: words only on the lock screen, no amount.
+
+14. His PC afterwards: Settings, Log out, if she would rather he not stay
+    logged in to her books on it.
+
+
+EVERY DEPLOY FROM NOW ON
+
+As docs/her-setup.txt step 5 says: npm run deploy-check (it now rebuilds
+her real books from budget-h-real and replays every event), deploy only on
+"The backup works.", then fly deploy --app budget-app-h-lbwr --ha=false
+--remote-only, and the checks of step 5.
+
+
+THE WAY BACK (before setup day only)
+
+If something is wrong before setup day: fly.toml back to sandbox and
+budget_h_data, litestream.yml back to budget-h (a revert of the switch
+pull request), the Sandbox secret (in her .env) and the old bank key
+(budget-app-h-BANK_TOKEN_KEY.txt) as secrets, the machine destroyed and
+deployed again as in step 4. The test bank's books come back as they were,
+still able to read the test bank. Any connection made in steps 7 and 8
+stays used (2 of the 10): Plaid never gives one back. After setup day
+there is no way back: her real books are the books, and a problem gets a
+test and a fix (her roadmap, Phase 4).

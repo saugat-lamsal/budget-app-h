@@ -38,9 +38,10 @@ describe('Phase 6 fly.toml', () => {
     expect(value('primary_region')).toBe('ewr');
     expect(value('size', 'vm')).toBe('shared-cpu-1x');
     expect(value('memory', 'vm')).toBe('512mb');
-    // Her plan, PR 2: her own volume, for the test bank's books until her
-    // connection day (then budget_h_real, with this one kept as the way back).
-    expect(value('source', 'mounts')).toBe('budget_h_data');
+    // Her connection day (her roadmap, Phase 3): her real books on a volume
+    // of their own; the test bank's (budget_h_data) stay untouched, as the
+    // way back.
+    expect(value('source', 'mounts')).toBe('budget_h_real');
     expect(value('destination', 'mounts')).toBe('/data');
     expect(value('initial_size', 'mounts')).toBe('1gb');
     expect(value('BUDGET_DB', 'env')).toBe('/data/budget.sqlite');
@@ -71,8 +72,8 @@ describe('Phase 6 fly.toml', () => {
     expect(value('kill_timeout')).toBe('60s');
   });
 
-  it("her plan PR 2 Plaid's test bank until her connection day, and no key in the file", () => {
-    expect(value('PLAID_ENV', 'env')).toBe('sandbox');
+  it("her connection day Plaid's real bank (the lock lets it in only on the hosted server), and no key in the file", () => {
+    expect(value('PLAID_ENV', 'env')).toBe('production');
     const env = settings.slice(settings.indexOf('[env]') + 1, settings.findIndex((l, i) => i > settings.indexOf('[env]') && l.startsWith('[')));
     expect(env.map((l) => l.split('=')[0]?.trim()).sort()).toEqual(['APP_ORIGIN', 'BUDGET_DB', 'BUDGET_SETUP', 'PLAID_ENV', 'PORT']);
   });
@@ -88,18 +89,23 @@ describe('her plan PR 2 her own app, never upstream\'s', () => {
   const UPSTREAM_APP = 'budget-app-x7q2';
   const UPSTREAM_VOLUMES = ['budget_data', 'budget_real'];
   const UPSTREAM_FOLDERS = ['budget', 'budget-real'];
+  // Her test bank's books: kept as the way back, never mounted or copied to
+  // again once her real books start.
+  const HER_TEST_VOLUME = 'budget_h_data';
+  const HER_TEST_FOLDER = 'budget-h';
 
   it("her plan PR 2 fly.toml names her own app and address, not upstream's", () => {
     expect(value('app')).not.toBe(UPSTREAM_APP);
     expect(value('APP_ORIGIN', 'env')).not.toContain(UPSTREAM_APP);
     expect(fly).not.toContain(UPSTREAM_APP);
     expect(UPSTREAM_VOLUMES).not.toContain(value('source', 'mounts'));
+    expect(value('source', 'mounts')).not.toBe(HER_TEST_VOLUME);
   });
 
-  it("her plan PR 2 her books go to a folder of their own (budget-h), never upstream's", () => {
+  it("her connection day her real books go to a folder of their own (budget-h-real), never upstream's, and never the test bank's (budget-h)", () => {
     const paths = [...read('litestream.yml').matchAll(/^\s*path:\s*(\S+)\s*$/gm)].map((m) => m[1]);
-    expect(paths).toEqual(['budget-h']);
-    for (const folder of UPSTREAM_FOLDERS) expect(paths).not.toContain(folder);
+    expect(paths).toEqual(['budget-h-real']);
+    for (const folder of [...UPSTREAM_FOLDERS, HER_TEST_FOLDER]) expect(paths).not.toContain(folder);
   });
 
   it("her plan PR 2 the deploy check checks the app fly.toml names, so never upstream's", () => {
