@@ -723,8 +723,8 @@
   {
     "section": "home",
     "file": "packages/web/src/ui/blocks.tsx",
-    "find": " onClick={onClick} disabled={disabled} data-testid={testId}>",
-    "replace": " onClick={onClick} data-testid={testId}>",
+    "find": " onClick={onClick} disabled={disabled} aria-pressed={pressed} data-testid={testId}>",
+    "replace": " onClick={onClick} aria-pressed={pressed} data-testid={testId}>",
     "why": "[review] no button is ever disabled"
   },
   {
