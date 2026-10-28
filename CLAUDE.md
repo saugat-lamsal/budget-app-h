@@ -176,7 +176,9 @@ One good test per case beats many that check the same thing.
   browser random-lives, break-it's own tests), the Litestream heartbeat
   test (real minutes), and the larger counts in each package's
   test/slow.ts (`runs(n)` for fast-check, `lives(slow, default)` for
-  lives, years and scenarios).
+  lives, years and scenarios). Not slow: test/break-it-lists.test.ts,
+  which fails when a break no longer finds its code, runs in both (Oct
+  27, 2026: left out of the default run, nine breaks had gone stale).
 - A new test is fast by default. A long one is either added to SLOW_FILES
   or written with `runs()`, `lives()` or `it.runIf(SLOW)`. A rule's test
   in a slow file still counts for the rule table. Upstream's test files
