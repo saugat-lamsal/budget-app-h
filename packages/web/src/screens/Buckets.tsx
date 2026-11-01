@@ -1,9 +1,10 @@
 import type { BucketsShown as BucketsView } from '@budget-app/server/views';
 import { useState } from 'react';
 import type { Load, Reload } from '../app/api.js';
-import { activityPath, pathOf } from '../app/routes.js';
+import { activityPath, pathOf, statementPath } from '../app/routes.js';
 import { BucketBar, Button, Card, Hero, ListRow, MadeUpPill, Money, Skeleton, StateMessage, TargetBar } from '../ui/blocks.js';
 import { longDate, monthName } from '../ui/dates.js';
+import { cardNames } from '../ui/card-names.js';
 import { Icon } from '../ui/Icon.js';
 import { cardStatementDetail, cardStatementTitle, onItsWayDetail, onItsWayTitle } from './buckets-text.js';
 import { SaidNotice, type Said } from './choose.js';
@@ -12,7 +13,7 @@ import { CheckBanner } from './check-banner.js';
 import { cardsOffText } from './home-text.js';
 
 // Buckets: what is left in each bucket, the mom reserve with this month
-// against the target, money held for others, and the old card debt. The one
+// against the target, Other, and the old card debt. The one
 // main number is everything in the buckets (12.2). Every number comes from
 // the server, worked out by the money math. Each bucket opens the list of
 // what went in and out of it (B97), money can be moved between them by hand
@@ -226,6 +227,7 @@ function BucketsReady({ view, reload, onChanged }: { readonly view: Tracking; re
               title={cardStatementTitle(line)}
               detail={cardStatementDetail(line)}
               trailing={<Money cents={line.statementBalance ?? line.minimumPayment} testId={`statement-${line.card}-amount`} />}
+              {...(line.card !== 'old-card' && cardNames() !== null ? { href: statementPath(line.card) } : {})}
               testId={`statement-${line.card}`}
             />
           ))}

@@ -62,7 +62,7 @@ You decide:
 - The $100.00 payment to the Made-up Second Card is on its way.
 - Your last paycheck before setup day came on Fri, Sep 18, 2026.
 - Starting money: savings $3,000.00, Wishlist $150.00, wants $250.00,
-  nothing held for others, everything else in needs.
+  nothing in Other, everything else in needs.
 - Start tracking.
 - Then, the same day, on Settings:
   - The split: savings 40%, needs 30%, wants 20%, Wishlist 10%.
@@ -124,7 +124,7 @@ At the banks:
 You decide:
 - The audio purchase: Wishlist, and it was the "Made-up headphones".
 - The payment to your friend: split it, $20.00 wants and the rest ($10.00)
-  not mine.
+  Other.
 - Look at what Home says about moving money from savings to checking. Do
   not move it yet.
 
@@ -195,7 +195,7 @@ Sun Oct 11
 At the banks:
 - Checking: "MADE UP FRIEND PAID BACK", $10.00 in (the friend's share from
   Oct 5).
-You decide: the $10.00: not mine.
+You decide: the $10.00: Other.
 
 
 Mon Oct 12

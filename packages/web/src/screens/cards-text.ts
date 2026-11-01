@@ -92,6 +92,8 @@ export function bucketTitle(bucket: StatementBucket): string {
       return 'Wants';
     case 'wishlist':
       return 'Wishlist';
+    case 'other':
+      return 'Other';
     case 'unsorted':
       return 'Still unsorted';
     case 'before-setup':

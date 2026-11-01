@@ -339,6 +339,7 @@ export const HER_STAT_NAMES = [
   'wishlistPaychecks',
   'wishlistPurchases',
   'wishlistSplits',
+  'boughtForOthers',
   'wishlistRefunds',
   'wishlistHandMoves',
   'wishlistMoves',
@@ -445,10 +446,10 @@ type Intent =
 // is in, waiting in review, split, counted on setup day, on the old card, or
 // taken back by the bank (4.10), or refunded in full while it waited, so
 // kept as a record sorted nowhere (4.5, A26).
-type Standing = 'needs' | 'wants' | 'wishlist' | 'unsorted' | 'split' | 'setup' | 'old-card' | 'gone' | 'refunded';
+type Standing = 'needs' | 'wants' | 'wishlist' | 'heldForOthers' | 'unsorted' | 'split' | 'setup' | 'old-card' | 'gone' | 'refunded';
 
-// Sorted into one bucket (her life: Wishlist too).
-const inABucket = (s: Standing | undefined): s is 'needs' | 'wants' | 'wishlist' => s === 'needs' || s === 'wants' || s === 'wishlist';
+// Sorted into one bucket (her life: Wishlist too, and Other, 7.7).
+const inABucket = (s: Standing | undefined): s is 'needs' | 'wants' | 'wishlist' | 'heldForOthers' => s === 'needs' || s === 'wants' || s === 'wishlist' || s === 'heldForOthers';
 
 type PotName = keyof Pots;
 const POT_NAMES: readonly PotName[] = ['savings', 'needs', 'wants', 'momReserve', 'heldForOthers', 'unsortedIn', 'unsortedOut'];
@@ -519,7 +520,7 @@ class Life {
   // them back for a full refund (A26).
   readonly #awaitingReturn = new Set<string>();
   // How the person split each split purchase, by the id it first had.
-  readonly #splitParts = new Map<string, { readonly needs: Cents; readonly wants: Cents; readonly wishlist?: Cents }>();
+  readonly #splitParts = new Map<string, { readonly needs: Cents; readonly wants: Cents; readonly wishlist?: Cents; readonly heldForOthers?: Cents }>();
   readonly #momSent = new Map<string, Cents>();
   // 13.2, A9: now and then the person clears the mom rule, and sets it again
   // a few days later. Payments to mom wait in review meanwhile, and the bank
@@ -2056,9 +2057,11 @@ class Life {
         // 7.8: now and then part of a friend's money was what the friend owed.
         if (choice === 'not-mine' && item.amount % 5 === 0 && item.amount >= 2) {
           const owed = Math.max(1, Math.floor(item.amount / 10));
-          this.#book.sort(item.id, { split: [{ bucket: 'not-mine', amount: item.amount - owed }, { bucket: 'wants', amount: owed }] }, today);
+          // Her rulebook, 7.8: now and then what was owed goes to Wishlist.
+          const to = this.#her && r.chance(1, 2) ? 'wishlist' : 'wants';
+          this.#book.sort(item.id, { split: [{ bucket: 'not-mine', amount: item.amount - owed }, { bucket: to, amount: owed }] }, today);
           this.#note(`split money in ${item.id}`);
-          this.#expectChange(before, { heldForOthers: item.amount - owed, wants: owed, unsortedIn: -item.amount }, '7.8 splitting money in', item.id);
+          this.#expectChange(before, { heldForOthers: item.amount - owed, [to]: owed, unsortedIn: -item.amount }, '7.8 splitting money in', item.id);
           return;
         }
         const asked = this.#openLeftovers();
@@ -2280,6 +2283,23 @@ class Life {
         this.#book.sort(item.id, { to: sorting }, today);
         change = sorting === 'not-mine' ? { heldForOthers: -item.amount } : { [sorting]: -item.amount };
       }
+    } else if (intent?.type === 'store' && this.#her && item.reason === 'no-rule' && r.chance(1, 20)) {
+      // Her rulebook, 7.7: something bought for a friend, on any of her accounts.
+      this.#book.sort(item.id, { to: 'not-mine' }, today);
+      change = { heldForOthers: -item.amount };
+      this.#standing.set(item.id, 'heldForOthers');
+      this.#stats.boughtForOthers++;
+    } else if (intent?.type === 'store' && this.#her && item.reason === 'no-rule' && item.amount >= 3 && r.chance(1, 20)) {
+      // Her rulebook, 7.7: part of it for a friend.
+      const needs = r.int(1, item.amount - 2);
+      const heldForOthers = r.int(1, item.amount - needs - 1);
+      const wants = item.amount - needs - heldForOthers;
+      this.#book.sort(item.id, { split: [{ bucket: 'needs', amount: needs }, { bucket: 'not-mine', amount: heldForOthers }, { bucket: 'wants', amount: wants }] }, today);
+      change = { needs: -needs, heldForOthers: -heldForOthers, wants: -wants };
+      this.#standing.set(item.id, 'split');
+      this.#splitParts.set(item.id, { needs, wants, heldForOthers });
+      this.#stats.boughtForOthers++;
+      this.#stats.splitPurchases++;
     } else if (intent?.type === 'store' && intent.sorting === 'split' && item.amount >= 3 && this.#her && r.chance(1, 3)) {
       // Her rulebook, 4.4: split across needs, wants and Wishlist.
       const needs = r.int(1, item.amount - 2);

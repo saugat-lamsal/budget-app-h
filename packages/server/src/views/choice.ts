@@ -30,7 +30,7 @@ export interface ChoicePart {
 }
 
 export type ChoiceOf =
-  // One tap: a bucket, other income, my paycheck, not mine, for mom.
+  // One tap: a bucket, other income, my paycheck, Other, for mom.
   | { readonly to: PickTo }
   | { readonly split: readonly ChoicePart[] }
   // "Transfer between my accounts" (5.6), with that account.

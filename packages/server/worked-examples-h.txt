@@ -275,3 +275,21 @@ minimum paid (100.00 against 35.00), so it is not overdue (9.4).
 Before this was fixed, both said 0.00 paid: the books start on setup day.
 
 Check: capital one paid toward it 450.00 | capital one left to pay 0.00 | amex paid toward it 100.00 | amex left to pay 150.00
+
+
+
+========================================================================
+EXAMPLE 9. Each card's statement on Buckets, at any time (9.9, 60i)
+========================================================================
+
+Setup day is Oct 1. Today is Oct 2. Each statement is long before its first
+reminder day, so Home says nothing is due. Buckets shows both anyway:
+
+The Capital One card: closed Sep 20 at 450.00, minimum 35.00, due Oct 25.
+        She paid 450.00 on Sep 25, before setup day. The app reads it from
+        the bank history it keeps (9.3, 60i). 450.00 paid of 450.00: Paid.
+The Amex card: closed Sep 28 at 250.00, minimum 25.00, due Oct 25.
+        She has paid 40.00 toward it since the statement, on Oct 2.
+        Left to pay: 250.00 - 40.00 = 210.00. Still to pay, due in 23 days.
+
+Check: capital one statement 450.00 | capital one paid 450.00 | amex statement 250.00 | amex paid 40.00 | amex left to pay 210.00

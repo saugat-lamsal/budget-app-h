@@ -347,7 +347,7 @@ export type CardEntry =
   | (CardEntryBase & { readonly kind: 'charge'; readonly spendingKind: SpendingKind; readonly sortedTo: SpendingSort })
   // A refund counted on the purchase it belongs to (refundOf), or money in
   // on the card sorted on its own (4.5, 6.1).
-  | (CardEntryBase & { readonly kind: 'refund'; readonly refundOf: string | null; readonly sortedTo: MoneyInEntry['sortedTo'] })
+  | (CardEntryBase & { readonly kind: 'refund'; readonly refundOf: string | null; readonly sortedTo: MoneyInEntry['sortedTo']; readonly parts: readonly SplitPart[] | null })
   | (CardEntryBase & { readonly kind: 'payment' });
 
 // Her rulebook, 50.4: one purchase's part in Wishlist (Book.wishlistFlows).
@@ -1131,7 +1131,7 @@ export class Book {
       } else if ((entry.kind === 'refund' || entry.kind === 'money-in') && entry.txn.kind === 'refund' && entry.txn.account === card) {
         const gone = this.#gone(entry);
         const base = { id: entry.id, posted: { id: entry.txn.id, date: entry.txn.date }, date: entry.txn.date, description: entry.txn.description, owes: gone ? 0 : -entry.txn.amount, atSetup: 0 };
-        const sorted = entry.kind === 'refund' ? { refundOf: entry.of, sortedTo: 'unsorted' as const } : { refundOf: null, sortedTo: entry.sortedTo };
+        const sorted = entry.kind === 'refund' ? { refundOf: entry.of, sortedTo: 'unsorted' as const, parts: null } : { refundOf: null, sortedTo: entry.sortedTo, parts: entry.parts };
         entries.push({ ...base, kind: 'refund', ...sorted, takenBack: takenBack(entry, -entry.txn.amount) });
       } else if ((entry.kind === 'transfer' || entry.kind === 'leg') && (entry.txn.kind === 'transfer' || entry.txn.kind === 'transfer-arrived') && entry.txn.to === card) {
         const owes = this.#gone(entry) ? 0 : -entry.txn.amount;
@@ -1161,7 +1161,7 @@ export class Book {
         if (amount <= 0 || account === 'savings') continue;
         const shown = entry.postedTxn ?? txn;
         purchases.push(Object.freeze({ id: entry.id, date: txn.date, account, amount, posted: entry.pending ? null : Object.freeze({ id: shown.id, date: shown.date }) }));
-      } else if (entry.kind === 'money-in' && entry.sortedTo === 'wishlist') {
+      } else if (entry.kind === 'money-in' && (entry.sortedTo === 'wishlist' || entry.sortedTo === 'split')) {
         paidBack = addCents(paidBack, entry.effect.wishlist ?? 0);
       } else if ((entry.kind === 'transfer' || entry.kind === 'leg') && !this.#gone(entry) && !this.#setupLegs.has(entry.id)) {
         const t = entry.txn;
@@ -2556,12 +2556,12 @@ export class Book {
   }
 
   // 7.6, 7.7: a payment to a person, or a purchase or money leaving checking,
-  // savings, or the everyday card. Not the difference on one counted on setup day (14.2), or
+  // savings, or either card used day to day. Not the difference on one counted on setup day (14.2), or
   // the money back on one the bank took back (4.10): those did not leave now.
   #canBeNotMine(entry: SpendEntry): boolean {
     if (entry.spendingKind === 'person-payment') return true;
     const txn = entry.txn;
-    const fromAnAccount = txn.kind === 'savings-withdrawal' || (txn.kind === 'purchase' && (txn.account === 'checking' || txn.account === 'everyday-card'));
+    const fromAnAccount = txn.kind === 'savings-withdrawal' || (txn.kind === 'purchase' && (txn.account === 'checking' || txn.account === 'everyday-card' || txn.account === 'second-card'));
     return entry.spendingKind === 'purchase' && fromAnAccount && entry.countedAtSetup === 0 && entry.dropped !== true && entry.takenBack !== true;
   }
 
@@ -2654,13 +2654,14 @@ export class Book {
     this.#review.delete(entry.id);
   }
 
-  // Rule 7.8: money in split across Other, savings, needs, and wants. Each part
-  // counts as Other (7.1) or as a payback into that bucket (6.1).
+  // Rule 7.8: money in split across Other, savings, needs, and wants (her
+  // rulebook: and Wishlist). Each part counts as Other (7.1) or as a payback into
+  // that bucket (6.1).
   #splitMoneyIn(entry: MoneyInEntry, split: readonly SplitPart[]): void {
     if (!Array.isArray(split) || split.length < 2) throw new MoneyError('bad-choice', 'a split needs at least two parts');
     const effect: Effect = {};
     const parts = split.map((part: SplitPart) => {
-      if (part.bucket !== 'not-mine' && part.bucket !== 'savings' && !isSpendingBucket(part.bucket)) {
+      if (part.bucket !== 'not-mine' && part.bucket !== 'savings' && !isSortBucket(part.bucket)) {
         throw new MoneyError('bad-choice', `money in splits across other, savings, needs and wants, not ${String(part.bucket)}`);
       }
       assertPositiveCents(part.amount, 'each part of a split');

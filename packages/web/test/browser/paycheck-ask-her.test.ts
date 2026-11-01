@@ -113,7 +113,7 @@ describe.each(ENGINES)('3.1 51.1 a paycheck waiting for her yes, in %s', (_name,
     });
   });
 
-  it('3.1 "Not a paycheck" opens the other choices (other income, payback, not mine), with no paycheck among them; "It is a paycheck after all" goes back', async () => {
+  it('3.1 "Not a paycheck" opens the other choices (other income, payback, Other), with no paycheck among them; "It is a paycheck after all" goes back', async () => {
     const life = await herPaychecks([['pay-1', '2026-10-09', 250_000]]);
     await served(life, async (page, base) => {
       await open(page, base, '/review');

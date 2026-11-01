@@ -114,7 +114,7 @@ describe.each(ENGINES)('her Wishlist on the screens, in %s', (_name, engine) => 
   });
 
   // PR 12, found by the agent on her screens (HB30).
-  it('4.4 the split sheet splits a purchase across needs and wants only: Wishlist, which gets the rest, gets nothing, and it is not refused (HB30)', async () => {
+  it('4.4 60j the split sheet splits a purchase across needs and wants only: Wants gets the rest, Wishlist gets nothing, and it is not refused (HB30)', async () => {
     const life = await herWithAPurchase();
     const before = life.keeper.book()!.pots();
     await served(life, async (page, base) => {
@@ -122,7 +122,7 @@ describe.each(ENGINES)('her Wishlist on the screens, in %s', (_name, engine) => 
       await item(page, 'gadget-1').getByTestId('more').click();
       const sheet = page.getByTestId('review-sheet');
       await sheet.waitFor();
-      expect(words(await sheet.getByTestId('split-rest').innerText())).toBe('Wishlist gets the rest.');
+      expect(words(await sheet.getByTestId('split-rest').innerText())).toBe('Wants gets the rest.');
       await sheet.getByTestId('split-needs').fill('30.00');
       await sheet.getByTestId('split-wants').fill('20.00');
       await sheet.getByTestId('split-submit').click();

@@ -274,7 +274,7 @@ export function useChoiceFlow(options: { readonly resort: boolean; readonly relo
       ...(extra.ask === undefined ? {} : { ask: extra.ask }),
       ...(extra.about === undefined ? {} : { about: extra.about }),
     };
-    if ((options.wishlistItems?.length ?? 0) > 0 && putsInWishlist(choice)) {
+    if (target.kind === 'spending' && (options.wishlistItems?.length ?? 0) > 0 && putsInWishlist(choice)) {
       setSaid(null);
       setSheet({ item: target.id, step: 'which-item', pending });
     } else if (extra.final === true || extra.always !== undefined) {
@@ -686,7 +686,7 @@ function Choices({ subject, busy, onChoose, startNotAPaycheck = false }: { reado
   const rule = always ? { contains: ruleText } : undefined;
   // Her rulebook, 3.1: a paycheck waiting for her yes shows what each bucket
   // would get, and yes asks first. "Not a paycheck" opens the other choices
-  // of 6.1 (other income, payback, not mine).
+  // of 6.1 (other income, payback, Other).
   const [notAPaycheck, setNotAPaycheck] = useState(startNotAPaycheck);
   const asking = subject.paycheckAsk === true && subject.now === null && !notAPaycheck;
   const yes = options.picks.find((p) => p.to === 'paycheck');

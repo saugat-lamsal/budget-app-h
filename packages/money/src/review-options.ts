@@ -135,8 +135,8 @@ function moneyInOptions(f: Extract<ReviewFacts, { type: 'money-in' }>): ReviewOp
   return {
     type: 'sort',
     picks,
-    // 7.8: the last gets the rest on the screen.
-    split: f.amount >= 2 ? ['not-mine', 'savings', 'needs', 'wants'] : null,
+    // 7.8: the last gets the rest on the screen. Her rulebook, 7.8: Wishlist is a part.
+    split: f.amount >= 2 ? ['not-mine', 'savings', 'needs', ...(f.wishlist === true ? (['wishlist'] as const) : []), 'wants'] : null,
     transfer,
     transferOutcome: Object.fromEntries(transfer.map((a) => [a, 'no-bucket-change'])),
     // A18: a refund can be matched to a purchase it likely belongs to (4.5);
@@ -160,16 +160,16 @@ function spendingOptions(f: Extract<ReviewFacts, { type: 'spending' }>): ReviewO
   // a person keeps 7.6's choices, and the difference on a mom payment 8.3's.
   const wishlist = f.wishlist === true && !person && f.kind !== 'mom-difference';
   // 7.6, 7.7: a payment to a person, or a purchase or money leaving checking,
-  // savings, or the everyday card. Not the difference on one counted on setup
+  // savings, or either card used day to day. Not the difference on one counted on setup
   // day (14.2), or the money back on one the bank took back (4.10): those did not leave now.
-  const notMine = person || (f.kind === 'purchase' && (f.leavesAnAccount || f.account === 'everyday-card') && !f.countedAtSetup && !f.gone);
+  const notMine = person || (f.kind === 'purchase' && (f.leavesAnAccount || f.account === 'everyday-card' || f.account === 'second-card') && !f.countedAtSetup && !f.gone);
   const picks: ReviewPick[] = [plain('needs'), plain('wants'), ...(wishlist ? [plain('wishlist')] : [])];
   if (notMine) picks.push(plain('not-mine'));
   if (person && f.canBeForMom) picks.push(plain('mom'));
   // 4.4: parts of at least a cent each. 8.3, B23: the difference on a mom payment goes to one bucket.
   const canSplit = f.kind !== 'mom-difference' && f.net >= 2;
-  // The last one gets the rest on the screen: on a purchase (7.7) it stays Wants, as before Not mine was offered.
-  const parts = person ? (['needs', 'wants', 'not-mine'] as const) : wishlist ? (['needs', 'wants', 'wishlist'] as const) : notMine ? (['needs', 'not-mine', 'wants'] as const) : (['needs', 'wants'] as const);
+  // The last one gets the rest on the screen: on a purchase (7.7) it stays Wants, as before Not mine was offered. Her rulebook, 7.7, 60j: Wishlist is a part, and Wants still gets the rest.
+  const parts = person ? (['needs', 'wants', 'not-mine'] as const) : (['needs', ...(notMine ? (['not-mine'] as const) : []), ...(wishlist ? (['wishlist'] as const) : []), 'wants'] as const);
   const split = canSplit ? parts : null;
 
   // 5.6, B74: only a purchase or a payment to a person, that left checking or

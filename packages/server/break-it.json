@@ -7169,7 +7169,7 @@
   {
     "section": "review",
     "file": "packages/server/src/views/buckets.ts",
-    "find": "cardStanding(today, statement, book.cardPayments(statement.card))",
+    "find": "cardStanding(today, statement, cardPaymentsSeen(book, statement.card, paidBeforeSetup))",
     "replace": "cardStanding(today, statement, [])",
     "why": "[a61] 9.9 the book's payments are not counted"
   },
@@ -7183,22 +7183,22 @@
   {
     "section": "review",
     "file": "packages/server/src/views/buckets.ts",
-    "find": "statements: cardsOf(input.statements ?? [], book, today)",
-    "replace": "statements: cardsOf([], book, today)",
+    "find": "statements: cardsOf(input.statements ?? [], book, today, input.paidBeforeSetup)",
+    "replace": "statements: cardsOf([], book, today, input.paidBeforeSetup)",
     "why": "[a61] 9.9 no statements are shown"
   },
   {
     "section": "history",
     "file": "packages/server/src/history/keeper.ts",
-    "find": "why: this.#whyNow(), statements: this.#statements(), cardsOff: this.#cardsOff() });",
-    "replace": "why: this.#whyNow(), cardsOff: this.#cardsOff() });",
+    "find": "why: this.#whyNow(), statements: this.#statements(), cardsOff: this.#cardsOff(), paidBeforeSetup: this.#bankNow().paidBeforeSetup });",
+    "replace": "why: this.#whyNow(), cardsOff: this.#cardsOff(), paidBeforeSetup: this.#bankNow().paidBeforeSetup });",
     "why": "[a61] 9.9 the real server gives Buckets no statements"
   },
   {
     "section": "history",
     "file": "packages/server/src/history/keeper.ts",
-    "find": "why: this.#whyNow(), statements: this.#statements(), cardsOff: this.#cardsOff() });",
-    "replace": "why: this.#whyNow(), statements: this.#statements() });",
+    "find": "why: this.#whyNow(), statements: this.#statements(), cardsOff: this.#cardsOff(), paidBeforeSetup: this.#bankNow().paidBeforeSetup });",
+    "replace": "why: this.#whyNow(), statements: this.#statements(), paidBeforeSetup: this.#bankNow().paidBeforeSetup });",
     "why": "[a61] 9.9 9.8 the real server gives Buckets no cards off"
   },
   {
@@ -7792,8 +7792,8 @@
   {
     "section": "review",
     "file": "packages/server/src/choices.ts",
-    "find": "['needs', 'wants', 'not-mine', 'savings'];",
-    "replace": "['needs', 'wants', 'not-mine'];",
+    "find": "['needs', 'wants', 'wishlist', 'not-mine', 'savings'];",
+    "replace": "['needs', 'wants', 'wishlist', 'not-mine'];",
     "why": "[a63] 7.8 savings is not read as a part"
   },
   {
@@ -7802,5 +7802,26 @@
     "find": "        return 'marked Other';",
     "replace": "        return 'marked not mine';",
     "why": "[a62] the desk says the old word"
+  },
+  {
+    "section": "review",
+    "file": "packages/server/src/views/buckets.ts",
+    "find": "cardPaymentsSeen(book, statement.card, paidBeforeSetup))",
+    "replace": "cardPaymentsSeen(book, statement.card, undefined))",
+    "why": "[her-other] 9.9 60i a statement paid before setup day says overdue on Buckets"
+  },
+  {
+    "section": "history",
+    "file": "packages/server/src/history/keeper.ts",
+    "find": "cardsOff: this.#cardsOff(), paidBeforeSetup: this.#bankNow().paidBeforeSetup });",
+    "replace": "cardsOff: this.#cardsOff() });",
+    "why": "[her-other] 9.9 60i the real server gives Buckets no payments from before setup day"
+  },
+  {
+    "section": "review",
+    "file": "packages/server/src/choices.ts",
+    "find": "['needs', 'wants', 'wishlist', 'not-mine', 'savings'];",
+    "replace": "['needs', 'wants', 'not-mine', 'savings'];",
+    "why": "[her-other] 7.7 7.8 Wishlist is not read as a part"
   }
 ]

@@ -74,7 +74,7 @@ Then, both still waiting in review:
         Money in from a friend (a deposit)          60.00
         A purchase on the everyday card             12.50
 
-App side = savings + needs + wants + held for others
+App side = savings + needs + wants + Other
            + unsorted money in - unsorted spending
          = 4,000.00 + 1,000.00 + 200.00 + 0.00 + 60.00 - 12.50
          = 5,247.50
@@ -95,7 +95,7 @@ It waits in review. Nothing is split yet, so no bucket changes. It is
 money in waiting in review (51.1): it counts on the app side of the
 self-check, and not in safe to spend.
 
-App side = savings + needs + wants + held for others
+App side = savings + needs + wants + Other
            + unsorted money in - unsorted spending
          = 3,000.00 + 400.00 + 150.00 + 0.00 + 1,987.65 - 0.00
          = 5,537.65
@@ -213,7 +213,7 @@ Step 2. She assigns it:
         Savings                                   6,300.00
         Needs                                       452.98
         Wants                                       300.00
-        Held for others                               0.00
+        Other                                         0.00
         Together: 6,300.00 + 452.98 + 300.00 = 7,052.98, all of it, so
         tracking starts (14.3).
 
@@ -433,7 +433,7 @@ EXAMPLE 17. Money out of Wishlist by hand, and the app side (13.4, 12.2)
 ========================================================================
 
 She starts with savings 2,000.00, needs 500.00, wants 200.00, Wishlist
-300.00 and nothing held for others. A deposit of 25.00 and a purchase of
+300.00 and nothing in Other. A deposit of 25.00 and a purchase of
 60.00 wait in review.
 
 The app side: 2,000.00 + 500.00 + 200.00 + 300.00 + 0.00 + 25.00 - 60.00
@@ -471,3 +471,53 @@ Wishlist: 300.00 - 43.12 = 256.88
 Rain jacket: 250.00, Ready. Bike: 256.88 - 250.00 = 6.88.
 
 Check: jacket has 250.00 | lamp has 45.00 | bike has 5.00 | more than the list needs 0.00 | paid for the lamp 43.12 | wishlist after the lamp 256.88 | bike has after 6.88
+
+
+========================================================================
+EXAMPLE 19. Something bought for a friend on the Amex card (7.1, 7.7, 11.3)
+========================================================================
+
+Needs 500.00, wants 300.00, Wishlist 200.00, nothing in Other, and nothing
+waiting in review, so safe to spend is 300.00.
+
+Oct 5: she buys tickets for a friend on the Amex card, 80.00, and marks them
+Other. Other: 0.00 - 80.00 = -80.00. More went out than came in, for now.
+Needs, wants and Wishlist do not move, so safe to spend is still 300.00. The
+card still owes the 80.00: it is on its statement, under Other (52.4).
+
+Oct 7: she buys a lamp and a gift together on the Capital One card, 100.00.
+She splits it: Other 60.00, Wishlist 25.00, and Wants gets the rest, 15.00.
+Other: -80.00 - 60.00 = -140.00. Wishlist: 200.00 - 25.00 = 175.00.
+Wants: 300.00 - 15.00 = 285.00. Together 60.00 + 25.00 + 15.00 = 100.00.
+
+Oct 9: the friend pays her back, 140.00. She marks it Other.
+Other: -140.00 + 140.00 = 0.00.
+
+Check: other after the tickets -80.00 | safe to spend after the tickets 300.00 | other after the split -140.00 | wishlist after the split 175.00 | wants after the split 285.00 | other after being paid back 0.00
+
+
+========================================================================
+EXAMPLE 20. A friend's cash, split with Wishlist, and the money to move (6.1, 7.8, 50.4)
+========================================================================
+
+Savings 2,000.00, Wishlist 300.00, wants 150.00, and nothing in Other. The
+savings account holds 2,500.00, so the extra in savings is
+2,500.00 - (2,000.00 + 300.00) = 200.00.
+
+Oct 4: she buys a desk lamp from checking, 90.00, and sorts it to Wishlist.
+Wishlist: 300.00 - 90.00 = 210.00.
+Should be in savings: 2,000.00 + 210.00 = 2,210.00. Extra: 290.00.
+Move from savings to checking: the smaller of 290.00 and 90.00 = 90.00.
+
+Oct 6: she deposits 140.00 in cash to checking: 100.00 to send on, and 40.00
+a friend owed her, which she puts in Wishlist. She splits it: Other 100.00,
+Wishlist 25.00, and Wants gets the rest, 15.00.
+Other: 0.00 + 100.00 = 100.00. Wishlist: 210.00 + 25.00 = 235.00.
+Wants: 150.00 + 15.00 = 165.00. Together 100.00 + 25.00 + 15.00 = 140.00.
+
+The part in Wishlist counts like a payback into Wishlist (50.4):
+Should be in savings: 2,000.00 + 235.00 = 2,235.00. Extra: 265.00.
+Not moved yet: 90.00 - 25.00 = 65.00.
+Move from savings to checking: the smaller of 265.00 and 65.00 = 65.00.
+
+Check: move after the lamp 90.00 | other after the deposit 100.00 | wishlist after the deposit 235.00 | wants after the deposit 165.00 | move after the deposit 65.00

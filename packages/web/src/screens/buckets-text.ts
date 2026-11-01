@@ -2,6 +2,7 @@ import type { CardStanding } from '@budget-app/money';
 import type { OnItsWay } from '@budget-app/server/views';
 import { nameOf } from '../ui/card-names.js';
 import { shortDate } from '../ui/dates.js';
+import { withCardNames } from '../ui/card-names.js';
 import { moneyText } from '../ui/money-format.js';
 import { dueText } from './home-text.js';
 import { ACCOUNT_NAMES } from './review-text.js';
@@ -36,8 +37,10 @@ export function onItsWayDetail(item: Pick<OnItsWay, 'from' | 'to' | 'date' | 'se
 // 9.9: a card's statement, on Buckets. The amount beside the row is the
 // statement balance on the everyday card (9.1) and the minimum on the old card
 // (9.2); the row's name says which.
+const STATEMENT_NAMES = withCardNames({ 'everyday-card': 'Everyday card', 'second-card': 'Second card' } as const);
+
 export function cardStatementTitle(line: Pick<CardStanding, 'card'>): string {
-  return line.card === 'everyday-card' ? 'Everyday card statement' : 'Old card minimum';
+  return line.card === 'old-card' ? 'Old card minimum' : `${STATEMENT_NAMES[line.card]} statement`;
 }
 
 export function cardStatementDetail(line: CardStanding): string {
@@ -46,7 +49,7 @@ export function cardStatementDetail(line: CardStanding): string {
   const minimum = `Minimum ${moneyText(line.minimumPayment)}.`;
   switch (line.standing) {
     case 'paid':
-      return `${line.card === 'everyday-card' ? 'Paid' : 'Minimum paid'}. Due ${due}. ${closed}`;
+      return `${line.card !== 'old-card' ? 'Paid' : 'Minimum paid'}. Due ${due}. ${closed}`;
     case 'overdue':
       return `Overdue: it was due ${due}. ${minimum} ${closed}`;
     case 'minimum-paid':
@@ -54,7 +57,7 @@ export function cardStatementDetail(line: CardStanding): string {
     case 'to-pay': {
       const when = dueText(line.daysLeft);
       const parts = [`${when.charAt(0).toUpperCase()}${when.slice(1)}, ${due}.`];
-      if (line.card === 'everyday-card') parts.push(minimum);
+      if (line.card !== 'old-card') parts.push(minimum);
       if (line.paid > 0) parts.push(`${moneyText(line.paid)} paid so far.`);
       parts.push(closed);
       return parts.join(' ');

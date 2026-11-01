@@ -3383,14 +3383,14 @@
   {
     "section": "words",
     "file": "packages/web/src/screens/buckets-text.ts",
-    "find": "line.card === 'everyday-card' ? 'Paid' : 'Minimum paid'",
+    "find": "line.card !== 'old-card' ? 'Paid' : 'Minimum paid'",
     "replace": "line.card === 'old-card' ? 'Paid' : 'Minimum paid'",
     "why": "[a61] 9.9 paid in the wrong words for the card"
   },
   {
     "section": "words",
     "file": "packages/web/src/screens/buckets-text.ts",
-    "find": "if (line.card === 'everyday-card') parts.push(minimum);",
+    "find": "if (line.card !== 'old-card') parts.push(minimum);",
     "replace": "parts.push(minimum);",
     "why": "[a61] 9.9 the old card says its minimum twice"
   },
@@ -3404,8 +3404,8 @@
   {
     "section": "words",
     "file": "packages/web/src/screens/buckets-text.ts",
-    "find": "line.card === 'everyday-card' ? 'Everyday card statement' : 'Old card minimum'",
-    "replace": "line.card === 'old-card' ? 'Everyday card statement' : 'Old card minimum'",
+    "find": "line.card === 'old-card' ? 'Old card minimum' :",
+    "replace": "line.card !== 'old-card' ? 'Old card minimum' :",
     "why": "[a61] 9.9 the row names the wrong card"
   },
   {
@@ -3418,8 +3418,8 @@
   {
     "section": "home",
     "file": "packages/web/src/screens/Buckets.tsx",
-    "find": "detail={momReserve !== undefined ? 'Needs, wants, savings, the mom reserve, or money held for others' : view.wishlist !== undefined",
-    "replace": "detail={momReserve !== null ? 'Needs, wants, savings, the mom reserve, or money held for others' : view.wishlist !== undefined",
+    "find": "detail={momReserve !== undefined ? 'Needs, wants, savings, the mom reserve, or Other' : view.wishlist !== undefined",
+    "replace": "detail={momReserve !== null ? 'Needs, wants, savings, the mom reserve, or Other' : view.wishlist !== undefined",
     "why": "[her-switches] Off in this setup: Buckets: moving money names the mom reserve"
   },
   {
@@ -3974,5 +3974,40 @@
     "find": "if (at === Infinity) changedUntil.current.set(id, until);\n",
     "replace": "\n",
     "why": "[b281] 13.7 the hold never ends"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/choose.tsx",
+    "find": "if (target.kind === 'spending' && (options.wishlistItems?.length ?? 0) > 0 && putsInWishlist(choice)) {",
+    "replace": "if ((options.wishlistItems?.length ?? 0) > 0 && putsInWishlist(choice)) {",
+    "why": "[her-other] 7.8 money in asks which thing on her list it was"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Buckets.tsx",
+    "find": "{...(line.card !== 'old-card' && cardNames() !== null ? { href: statementPath(line.card) } : {})}",
+    "replace": "",
+    "why": "[her-other] 9.9 a card on Buckets does not open its statement"
+  },
+  {
+    "section": "words",
+    "file": "packages/web/src/screens/cards-text.ts",
+    "find": "    case 'other':\n      return 'Other';",
+    "replace": "    case 'other':\n      return 'Still unsorted';",
+    "why": "[her-other] 52.4 the Other group is called still unsorted"
+  },
+  {
+    "section": "words",
+    "file": "packages/web/src/screens/buckets-text.ts",
+    "find": "`${STATEMENT_NAMES[line.card]} statement`",
+    "replace": "'Your card statement'",
+    "why": "[her-other] 9.9 the row does not name the card"
+  },
+  {
+    "section": "words",
+    "file": "packages/web/src/screens/buckets-text.ts",
+    "find": "const STATEMENT_NAMES = withCardNames({ 'everyday-card': 'Everyday card', 'second-card': 'Second card' } as const);",
+    "replace": "const STATEMENT_NAMES = { 'everyday-card': 'Everyday card', 'second-card': 'Second card' } as const;",
+    "why": "[her-other] 9.9 the row ignores her bank's name for the card"
   }
 ]

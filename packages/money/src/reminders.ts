@@ -150,7 +150,7 @@ export function cardStanding(today: IsoDate, statement: CardStatement, payments:
   if (paid >= toPay) standing = 'paid';
   else if (daysLeft >= 0) standing = 'to-pay';
   else standing = paid < minimumPayment ? 'overdue' : 'minimum-paid';
-  return { card, closingDate, dueDate, daysLeft, statementBalance: card === 'everyday-card' ? statementBalance : null, minimumPayment, paid, standing };
+  return { card, closingDate, dueDate, daysLeft, statementBalance: isEverydayCard(card) ? statementBalance : null, minimumPayment, paid, standing };
 }
 
 function checkStatement(statement: CardStatement): void {

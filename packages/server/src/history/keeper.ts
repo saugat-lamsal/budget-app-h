@@ -531,7 +531,7 @@ export class Keeper {
   }
 
   buckets(): BucketsView {
-    return bucketsView({ today: this.today(), book: this.book(), bank: this.#bank(), madeUpData: false, catchingUp: this.#catchingUp(), why: this.#whyNow(), statements: this.#statements(), cardsOff: this.#cardsOff() });
+    return bucketsView({ today: this.today(), book: this.book(), bank: this.#bank(), madeUpData: false, catchingUp: this.#catchingUp(), why: this.#whyNow(), statements: this.#statements(), cardsOff: this.#cardsOff(), paidBeforeSetup: this.#bankNow().paidBeforeSetup });
   }
 
   // Section 40: the Trends tab, from the books and the bank history kept from
