@@ -55,6 +55,35 @@ function cardsOff(life: Life) {
   return settings.cardsOff;
 }
 
+describe('9.9 the statements on Buckets, from what the bank sent', () => {
+  function cards(life: Life) {
+    const buckets = life.keeper.buckets();
+    if (buckets.state !== 'tracking') throw new Error('not tracking');
+    return buckets.cards;
+  }
+
+  it('9.9 9.8 before the first reminder day too: the card with no closing day says its reminders are off; once set, its statement shows', async () => {
+    const life = await lifeInAFile();
+    try {
+      setUpThroughTheDesk(life);
+      life.h.fake.setStatement(ACCOUNT_IDS.old, OLD);
+      life.h.fake.setStatement(ACCOUNT_IDS.everyday, EVERYDAY);
+      life.now = noonInNewYork('2026-10-10');
+      await life.sync();
+      expect(attention(life).filter((a) => a.kind === 'card-due')).toEqual([]);
+      expect(cards(life)).toEqual({
+        statements: [{ card: 'everyday-card', closingDate: '2026-09-28', dueDate: '2026-10-23', daysLeft: 13, statementBalance: 45_025, minimumPayment: 3_500, paid: 0, standing: 'to-pay' }],
+        off: [{ card: 'old-card', why: 'no-statement-date' }],
+      });
+      expect(set(life, { oldCardClosingDay: 29 })).toBe(true);
+      expect(cards(life).off).toEqual([]);
+      expect(cards(life).statements[1]).toEqual({ card: 'old-card', closingDate: '2026-09-29', dueDate: '2026-10-26', daysLeft: 16, statementBalance: null, minimumPayment: 4_000, paid: 0, standing: 'to-pay' });
+    } finally {
+      life.done();
+    }
+  });
+});
+
 describe('9.8 a card the bank sends no statement date for', () => {
   it('9.8 no closing day set: no reminder, no due line, and Home and Settings say its reminders are off; the card the bank sent a date for is as before', async () => {
     const life = await onTheNineteenth({ old: OLD, everyday: EVERYDAY });

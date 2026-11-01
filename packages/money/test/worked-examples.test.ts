@@ -2,7 +2,7 @@
 // come from the "Check:" line in the text file itself, so the file you
 // check by hand and the test can never drift apart.
 import { describe, expect, it } from 'vitest';
-import { checkAssignment, nextPayday, parseDollars, payoffCountdown, startTracking, startingMoney, withPendingCharges, type Book, type Cents } from '../src/index.js';
+import { cardStanding, checkAssignment, nextPayday, parseDollars, payoffCountdown, startTracking, startingMoney, withPendingCharges, type Book, type Cents } from '../src/index.js';
 import text from '../worked-examples.txt?raw';
 import { describeFailure, liveALife } from './sim/life.js';
 import { PAY_PERIOD, PAY_PERIOD_SEED } from './sim/pay-period.js';
@@ -478,7 +478,7 @@ const examples: Record<number, () => Record<string, Cents>> = {
     const marked = book.pots();
     // The row on Needs' list offers what the purchase could be, and Wants makes it that purchase again.
     const offered = book.resortDetail('landlord');
-    expect(offered).toMatchObject({ resortable: true, marked: 'old-card', options: { picks: [{ to: 'needs' }, { to: 'wants' }] } });
+    expect(offered).toMatchObject({ resortable: true, marked: 'old-card', options: { picks: [{ to: 'needs' }, { to: 'wants' }, { to: 'not-mine' }] } });
     book.sort('landlord', { to: 'wants' }, '2026-10-06');
     const undone = book.pots();
     book.sort('landlord', { transfer: 'old-card' }, '2026-10-07');
@@ -768,6 +768,57 @@ const examples: Record<number, () => Record<string, Cents>> = {
       return countdown.on ? countdown.perPayday : -1;
     };
     return { 'twice a month share': share('twice-a-month'), 'every fourteen days share': share('every-n-days') };
+  },
+
+  43: () => {
+    const book = openTestBook({ pots: { needs: 100_000, wants: 50_000 } });
+    book.receive(deposit('cash', '2026-10-05', 20_000, 'MADE UP ATM DEPOSIT'));
+    book.sort('cash', { to: 'not-mine' }, '2026-10-05');
+    const afterDeposit = book.pots().heldForOthers;
+    book.receive(withdrawal('sent', '2026-10-06', 20_000, 'MADE UP ZELLE PAYMENT'));
+    book.sort('sent', { to: 'not-mine' }, '2026-10-06');
+    const afterSending = book.pots().heldForOthers;
+    book.receive(withdrawal('dinner', '2026-10-07', 8_500, 'MADE UP ZELLE PAYMENT'));
+    book.sort('dinner', { split: [{ bucket: 'wants', amount: 1_500 }, { bucket: 'not-mine', amount: 7_000 }] }, '2026-10-07');
+    const pots = book.pots();
+    return { 'held after the deposit': afterDeposit, 'held after sending it on': afterSending, 'last needs': pots.needs, 'last wants': pots.wants, 'last held': pots.heldForOthers };
+  },
+
+  44: () => {
+    const statement = { card: 'everyday-card', closingDate: '2026-10-05', dueDate: '2026-11-01', statementBalance: 25_000, minimumPayment: 2_500 } as const;
+    const some = [{ date: '2026-10-10', amount: 10_000 }];
+    const all = [{ date: '2026-10-10', amount: 25_000 }];
+    const before = cardStanding('2026-10-10', statement, []);
+    expect(before).toMatchObject({ daysLeft: 22, standing: 'to-pay' });
+    expect(cardStanding('2026-10-10', statement, some).standing).toBe('to-pay');
+    expect(cardStanding('2026-10-10', statement, all).standing).toBe('paid');
+    expect(cardStanding('2026-11-02', statement, some).standing).toBe('minimum-paid');
+    expect(cardStanding('2026-11-02', statement, []).standing).toBe('overdue');
+    return { 'statement balance': before.statementBalance ?? -1, minimum: before.minimumPayment, 'paid in part': cardStanding('2026-10-10', statement, some).paid };
+  },
+
+  45: () => {
+    const book = openTestBook({ pots: { needs: 100_000, wants: 50_000 } });
+    book.receive(withdrawal('sent', '2026-10-05', 12_500, 'MADE UP ZELLE PAYMENT'));
+    book.sort('sent', { to: 'not-mine' }, '2026-10-05');
+    const afterSending = book.pots().heldForOthers;
+    book.receive(deposit('cash', '2026-10-08', 14_000, 'MADE UP ATM DEPOSIT'));
+    book.sort('cash', { split: [{ bucket: 'not-mine', amount: 12_500 }, { bucket: 'wants', amount: 1_500 }] }, '2026-10-08');
+    const pots = book.pots();
+    return { 'other after sending it on': afterSending, 'other after the deposit': pots.heldForOthers, 'last wants': pots.wants, 'last needs': pots.needs };
+  },
+
+  46: () => {
+    const book = openTestBook({ pots: { needs: 100_000, wants: 50_000 } });
+    const safe = book.safeToSpend('2026-10-05').amount;
+    book.receive(purchase('tickets', '2026-10-05', 8_000, 'MADE UP TICKETS', { account: 'everyday-card' }));
+    book.sort('tickets', { to: 'not-mine' }, '2026-10-05');
+    const afterBuying = book.pots().heldForOthers;
+    const unchanged = book.safeToSpend('2026-10-05').amount;
+    expect(unchanged).toBe(safe);
+    book.receive(deposit('back', '2026-10-09', 8_000, 'MADE UP FRIEND'));
+    book.sort('back', { to: 'not-mine' }, '2026-10-09');
+    return { 'other after buying': afterBuying, 'other after being paid back': book.pots().heldForOthers, 'safe to spend': unchanged };
   },
 };
 

@@ -49,7 +49,7 @@ function attempts(d: ReviewDetail): Attempt[] {
     offered: o.split?.includes('not-mine') === true,
     run: (b) => b.sort(id, { split: [{ bucket: 'needs', amount: 1 }, { bucket: 'not-mine', amount: net - 1 }] }, TODAY),
   });
-  found.push({ name: 'split needs/savings', offered: false, run: (b) => b.sort(id, { split: [{ bucket: 'needs', amount: 1 }, { bucket: 'savings' as never, amount: net - 1 }] }, TODAY) });
+  found.push({ name: 'split needs/savings', offered: o.split?.includes('savings') === true, run: (b) => b.sort(id, { split: [{ bucket: 'needs', amount: 1 }, { bucket: 'savings' as never, amount: net - 1 }] }, TODAY) });
   for (const account of ACCOUNTS) found.push({ name: `transfer with ${account}`, offered: o.transfer.includes(account), run: (b) => b.sort(id, { transfer: account }, TODAY) });
   // A18: a refund matched to each purchase offered; and to something that is not one.
   for (const of of o.match) found.push({ name: `match to ${of}`, offered: true, run: (b) => b.sort(id, { refundOf: of }, TODAY) });

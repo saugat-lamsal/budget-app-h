@@ -196,10 +196,10 @@ describe('7.6 in review, a payment to a person can go to needs, wants, not mine,
     expect(b.pots()).toEqual({ ...START, needs: 17_000, wants: 29_999, heldForOthers: -5_999 });
   });
 
-  it('7.6 a purchase still splits across needs and wants only, and cannot be for mom (4.4)', () => {
+  it('7.6 7.7 a purchase never splits into savings, and cannot be for mom (4.4)', () => {
     const b = book();
     b.receive(purchase('e1', '2026-10-06', 9_000, 'MADE UP STORE'));
-    expect(codeOf(() => b.sort('e1', { split: [{ bucket: 'needs', amount: 5_000 }, { bucket: 'not-mine', amount: 4_000 }] }, '2026-10-07'))).toBe('bad-choice');
+    expect(codeOf(() => b.sort('e1', { split: [{ bucket: 'needs', amount: 5_000 }, { bucket: 'savings' as never, amount: 4_000 }] }, '2026-10-07'))).toBe('bad-choice');
     expect(codeOf(() => b.sort('e1', { to: 'mom' } as never, '2026-10-07'))).toBe('bad-choice');
     expect(b.pots()).toEqual({ ...START, unsortedOut: 9_000 });
   });

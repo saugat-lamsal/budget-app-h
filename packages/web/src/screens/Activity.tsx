@@ -84,7 +84,7 @@ const WHAT_WORDS: Readonly<Record<ActivityWhat, string>> = {
   paycheck: 'Paycheck',
   'other-income': 'Other income',
   payback: 'Payback',
-  'not-mine': 'Held for others',
+  'not-mine': 'Other',
   purchase: 'Purchase',
   'card-fee': 'Card fee',
   'card-interest': 'Card interest',

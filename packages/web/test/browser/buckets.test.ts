@@ -1,9 +1,10 @@
-import type { BankBalances, Book, IsoDate } from '@budget-app/money';
+import { cardStanding, type BankBalances, type Book, type IsoDate } from '@budget-app/money';
 import type { Server } from 'node:http';
 import type { Browser, Page } from 'playwright';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { MOM_NAME, START_DATE, appSide, openTestBook, payPerson, purchase, refund } from '../../../money/test/helpers.js';
 import { demoScenario } from '../../../server/src/demo/scenarios.js';
+import { cardStatementDetail } from '../../src/screens/buckets-text.js';
 import { ENGINES, launch, centsAt, close, openScenario, phone, showScenario, textAt, useEngine } from './harness.js';
 import { openLive, showLive, startLive } from './live.js';
 
@@ -20,6 +21,32 @@ function life(name: string): { readonly book: Book; readonly bank: BankBalances;
 
 describe.each(ENGINES)('Buckets in %s', (_name, engine) => {
   const { browser, base } = useEngine(engine);
+
+  it('9.9 each card statement shows before its first reminder day, against the money math', async () => {
+    const input = demoScenario('normal')?.input?.();
+    if (input === undefined || input.book === null) throw new Error('no life');
+    const old = input.statements.find((s) => s.card === 'old-card');
+    if (old === undefined) throw new Error('no old card statement');
+    const stands = cardStanding(input.today, old, input.book.cardPayments('old-card'));
+    expect(stands.daysLeft).toBeGreaterThan(7);
+    const page = await openScenario(await browser().newContext(phone()), base(), 'normal', '/buckets');
+    expect(await centsAt(page, 'statement-old-card-amount')).toBe(stands.minimumPayment);
+    const everyday = input.statements.find((s) => s.card === 'everyday-card');
+    expect(await centsAt(page, 'statement-everyday-card-amount')).toBe(everyday?.statementBalance);
+    expect(await textAt(page, 'statement-old-card')).toContain(cardStatementDetail(stands));
+    await page.context().close();
+  });
+
+  it('9.9 9.4 9.8 an overdue card says so in words, and a card whose reminders are off says why', async () => {
+    const overdue = await openScenario(await browser().newContext(phone()), base(), 'trouble', '/buckets');
+    expect(await textAt(overdue, 'statement-old-card')).toContain('Overdue: it was due');
+    await overdue.context().close();
+    const off = await openScenario(await browser().newContext(phone()), base(), 'cards-off', '/buckets');
+    expect(await off.locator('[data-testid^="statement-everyday-card"], [data-testid^="statement-old-card"]').count()).toBe(0);
+    expect(await textAt(off, 'statement-off-old-card')).toContain('Card reminders are off for the old card');
+    expect(await textAt(off, 'statement-off-everyday-card')).toContain('cannot be read');
+    await off.context().close();
+  });
 
   it('12.2 the total is what the buckets add up to, and every part adds up on the screen', async () => {
     const { book, bank } = life('normal');
@@ -117,11 +144,11 @@ describe.each(ENGINES)('Buckets in %s', (_name, engine) => {
     const context = await browser().newContext(phone());
     const page = await openScenario(context, base(), 'normal', '/buckets');
     expect(await centsAt(page, 'held-for-others')).toBe(0);
-    expect(await textAt(page, 'row-held')).toBe('Held for others Settled: nothing held either way $0.00');
+    expect(await textAt(page, 'row-held')).toBe('Other Not in Needs or Wants. Nothing here now. $0.00');
     // The same page, moved to the other life (showLive in live.ts says why).
     await showScenario(page, base(), 'buckets-busy', '/buckets');
     expect(await centsAt(page, 'held-for-others')).toBe(life('buckets-busy').book.othersMoney().heldForOthers);
-    expect(await textAt(page, 'row-held')).toBe("Held for others Holding money that isn't yours $120.00");
+    expect(await textAt(page, 'row-held')).toBe('Other Not in Needs or Wants. $120.00');
     await context.close();
   });
 
@@ -301,7 +328,7 @@ describe.each(ENGINES)('Buckets, books made for the test, in %s', (_name, engine
   it('7.3 someone owes you shows as a negative with words, not color alone', async () => {
     const book = openTestBook({ pots: { heldForOthers: -3_500 } });
     const { page, context } = await show(book);
-    expect(await textAt(page, 'row-held')).toBe('Held for others Someone owes you −$35.00');
+    expect(await textAt(page, 'row-held')).toBe('Other More went out than came in. Move money in to clear it. −$35.00');
     expect(await page.getByTestId('held-for-others').getAttribute('aria-label')).toBe('minus $35.00');
     expect(await centsAt(page, 'held-for-others')).toBe(-3_500);
     await context.close();

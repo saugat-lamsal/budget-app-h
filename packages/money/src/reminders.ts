@@ -125,6 +125,34 @@ export function cardDue(today: IsoDate, statement: CardStatement, payments: read
     : { kind: 'due', card, daysLeft, dueDate, minimumPayment };
 }
 
+// Rule 9.9 (QUESTIONS.md A61): a card's latest statement and where it stands,
+// at any time, for Buckets. It only reads: 9.6 and 9.7 say when the rest comes.
+export interface CardStanding {
+  readonly card: EverydayCard | 'old-card';
+  readonly closingDate: IsoDate;
+  readonly dueDate: IsoDate;
+  // Below zero once the due date has passed.
+  readonly daysLeft: number;
+  // 9.2: null on the old card.
+  readonly statementBalance: Cents | null;
+  readonly minimumPayment: Cents;
+  // What the app has seen paid toward this statement (9.3).
+  readonly paid: Cents;
+  // minimum-paid: past the due date, the minimum met and the rest not (9.3, 9.4).
+  readonly standing: 'to-pay' | 'paid' | 'overdue' | 'minimum-paid';
+}
+
+export function cardStanding(today: IsoDate, statement: CardStatement, payments: readonly CardPayment[]): CardStanding {
+  const { card, closingDate, dueDate, statementBalance, minimumPayment } = statement;
+  const { paid, toPay } = paidAgainst(today, statement, payments);
+  const daysLeft = daysBetween(today, dueDate);
+  let standing: CardStanding['standing'];
+  if (paid >= toPay) standing = 'paid';
+  else if (daysLeft >= 0) standing = 'to-pay';
+  else standing = paid < minimumPayment ? 'overdue' : 'minimum-paid';
+  return { card, closingDate, dueDate, daysLeft, statementBalance: card === 'everyday-card' ? statementBalance : null, minimumPayment, paid, standing };
+}
+
 function checkStatement(statement: CardStatement): void {
   if (!isEverydayCard(statement.card) && statement.card !== 'old-card') {
     throw new MoneyError('bad-statement', `reminders are for the everyday card, the second card or the old card, not ${String(statement.card)}`);

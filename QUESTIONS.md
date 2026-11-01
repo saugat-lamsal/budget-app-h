@@ -1135,6 +1135,36 @@ A59. ADDED Oct 18 (the redesign's PR 5, docs/redesign-plan.txt): the Trends
      all the recommended choices."): rulebook draft 30, 40.10 to 40.17 and
      42a.
 
+## Part A, added Oct 30, 2026. Both answered.
+
+A60. ANSWERED Oct 30 (his ask, his OK to build): a friend gives him cash, he
+     deposits it, and he sends it on through Zelle. The Zelle came out of
+     savings, read as money leaving savings, whose only choices were needs,
+     wants, a split, or a transfer. Now 7.7: "not mine" for money leaving
+     checking or savings. Rulebook draft 31, section 43.
+
+A61. ANSWERED Oct 30 (his ask): he could not tell whether a statement was
+     coming, since a card shows only from the first reminder day. Now 9.9: a
+     card on Buckets with each card's statement at any time.
+
+## Part A, added Nov 1, 2026. All answered.
+
+A62. ANSWERED Nov 1 (his ask, and "build all three"): he did not want money
+     marked as someone else's when it is just not needs or wants. Options
+     were one line called Other, or a choice that comes out of savings; he
+     took Other. Only the words change: the books keep their old names inside,
+     so the history replays as it was. Rulebook draft 32, section 44.
+
+A63. ANSWERED Nov 1: cash that is part a friend's and part what the friend owed
+     him could not be sorted in one step. Now 7.8: money in can be split.
+
+A64. ANSWERED Nov 1: something bought for a friend on the everyday card had to
+     go through a bucket until the friend paid back. Now 7.7 covers that card.
+
+A65. ANSWERED Nov 1: no cash balance. Everything in the app is checked against
+     the bank, and nothing could check a wallet. Moving money in by hand (13.3)
+     covers money sent on against cash he keeps.
+
 ## Part B. Built on the plain reading. Tell me if any is wrong.
 
 WAITING FOR YOU TO CHECK (Oct 10, 2026, the end of Phase 4). Each was
@@ -3425,3 +3455,46 @@ B274. Found in the WebKit pictures (PR 5's finishing pass), fixed with a test
       Every rolling amount with a 1 in it, since PR 2. Each digit is now
       centred in its cell, as a tabular figure is. Test: rolling-amounts.test.ts
       (a drawn "1" sits in the middle of its cell; failed in WebKit before).
+B275. A60 as built (7.7). "Not mine" is offered for money leaving checking or
+      savings, not for a purchase on a card: he asked about money in his
+      accounts, and a card purchase for a friend is already answered by the
+      friend paying it back (7.5). A sorting rule cannot pick it, since a
+      purchase rule picks needs or wants (13.6), so 13.8 offers no rule for it.
+      A refund of one marked not mine goes back to held for others, where it
+      came from (4.5). It shows as "Purchase" on Held for others' list, the
+      word that kind of item has on every list.
+B276. Found in his live books (Oct 30, his OK, read-only): the bank words a
+      Zelle from savings one way while pending and another once posted. His
+      bank rule on savings names the pending words, and the rule naming the
+      posted words is on checking only. So the posted one reads as money
+      leaving savings, not as a payment to a person, with no "for mom" and no
+      mom rule. It is fixed for what comes next by a second bank rule on
+      savings, in Settings (his step). What was already read stays as it was
+      (section 2), so 7.7 is what sorts the ones already waiting.
+B277. A61 as built (9.9). The card sits on Buckets, not Home, since Home has
+      one main number and its own line from the first reminder day (9.6). A
+      due date past with what 9.3 asks for paid says paid. The everyday card
+      paid in part after the due date, with the minimum met, says so in words:
+      no overdue alert comes for it (9.4).
+B278. A62 as built. Only the screens' words changed. Inside, the books still say
+      heldForOthers and not-mine, and the address stays /buckets/held-for-others,
+      since changing them would change what the history replays. On the sheet the
+      choice reads "Other (not Needs or Wants)", so it is not taken for "Other
+      income"; everywhere else it is Other.
+B279. A63 as built (7.8). The parts are Other, savings, needs, and wants, in that
+      order, so Wants gets the rest on the screen. The mom reserve is not a part:
+      the reserve fills from paychecks, and a whole payback into it is still a
+      choice. Other income is not a part, since it has its own split. A store
+      refund can be split too: both of its choices are parts. A split one on a
+      bucket's list says it was part of a split, and sorting it again replaces
+      the whole split.
+B280. A64 as built (7.7). The everyday card, not the old card, whose purchases
+      raise the debt and touch no bucket (5.4). As on checking and savings, a split
+      keeps Wants as the rest. A rule still picks needs or wants for a purchase, so
+      one a rule sorted is changed from its bucket's list.
+B281. Found on CI's WebKit (PR 54, the same test twice), fixed with a test first.
+      13.7's second was counted from when the screen worked out the new numbers,
+      so a slow first frame could use it up before the change could be seen, and a
+      tap meant for what was there before went through. It now starts at the frame
+      that shows the change. Nothing about money changed: the server still refuses
+      an answer about an item that is not what the screen sent.

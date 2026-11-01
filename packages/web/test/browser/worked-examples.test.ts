@@ -95,15 +95,16 @@ describe.each(ENGINES)('worked examples on the screen in %s', (_name, engine) =>
     await page.context().close();
   });
 
-  it('example 7 says Under target, and example 8 says In the target and Holding money that is not his', async () => {
+  it('example 7 says Under target, and example 8 says In the target and money in Other', async () => {
     const context = await browser().newContext(phone());
     const page = await openScenario(context, base(), EXAMPLE_LIVES[7] ?? '', '/buckets');
     expect(await page.getByTestId('mom').locator('[data-status]').innerText()).toBe('Under target');
-    expect(await textAt(page, 'row-held')).toContain('Settled');
+    expect(await textAt(page, 'row-held')).toContain('Nothing here now.');
     // The same page, moved to example 8's life (showLive in live.ts says why).
     await showScenario(page, base(), EXAMPLE_LIVES[8] ?? '', '/buckets');
     expect(await page.getByTestId('mom').locator('[data-status]').innerText()).toBe('In the target');
-    expect(await textAt(page, 'row-held')).toContain("Holding money that isn't yours");
+    expect(await textAt(page, 'row-held')).toContain('Not in Needs or Wants.');
+    expect(await textAt(page, 'row-held')).not.toContain('Nothing here now.');
     await context.close();
   });
 

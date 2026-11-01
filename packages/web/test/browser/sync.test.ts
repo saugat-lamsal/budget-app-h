@@ -268,6 +268,58 @@ describe.each(ENGINES)('syncing on the real server in %s', (_name, engine) => {
     }
   });
 
+  // B281 (CI's WebKit, PR 54): the second was counted from when the screen worked
+  // out the new numbers, so a slow first frame could use it up before the change
+  // could be seen. Here the frame is held back on purpose, longer than the hold.
+  it('13.7 A32 B281 the second starts when the change can be seen: a slow first frame does not use it up, and the sheet takes a tap after it', async () => {
+    const r = await realServer();
+    try {
+      r.life.h.fake.addPending({ id: 'cinema-1', account: E, amount: 1_800, date: '2026-10-03', description: 'MADE UP CINEMA' });
+      await r.life.sync();
+      const page = await open(r, '/review');
+      await waitOrReport(page, '[data-testid="item-cinema-1"]');
+      await page.getByTestId('item-cinema-1').getByTestId('more').click();
+      await waitOrReport(page, '[data-testid="sheet-picks"]');
+      const choices: string[] = [];
+      page.on('request', (request) => {
+        if (request.url().endsWith('/api/choice')) choices.push(request.postData() ?? '');
+      });
+      await setVisibility(page, 'hidden');
+      r.life.h.fake.postPending('cinema-1', { id: 'cinema-1-posted', date: '2026-10-04', amount: 2_150 });
+      await r.life.sync();
+      const tapped = page.evaluate(
+        () =>
+          new Promise<string>((resolve) => {
+            const watch = new MutationObserver(() => {
+              const amount = document.querySelector('[data-testid="sheet-amount"]')?.textContent ?? '';
+              if (!amount.includes('21.50')) return;
+              watch.disconnect();
+              // The frame that would show it is late, by more than the hold, and
+              // whatever timers came due run first. Then a tap meant for what was there.
+              const until = performance.now() + 1_300;
+              while (performance.now() < until);
+              setTimeout(() => {
+                document.querySelector<HTMLButtonElement>('[data-testid="choice-wants"]')?.click();
+                resolve(amount);
+              }, 20);
+            });
+            watch.observe(document.body, { subtree: true, childList: true, characterData: true });
+          }),
+      );
+      await setVisibility(page, 'visible');
+      expect(await tapped).toContain('21.50');
+      await page.waitForTimeout(300);
+      expect(choices).toEqual([]);
+      await page.waitForTimeout(1_500);
+      await page.getByTestId('choice-wants').click();
+      await expect.poll(() => r.life.keeper.book()?.pots().wants).toBe(20_000 - 2_150);
+      await untilQuiet(page);
+      expect(choices).toHaveLength(1);
+    } finally {
+      await done(r);
+    }
+  });
+
   it('13.7 A32 3.4 on Payday, a question that spending from before payday made smaller says so, and takes no tap for about a second', async () => {
     const r = await realServer();
     try {

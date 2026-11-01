@@ -437,7 +437,7 @@ type PersonSorting = 'needs' | 'wants' | 'not-mine' | 'mom' | 'split';
 type Intent =
   | { readonly type: 'store'; readonly sorting: Sorting; readonly store: string }
   | { readonly type: 'person'; readonly sorting: PersonSorting }
-  | { readonly type: 'from-savings'; readonly sorting: 'needs' | 'wants' }
+  | { readonly type: 'from-savings'; readonly sorting: 'needs' | 'wants' | 'not-mine' }
   | { readonly type: 'money-in'; readonly choice: 'paycheck' | 'other-income' | 'not-mine' | 'needs' | 'wants' }
   | { readonly type: 'refund'; readonly bucket: 'needs' | 'wants' | 'wishlist' };
 
@@ -1426,7 +1426,10 @@ class Life {
     this.#stats.savingsBills++;
     const before = this.#book.pots();
     const txn = this.#bank.payFromSavings(this.#date, r.int(5_000, 60_000), r.pick(['MADE UP INSURANCE', 'MADE UP UTILITY'] as const));
-    this.#intents.set(txn.id, { type: 'from-savings', sorting: r.chance(4, 5) ? 'needs' : 'wants' });
+    // 7.7: now and then it was a friend's money sent on (from the amount, so the
+    // lives' random numbers stay as they were).
+    const bucket = r.chance(4, 5) ? 'needs' : 'wants';
+    this.#intents.set(txn.id, { type: 'from-savings', sorting: txn.amount % 5 === 0 ? 'not-mine' : bucket });
     const outcome = this.#receive(txn);
     const item = this.#book.reviewItems().find((i) => i.id === txn.id);
     if (outcome !== 'review' || item?.type !== 'spending' || item.reason !== 'from-savings') {
@@ -2050,6 +2053,14 @@ class Life {
           this.#expectRefused(() => this.#book.sort(item.id, { to: 'paycheck' }, today), before, item.id, 'calling a deposit older than the last paycheck a paycheck (B54)');
           choice = 'other-income';
         }
+        // 7.8: now and then part of a friend's money was what the friend owed.
+        if (choice === 'not-mine' && item.amount % 5 === 0 && item.amount >= 2) {
+          const owed = Math.max(1, Math.floor(item.amount / 10));
+          this.#book.sort(item.id, { split: [{ bucket: 'not-mine', amount: item.amount - owed }, { bucket: 'wants', amount: owed }] }, today);
+          this.#note(`split money in ${item.id}`);
+          this.#expectChange(before, { heldForOthers: item.amount - owed, wants: owed, unsortedIn: -item.amount }, '7.8 splitting money in', item.id);
+          return;
+        }
         const asked = this.#openLeftovers();
         this.#book.sort(item.id, { to: choice }, today);
         this.#waitingForYes.delete(item.id);
@@ -2239,8 +2250,8 @@ class Life {
       // it out of savings, the person then moves the money by hand (13.3).
       if (intent?.type !== 'from-savings') throw new CheckFailed('4.9 only money leaving savings waits as from savings', JSON.stringify(item));
       this.#book.sort(item.id, { to: intent.sorting }, today);
-      change = { [intent.sorting]: -item.amount };
-      if (r.chance(1, 2)) cover = intent.sorting;
+      change = intent.sorting === 'not-mine' ? { heldForOthers: -item.amount } : { [intent.sorting]: -item.amount };
+      if (r.chance(1, 2) && intent.sorting !== 'not-mine') cover = intent.sorting;
     } else if (intent?.type === 'person') {
       const sorting = intent.sorting === 'split' && item.amount < 3 ? 'wants' : intent.sorting;
       if (sorting === 'mom') {

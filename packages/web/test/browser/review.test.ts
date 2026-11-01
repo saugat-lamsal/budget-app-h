@@ -109,6 +109,65 @@ describe.each(ENGINES)('Review in %s', (_name, engine) => {
     await page.context().close();
   });
 
+  it('7.7 4.9 money out of savings can be marked Not mine: held for others goes down, and Needs and Wants do not move', async () => {
+    const twin = life('review-busy');
+    const id = idOf(twin.book, 'BILL PAY WATER UTILITY');
+    const page = await openReview(await browser().newContext(phone()), base(), 'review-busy');
+    await item(page, id).getByTestId('more').click();
+    await page.getByTestId('choice-not-mine').click();
+    await item(page, id).waitFor({ state: 'detached' });
+    twin.book.sort(id, { to: 'not-mine' }, twin.today);
+    expect(await textAt(page, 'notice')).toBe('BILL PAY WATER UTILITY marked Other. OK');
+    expect(await bucketsOnScreen(page)).toEqual(bucketsOf(twin.book));
+    await page.context().close();
+  });
+
+  it('7.8 a deposit can be split: a part in Other, Wants gets the rest', async () => {
+    const twin = life('review-busy');
+    const found = twin.book.reviewItems().find((i) => i.type === 'money-in' && i.reason === 'deposit');
+    if (found === undefined || found.type !== 'money-in') throw new Error('no deposit waiting');
+    const part = Math.floor(found.amount / 2);
+    const page = await openReview(await browser().newContext(phone()), base(), 'review-busy');
+    await item(page, found.id).getByTestId('more').click();
+    const sheet = page.getByTestId('review-sheet');
+    expect(await sheet.getByTestId('split-rest').innerText()).toBe('Wants gets the rest.');
+    await sheet.getByTestId('split-not-mine').fill((part / 100).toFixed(2));
+    await sheet.getByTestId('split-submit').click();
+    await item(page, found.id).waitFor({ state: 'detached' });
+    twin.book.sort(found.id, { split: [{ bucket: 'not-mine', amount: part }, { bucket: 'wants', amount: found.amount - part }] }, twin.today);
+    expect(await bucketsOnScreen(page)).toEqual(bucketsOf(twin.book));
+    await page.context().close();
+  });
+
+  it('7.7 a purchase on the everyday card can be marked Other, on the sheet with words that are not Other income', async () => {
+    const twin = life('review-busy');
+    const id = idOf(twin.book, 'CORNER STORE');
+    const page = await openReview(await browser().newContext(phone()), base(), 'review-busy');
+    await item(page, id).getByTestId('more').click();
+    expect(await textAt(page, 'choice-not-mine')).toBe('Other (not Needs or Wants)');
+    await page.getByTestId('choice-not-mine').click();
+    await item(page, id).waitFor({ state: 'detached' });
+    twin.book.sort(id, { to: 'not-mine' }, twin.today);
+    expect(await bucketsOnScreen(page)).toEqual(bucketsOf(twin.book));
+    await page.context().close();
+  });
+
+  it('7.7 4.4 splitting it, Wants still gets the rest, and a part can be Not mine', async () => {
+    const twin = life('review-busy');
+    const id = idOf(twin.book, 'BILL PAY WATER UTILITY');
+    const page = await openReview(await browser().newContext(phone()), base(), 'review-busy');
+    await item(page, id).getByTestId('more').click();
+    const sheet = page.getByTestId('review-sheet');
+    expect(await sheet.getByTestId('split-rest').innerText()).toBe('Wants gets the rest.');
+    await sheet.getByTestId('split-needs').fill('10.00');
+    await sheet.getByTestId('split-not-mine').fill('50.00');
+    await sheet.getByTestId('split-submit').click();
+    await item(page, id).waitFor({ state: 'detached' });
+    twin.book.sort(id, { split: [{ bucket: 'needs', amount: 1_000 }, { bucket: 'not-mine', amount: 5_000 }, { bucket: 'wants', amount: 410 }] }, twin.today);
+    expect(await bucketsOnScreen(page)).toEqual(bucketsOf(twin.book));
+    await page.context().close();
+  });
+
   it('4.2 4.4 4.9 5.2 6.1 7.6 8.3 the choices on every item are the ones the money math offers for it', async () => {
     const { book } = life('review-busy');
     const page = await openReview(await browser().newContext(phone()), base(), 'review-busy');
@@ -140,10 +199,10 @@ describe.each(ENGINES)('Review in %s', (_name, engine) => {
       const splitShown = (await sheet.getByTestId('sheet-split').count()) === 1;
       if (splitShown !== (o.split !== null)) problems.push(`${d.item.id}: split shown ${String(splitShown)}`);
       if (o.split !== null) {
-        const fields = await sheet.locator('[data-testid^="split-"][data-testid$="s"], [data-testid="split-needs"], [data-testid="split-wants"]').evaluateAll((els) => [...new Set(els.map((e) => e.getAttribute('data-testid') ?? ''))]);
+        const fields = await sheet.locator('[data-testid^="split-"][data-testid$="s"], [data-testid="split-needs"], [data-testid="split-wants"], [data-testid="split-not-mine"]').evaluateAll((els) => [...new Set(els.map((e) => e.getAttribute('data-testid') ?? ''))]);
         const expectFields = o.split.slice(0, -1).map((b) => `split-${b}`);
         if (fields.filter((f) => expectFields.includes(f)).join() !== expectFields.join()) problems.push(`${d.item.id}: split fields ${fields.join()} but ${expectFields.join()}`);
-        const restWord = o.split[o.split.length - 1] === 'not-mine' ? 'Not mine' : o.split[o.split.length - 1] === 'wants' ? 'Wants' : 'Needs';
+        const restWord = o.split[o.split.length - 1] === 'not-mine' ? 'Other' : o.split[o.split.length - 1] === 'wants' ? 'Wants' : 'Needs';
         if ((await sheet.getByTestId('split-rest').innerText()) !== `${restWord} gets the rest.`) problems.push(`${d.item.id}: rest line`);
       }
       const alwaysShown = (await sheet.getByTestId('always-toggle').count()) === 1;
@@ -846,13 +905,13 @@ describe.each(ENGINES)('Review in %s', (_name, engine) => {
     const page = await openReview(await browser().newContext(phone()), base(), 'review-busy');
     await item(page, id).getByTestId('more').click();
     const sheet = page.getByTestId('review-sheet');
-    expect(await sheet.getByTestId('split-rest').innerText()).toBe('Not mine gets the rest.');
+    expect(await sheet.getByTestId('split-rest').innerText()).toBe('Other gets the rest.');
     await sheet.getByTestId('split-needs').fill('10.00');
     await sheet.getByTestId('split-wants').fill('5.00');
     await sheet.getByTestId('split-submit').click();
     await item(page, id).waitFor({ state: 'detached' });
     twin.book.sort(id, { split: [{ bucket: 'needs', amount: 1_000 }, { bucket: 'wants', amount: 500 }, { bucket: 'not-mine', amount: 2_500 }] }, twin.today);
-    expect(await textAt(page, 'notice')).toBe('ZELLE TO MADE UP FRIEND split: Needs $10.00, Wants $5.00, Not mine $25.00. OK');
+    expect(await textAt(page, 'notice')).toBe('ZELLE TO MADE UP FRIEND split: Needs $10.00, Wants $5.00, Other $25.00. OK');
     const numbers = await bucketsOnScreen(page);
     expect(numbers).toEqual(bucketsOf(twin.book));
     expect(numbers.heldForOthers).toBe(-2_500);
