@@ -509,3 +509,30 @@ or "Due" on Wishlist items and cards, never color alone.
   and folder, and never the test bank's. Her day's steps:
   docs/her-connection-day.txt. Nothing deployed, imported or connected by
   it.
+- Other, split deposits and statements (branch her-other-and-statements, Nov 1,
+  2026; rulebook 60j, docs/her-questions.txt HA12, HB39 to HB43, his "yes to
+  all"). A real merge of upstream main at 1189c36 (his PRs #53 and #54), then her
+  parts, tests first. Rules 7.1 to 7.3, 7.6, 7.7, 7.8, 9.9, 52.4 and the words
+  in 3.1, 4.2, 4.9, 6.1, 11.3, 12.2, 14.2, 40.2.
+  - Other is words only: inside, heldForOthers and not-mine stay, and the
+    address stays /buckets/held-for-others, so the history replays.
+  - Money: Other on a purchase on either card, and on money leaving checking
+    or savings (review-options notMine, Book #canBeNotMine); Wishlist a part of
+    a purchase split and of a deposit split (#splitMoneyIn), and a Wishlist part
+    counts in 50.4 (wishlistFlows). Wants gets the rest on the screen, where
+    Wishlist did (HB30). statement.ts has an Other group, and a split refund on
+    a card reads part by part.
+  - Server: bucketsView reads each card's standing with cardPaymentsSeen (60i).
+    SPLIT_BUCKETS, ChoicePart. Web: "Card statements" on Buckets, each card by
+    its bank's name, a row opens its statement; money in never asks which thing
+    on her list it was (choose.tsx). B281 came with the merge.
+  - Tests: money other-her (with random lives), server other-her, web
+    other-text-her, browser other-her; worked examples money 19, 20, server 9.
+    Her simulated life marks purchases Other, splits them with it, and splits
+    money in with Wishlist. Her lives 200 x 2 years, upstream's 100 x 3 years,
+    and the slow run without browsers (4,466 passing): all passed. Browser tests
+    of the touched screens passed in Chromium and WebKit, worked examples and
+    the pay period among them.
+  - Break-it: "[her-other]" 23 of 23, and "[a60]", "[a61]", "[a62]", "[a63]",
+    "[b281]" and 5 older breaks pointed at the code again, 70 of 70; each judged
+    with --only by its own test file, the screens' in Chromium.
