@@ -61,7 +61,7 @@ export function createDemoServer(options: { readonly webRoot: string; readonly o
     },
     buckets: async (request) => {
       const { input, her } = await wait(scenarioOf(request));
-      const view = bucketsView({ today: input.today, book: input.book, bank: input.bank, madeUpData: input.madeUpData, catchingUp: input.catchingUp ?? false, why: input.bankDetail?.why ?? null });
+      const view = bucketsView({ today: input.today, book: input.book, bank: input.bank, madeUpData: input.madeUpData, catchingUp: input.catchingUp ?? false, why: input.bankDetail?.why ?? null, statements: input.statements, cardsOff: input.cardsOff ?? [] });
       return her === null ? view : herBuckets(view);
     },
     trends: async (request) => {

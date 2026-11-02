@@ -1,6 +1,6 @@
 import { parseDollars, type AccountId, type Cents, type IsoDate, type LikelyPurchase, type PickTo, type ReviewDetail, type ReviewOptions, type RuleOffer, type SortedNow, type WishlistItem } from '@budget-app/money';
 import type { ChoiceOf, ChoicePart, ChoiceRequest, PaycheckSplitShown, ReviewItemShown as KeyedDetail } from '@budget-app/server/views';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { newDecisionId, sendChoice, type Reload } from '../app/api.js';
 import { BottomSheet, Button, ButtonRow, Card, Decision, ListRow, Money, Notice, TextField, ToggleRow } from '../ui/blocks.js';
 import { shortDate } from '../ui/dates.js';
@@ -274,7 +274,7 @@ export function useChoiceFlow(options: { readonly resort: boolean; readonly relo
       ...(extra.ask === undefined ? {} : { ask: extra.ask }),
       ...(extra.about === undefined ? {} : { about: extra.about }),
     };
-    if ((options.wishlistItems?.length ?? 0) > 0 && putsInWishlist(choice)) {
+    if (target.kind === 'spending' && (options.wishlistItems?.length ?? 0) > 0 && putsInWishlist(choice)) {
       setSaid(null);
       setSheet({ item: target.id, step: 'which-item', pending });
     } else if (extra.final === true || extra.always !== undefined) {
@@ -293,7 +293,9 @@ function useFresh(keys: ReadonlyMap<string, string>) {
   const shown = useRef<ReadonlyMap<string, string> | null>(null);
   const signature = useRef('');
   // Changed items, and until when (performance.now()) each takes no tap.
+  // Infinity until the frame that shows the change (B281).
   const changedUntil = useRef(new Map<string, number>());
+  const frame = useRef<number | null>(null);
   // Items he answered since the screen last read its numbers.
   const own = useRef(new Set<string>());
   const [, redraw] = useState(0);
@@ -301,18 +303,36 @@ function useFresh(keys: ReadonlyMap<string, string>) {
   const now = [...keys].map(([id, key]) => `${id}=${key}`).join('&');
   if (now !== signature.current) {
     const before = shown.current;
-    const at = performance.now();
     for (const id of [...changedUntil.current.keys()]) if (!keys.has(id) || own.current.has(id)) changedUntil.current.delete(id);
     if (before !== null) {
       for (const [id, key] of keys) {
         const was = before.get(id);
-        if (was !== undefined && was !== key && !own.current.has(id)) changedUntil.current.set(id, at + CHANGED_HOLD_MS);
+        if (was !== undefined && was !== key && !own.current.has(id)) changedUntil.current.set(id, Infinity);
       }
     }
     own.current.clear();
     shown.current = new Map(keys);
     signature.current = now;
   }
+
+  // B281: the second starts at the frame that shows the change, so a slow frame
+  // does not use it up before he can see it.
+  useLayoutEffect(() => {
+    if (frame.current !== null || ![...changedUntil.current.values()].includes(Infinity)) return;
+    frame.current = requestAnimationFrame(() => {
+      frame.current = null;
+      const until = performance.now() + CHANGED_HOLD_MS;
+      for (const [id, at] of changedUntil.current) if (at === Infinity) changedUntil.current.set(id, until);
+      redraw((n) => n + 1);
+    });
+  });
+  useEffect(
+    () => () => {
+      if (frame.current !== null) cancelAnimationFrame(frame.current);
+      frame.current = null;
+    },
+    [],
+  );
 
   // Drawn again when the first hold ends, so its buttons take a tap.
   useEffect(() => {
@@ -666,7 +686,7 @@ function Choices({ subject, busy, onChoose, startNotAPaycheck = false }: { reado
   const rule = always ? { contains: ruleText } : undefined;
   // Her rulebook, 3.1: a paycheck waiting for her yes shows what each bucket
   // would get, and yes asks first. "Not a paycheck" opens the other choices
-  // of 6.1 (other income, payback, not mine).
+  // of 6.1 (other income, payback, Other).
   const [notAPaycheck, setNotAPaycheck] = useState(startNotAPaycheck);
   const asking = subject.paycheckAsk === true && subject.now === null && !notAPaycheck;
   const yes = options.picks.find((p) => p.to === 'paycheck');
@@ -832,7 +852,7 @@ function SplitForm({
   onChoose,
 }: {
   readonly subject: Subject;
-  readonly buckets: readonly ('needs' | 'wants' | 'wishlist' | 'not-mine')[];
+  readonly buckets: readonly ('needs' | 'wants' | 'wishlist' | 'not-mine' | 'savings')[];
   readonly busy: boolean;
   readonly onChoose: Choose;
 }) {

@@ -38,7 +38,7 @@ Each day
 3. Then look at the screens. Every day: Home (with each card on it),
    Buckets, Review, and the Wishlist list. On Oct 1, Oct 3, Oct 5, Oct 7,
    Oct 8, Oct 10, Oct 13 and Oct 16 also every other screen: the list of
-   each bucket (Needs, Wants, Savings, Wishlist, Held for others), Payday,
+   each bucket (Needs, Wants, Savings, Wishlist, Other), Payday,
    Settings and its Status page, each card's statement (tap the card on
    Home), and Trends.
 4. For every number on every screen you look at, write down what the

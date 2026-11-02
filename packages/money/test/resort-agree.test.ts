@@ -38,7 +38,7 @@ function attempts(d: Sortable): Attempt[] {
     offered: o.split?.includes('not-mine') === true,
     run: (b) => b.sort(id, { split: [{ bucket: 'needs', amount: 1 }, { bucket: 'not-mine', amount: d.amount - 1 }] }, TODAY),
   });
-  found.push({ name: 'split needs/savings', offered: false, run: (b) => b.sort(id, { split: [{ bucket: 'needs', amount: 1 }, { bucket: 'savings' as never, amount: d.amount - 1 }] }, TODAY) });
+  found.push({ name: 'split needs/savings', offered: o.split?.includes('savings') === true, run: (b) => b.sort(id, { split: [{ bucket: 'needs', amount: 1 }, { bucket: 'savings' as never, amount: d.amount - 1 }] }, TODAY) });
   for (const account of ACCOUNTS) found.push({ name: `transfer with ${account}`, offered: o.transfer.includes(account), run: (b) => b.sort(id, { transfer: account }, TODAY) });
   for (const of of o.match) found.push({ name: `match to ${of}`, offered: true, run: (b) => b.sort(id, { refundOf: of }, TODAY) });
   // A21: "It was not a payment to the old card", only for one marked from savings.

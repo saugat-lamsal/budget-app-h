@@ -1,6 +1,10 @@
+import type { CardStanding } from '@budget-app/money';
 import type { OnItsWay } from '@budget-app/server/views';
 import { nameOf } from '../ui/card-names.js';
 import { shortDate } from '../ui/dates.js';
+import { withCardNames } from '../ui/card-names.js';
+import { moneyText } from '../ui/money-format.js';
+import { dueText } from './home-text.js';
 import { ACCOUNT_NAMES } from './review-text.js';
 
 // Words for money on its way between his accounts (12.5, B44), on Buckets:
@@ -28,4 +32,35 @@ export function onItsWayDetail(item: Pick<OnItsWay, 'from' | 'to' | 'date' | 'se
   const to = nameOf(item.to) ?? (card ? `the ${ACCOUNT_NAMES[item.to].toLowerCase()}` : ACCOUNT_NAMES[item.to]);
   const where = item.seen === 'left' ? `Left ${from} ${shortDate(item.date)}. Not ${card ? 'on' : 'in'} ${to} yet.` : `Reached ${to} ${shortDate(item.date)}. Not shown leaving ${from} yet.`;
   return item.counted ? where : `${where} Not part of the check with your bank: the old card is kept apart.`;
+}
+
+// 9.9: a card's statement, on Buckets. The amount beside the row is the
+// statement balance on the everyday card (9.1) and the minimum on the old card
+// (9.2); the row's name says which.
+const STATEMENT_NAMES = withCardNames({ 'everyday-card': 'Everyday card', 'second-card': 'Second card' } as const);
+
+export function cardStatementTitle(line: Pick<CardStanding, 'card'>): string {
+  return line.card === 'old-card' ? 'Old card minimum' : `${STATEMENT_NAMES[line.card]} statement`;
+}
+
+export function cardStatementDetail(line: CardStanding): string {
+  const due = shortDate(line.dueDate);
+  const closed = `Statement closed ${shortDate(line.closingDate)}.`;
+  const minimum = `Minimum ${moneyText(line.minimumPayment)}.`;
+  switch (line.standing) {
+    case 'paid':
+      return `${line.card !== 'old-card' ? 'Paid' : 'Minimum paid'}. Due ${due}. ${closed}`;
+    case 'overdue':
+      return `Overdue: it was due ${due}. ${minimum} ${closed}`;
+    case 'minimum-paid':
+      return `The due date passed, ${due}, with ${moneyText(line.paid)} paid. The minimum was met; interest may apply to the rest. ${closed}`;
+    case 'to-pay': {
+      const when = dueText(line.daysLeft);
+      const parts = [`${when.charAt(0).toUpperCase()}${when.slice(1)}, ${due}.`];
+      if (line.card !== 'old-card') parts.push(minimum);
+      if (line.paid > 0) parts.push(`${moneyText(line.paid)} paid so far.`);
+      parts.push(closed);
+      return parts.join(' ');
+    }
+  }
 }

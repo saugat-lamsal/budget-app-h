@@ -143,5 +143,6 @@ describe('50.3 a purchase sorted to Wishlist, and what was bought', () => {
       }),
     ).toBe(false);
     expect(putsInWishlist({ refundOf: 'p1' })).toBe(false);
+    expect(putsInWishlist({ to: 'not-mine' })).toBe(false);
   });
 });

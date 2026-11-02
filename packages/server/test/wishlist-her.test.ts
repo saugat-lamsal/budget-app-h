@@ -91,7 +91,7 @@ describe('PR 9 the Wishlist bucket on the server', () => {
     const k = life.keeper;
     const review = k.review();
     const item = review.state === 'tracking' ? review.items.find((i) => i.item.id === 'gadget-1') : undefined;
-    expect(item?.options.type === 'sort' && item.options.picks.map((p) => p.to)).toEqual(['needs', 'wants', 'wishlist']);
+    expect(item?.options.type === 'sort' && item.options.picks.map((p) => p.to)).toEqual(['needs', 'wants', 'wishlist', 'not-mine']);
     expect(choose(k, { item: 'gadget-1', choice: { to: 'wishlist' } }).ok).toBe(true);
     const buckets = k.buckets();
     expect(buckets.state === 'tracking' && buckets.wishlist).toBe(25_000);

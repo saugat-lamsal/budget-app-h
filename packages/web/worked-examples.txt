@@ -214,9 +214,9 @@ EXAMPLE 8. Money held for a roommate, and mom within the target (demo
 
 The same life as example 1, plus:
 
-Oct 5  His roommate sends 120.00 for the rent. He marks it "not mine"
-       (7.1): held for others 0.00 + 120.00 = 120.00. Buckets says
-       "Holding money that isn't yours".
+Oct 5  His roommate sends 120.00 for the rent. He marks it Other
+       (7.1): Other 0.00 + 120.00 = 120.00. Buckets says
+       "Not in Needs or Wants."
 Oct 6  ZELLE TO MADE UP MOM, 2,000.00. The mom rule matches (8.1):
        mom reserve 2,200.00 - 2,000.00 = 200.00
        Sent to mom in October: 500.00 + 2,000.00 = 2,500.00. That is

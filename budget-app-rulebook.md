@@ -22,8 +22,10 @@ place too: PR 12b, 12.1's posted balance for her Capital One accounts
 (60h); PR 13, the rule finder (60g, docs/her-rule-finder.txt): section
 2's history, paycheck rule and bank rules lines, 40.1 and section 53. On
 Oct 27, 2026 he approved one more, found in her rehearsal and built at
-once: 9.3's payments from before setup day (60i). So section H is empty
-again: every rule here is in force. Unchanged for her setup: the pay schedule (section 2),
+once: 9.3's payments from before setup day (60i). On Nov 1, 2026 he approved
+upstream's 7.7, 7.8 and 9.9 for her setup, merged and built at once, with
+Other in place of "not mine" and "held for others" in the rules in force
+(60j). So section H is empty again: every rule here is in force. Unchanged for her setup: the pay schedule (section 2),
 sorting rules (4.2, 6.2, 13.2, 13.6, 13.8) and bank rules (section 2) stay
 exactly as upstream's; bank rules are per account, so they cover both
 banks without a change. "You" is the
@@ -184,7 +186,7 @@ offered anywhere.
      paycheck uses, 13.1), and nothing moves until you say yes. Yes splits it
      and starts the new pay period on the day it arrived, not the day you
      answer, exactly as "This is my paycheck" does (6.1). "Not a paycheck"
-     gives it the other choices of 6.1 (other income, payback, not mine).
+     gives it the other choices of 6.1 (other income, payback, Other).
      With the setting off, a matching deposit is split by itself and starts
      a new pay period.
 3.2  The mom reserve comes off first. If the reserve is already at its cap,
@@ -218,8 +220,8 @@ offered anywhere.
 4.1  A purchase on the debit card or on either card comes out of a
      bucket on the day of the purchase.
 4.2  The bucket is picked by your rules. No matching rule means "unsorted".
-     Spending goes to needs, wants or Wishlist; to pay for something out
-     of savings, move the money by hand (13.3).
+     Spending goes to needs, wants or Wishlist (or Other, 7.7); to pay for
+     something out of savings, move the money by hand (13.3).
 4.3  Unsorted spending is held back from safe-to-spend until you sort it.
 4.4  A purchase can be split across buckets. The parts must add up to the
      total. A purchase can be split across needs, wants and Wishlist.
@@ -255,9 +257,9 @@ offered anywhere.
 4.9  Money leaving savings that is not a transfer to one of your accounts
      (5.3, 5.6) or a payment to a person (7.4), such as a withdrawal or a
      bill paid straight from savings, always waits in review, even when a
-     rule matches it. It has the same choices as any spending (4.2 to 4.4).
-     To pay for it out of savings, sort it and then move the money by hand
-     (13.3).
+     rule matches it. It has the same choices as any spending (4.2 to 4.4),
+     and Other (7.7). To pay for it out of savings, sort it and then move
+     the money by hand (13.3).
 4.10 If the bank takes back a transaction the app already counted (a charge
      shown twice, a correction), the app takes it back too: whatever it did
      to the buckets, the mom reserve, money in transit, or the old card
@@ -307,34 +309,53 @@ offered anywhere.
        taken and no new pay period starts. The reserve comes only from
        paychecks.
      - Payback: goes into the bucket you pick
-     - Not mine: goes to "held for others"
+     - Other: goes to Other (7.1)
      A paycheck-looking deposit held back under 3.7 gets the same
      choices. A store refund waiting in review is not income: it gets
-     payback and not mine, and it can be matched to the purchase it belongs
+     payback and Other, and it can be matched to the purchase it belongs
      to (4.5). Money in to checking keeps the four choices and also offers
      "this refund is for this one", with its likely purchases on checking
-     (4.5).
+     (4.5). Money in can also be split (7.8).
 6.2  A rule can make the choice automatic for a known source.
 
 
-## 7. Other people's money
+## 7. Other: money that is not needs or wants
 
-7.1  A deposit marked "not mine" adds to "held for others". It is not income
-     and is not split.
-7.2  A payment out marked "not mine" lowers "held for others". It is not
-     spending.
-7.3  "Held for others" is shown as its own number and should return to zero.
-     A negative number means someone owes you.
+7.1  A deposit marked Other adds to Other. It is not income and is not split
+     by the percentages.
+7.2  A payment out marked Other lowers Other. It is not spending.
+7.3  Other is shown as its own number, and goes back to zero when what came
+     in and what went out cancel. A negative number means more went out than
+     came in: someone owes you, or it paid for something with nothing coming
+     back. Moving money in by hand (13.3) clears it.
 7.4  Payments to people go to the daily review unless there is a rule for
      that person. This is the same whichever of your accounts they leave.
 7.5  A friend paying you back is a payback (6.1).
-7.6  In review, a payment to a person can go to needs, wants, not mine, or
-     "for mom", or be split across needs, wants, and not mine; the parts
+7.6  In review, a payment to a person can go to needs, wants, Other, or
+     "for mom", or be split across needs, wants, and Other; the parts
      must add up to the payment. "For mom" takes it out of the mom reserve
      and counts it toward the month, like a payment the mom rule matches
      (8.1 to 8.3). A rule for a person can say "for mom" too. One marked
      for mom this way can be sorted again later; one the mom rule matches
      cannot.
+7.7  Money leaving checking or savings, and a purchase on either card, that
+     the app read as a purchase or a withdrawal (4.1, 4.9), not as a payment
+     to a person, can also be marked Other, in review or when sorting it
+     again, or split across needs, wants, Wishlist and Other; the parts must
+     add up to it. It then lowers Other and is not spending (7.2), such as a
+     friend's cash you deposited and sent on, or something you bought for a
+     friend. If the money that came in was marked Other too, the two cancel
+     out and no bucket changes. A sorting rule cannot pick it (6.2 and 7.4 are
+     the rules for known sources and people). The difference on a charge
+     counted on setup day, and what is left of one the bank took back, do not
+     get this choice. The app reads only the bank, so cash you hold is not in
+     it until you deposit it.
+7.8  Money in waiting in review, or sorted to anything but a paycheck, can be
+     split across Other, savings, needs, Wishlist and wants; the parts must
+     add up to it. Each part counts as Other (7.1) or as a payback into that
+     bucket (6.1), such as cash that was part a friend's and part what the
+     friend owed you. A part into Wishlist counts for 50.4 like a payback into
+     Wishlist. It starts no pay period, and a rule cannot pick it.
 
 
 ## 8. Mom
@@ -390,6 +411,14 @@ offered anywhere.
      are off for the Amex card: the bank did not send its statement date."
      The same when the bank sends a statement for a card that the app
      cannot read.
+9.9  Buckets shows each card's latest statement at any time, not only from
+     the first reminder day, each card by the name its bank gives it: the day
+     it closed, the due date and the days until it, the statement balance, the
+     minimum, what the app has seen paid toward it (9.3), and where it stands:
+     paid (what 9.3 asks for), still to pay, overdue (9.4), or past the due
+     date with the minimum paid and the rest not. A card whose reminders are
+     off says so (9.8). Tapping a card opens its statement (52.4). This only
+     reads: the reminders and Home's lines still come when 9.6 and 9.7 say.
 
 
 ## 10. Alerts
@@ -468,7 +497,7 @@ offered anywhere.
 11.2  It is shown with the number of days until the next payday, from the
       pay schedule. If that day passes with no paycheck, the days go
       negative instead of jumping ahead (B35).
-11.3  Savings, Wishlist, held for others, and unsorted money in are never
+11.3  Savings, Wishlist, Other, and unsorted money in are never
       part of it. (11.1 is unchanged: safe to spend is wants only.
       Wishlist money is kept for the things on your list; counting it in
       safe to spend would let it go on everyday wants, and the list would
@@ -505,7 +534,7 @@ offered anywhere.
       for them the bank side is always the posted balance less pending
       charges. For each card, what it owes, including pending charges
       (they already count in the buckets under 4.6).
-12.2  App side: savings + needs + wants + Wishlist + held for others
+12.2  App side: savings + needs + wants + Wishlist + Other
       + unsorted money in - unsorted spending.
       Unsorted money in: deposits and refunds waiting in review
       (3.7, 4.5, 6.1).
@@ -619,8 +648,7 @@ offered anywhere.
 
 14.1  The app reads your current balances.
 14.2  You assign the starting money (checking + savings - both cards'
-      balances) across savings, needs, wants, Wishlist and held for
-      others. Charges
+      balances) across savings, needs, wants, Wishlist and Other. Charges
       still pending that day are part of the starting
       money. If one later posts at a different amount, is refunded, or is
       dropped, only the difference waits in review. Money on its way
@@ -992,7 +1020,7 @@ it is worked out on the server, and nothing on it is sent anywhere.
       spending still waiting in review, shown as "unsorted" in the current
       pay period until it is sorted. A payment to the old card is its own
       part of needs, "Old card payment". Payments to mom from the reserve
-      (8.1), money held for others (7.1, 7.2), transfers between your
+      (8.1), money in Other (7.1, 7.2, 7.7), transfers between your
       accounts (5.1, 5.3), and money in are not spending. Before setup day
       the same: a transfer a bank rule names, a payment the mom rule
       matches, and money in to checking or savings are left out; money back
@@ -1248,7 +1276,7 @@ Readings HB19 to HB25 (docs/her-questions.txt), for his check. 50.1 to
       - what was carried in from the statement before, less the payments
         and credits that reached the card in this statement's days;
       - each purchase, fee and interest charge, less refunds, by the
-        bucket it is sorted to now (needs, wants, Wishlist, or still
+        bucket it is sorted to now (needs, wants, Wishlist, Other, or still
         unsorted), and
         again by the pay period (paycheck) it was counted in, each with
         its total;
@@ -1454,6 +1482,15 @@ i.  A card payment made before setup day counts toward the statement it
     rehearsal: the books start on setup day, so a statement she had
     already paid showed $0.00 paid, and its overdue alert would have come
     after the due date. Both setups: upstream's has the same gap.
+j.  Other, split deposits and statements (Nov 1, 2026, docs/her-questions.txt
+    HA12), from upstream's 7.7, 7.8 and 9.9. "Not mine" and "held for others"
+    are one line now, called Other; sections above this one that are his dated
+    answers keep the old words. Only the words change: inside, the books keep
+    their names, so the history replays as it was. Money leaving an account and
+    a purchase on either card can be marked Other, and money in can be split,
+    each with Wishlist as a part. Wants gets the rest on the split sheet.
+    Buckets shows each card's statement at any time. The app keeps no cash
+    balance: nothing could check it against the bank.
 
 
 ## H. Approved for her setup, not built yet

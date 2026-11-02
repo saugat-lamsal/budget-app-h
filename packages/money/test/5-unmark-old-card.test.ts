@@ -42,7 +42,7 @@ describe('5.6 A21 a payment marked from savings to the old card can be unmarked'
     expect(state(b)).toEqual(before);
     const d = b.reviewDetails().find((x) => x.item.id === 'w1');
     expect(d?.item).toMatchObject({ type: 'spending', reason: 'from-savings', amount: 20_000 });
-    expect(d?.options).toMatchObject({ picks: [{ to: 'needs' }, { to: 'wants' }], unmark: false });
+    expect(d?.options).toMatchObject({ picks: [{ to: 'needs' }, { to: 'wants' }, { to: 'not-mine' }], unmark: false });
   });
 
   it.each(['savings', 'needs'] as const)('5.6 A21 A4 sorted to %s, it can be unmarked from its list: the bucket gets its money back and it waits in review again', (to) => {

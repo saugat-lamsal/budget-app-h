@@ -6,7 +6,7 @@ export const POT_NAMES: Readonly<Record<AnyPot, string>> = {
   needs: 'Needs',
   wants: 'Wants',
   momReserve: 'Mom reserve',
-  heldForOthers: 'Held for others',
+  heldForOthers: 'Other',
   // Her rulebook, section 2: only in a setup that has it.
   wishlist: 'Wishlist',
 };

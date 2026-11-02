@@ -1,7 +1,7 @@
-import { bucketLevel, type BankBalances, type Book, type Cents } from '@budget-app/money';
+import { bucketLevel, cardStanding, type BankBalances, type Book, type CardStatement, type Cents } from '@budget-app/money';
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { MOM_NAME, START_DATE, appSide, arrived, deposit, openTestBook, payPerson, paycheck, purchase, refund, sent } from '../../money/test/helpers.js';
+import { MOM_NAME, START_DATE, appSide, arrived, deposit, openTestBook, payPerson, paycheck, purchase, refund, sent, transfer } from '../../money/test/helpers.js';
 import { bucketsView, type BucketsInput, type BucketsView } from '../src/views/buckets.js';
 
 // The Buckets screen's numbers (Phase 4), worked out on the server from the
@@ -269,5 +269,35 @@ describe('12.5 money on its way', () => {
     book.receive(sent('to-old', '2026-10-03', 15_000, 'checking', 'old-card'));
     book.receive(arrived('to-old-landed', '2026-10-05', 15_000, 'checking', 'old-card', 'to-old'));
     expect(view(book).onItsWay).toEqual({ counted: 0, items: [] });
+  });
+});
+
+describe("9.9 each card's statement, at any time", () => {
+  const OLD: CardStatement = { card: 'old-card', closingDate: '2026-09-29', dueDate: '2026-11-20', statementBalance: 200_000, minimumPayment: 4_000 };
+  const EVERYDAY: CardStatement = { card: 'everyday-card', closingDate: '2026-09-28', dueDate: '2026-11-11', statementBalance: 45_025, minimumPayment: 3_500 };
+
+  it('9.9 long before the first reminder day, both are shown, the everyday card first, as the money math has them', () => {
+    const book = openTestBook();
+    const cards = view(book, { statements: [OLD, EVERYDAY] }).cards;
+    expect(cards.statements).toEqual([cardStanding(START_DATE, EVERYDAY, []), cardStanding(START_DATE, OLD, [])]);
+    expect(cards.statements.map((c) => c.card)).toEqual(['everyday-card', 'old-card']);
+    expect(cards.statements[0]).toMatchObject({ statementBalance: 45_025, standing: 'to-pay' });
+    expect(cards.statements[1]).toMatchObject({ statementBalance: null, minimumPayment: 4_000 });
+    expect(cards.off).toEqual([]);
+  });
+
+  it('9.9 9.3 a payment the book has seen counts toward it', () => {
+    const book = openTestBook();
+    book.receive(transfer('t1', START_DATE, 3_999, 'checking', 'old-card'));
+    expect(view(book, { statements: [OLD] }).cards.statements[0]).toMatchObject({ paid: 3_999, standing: 'to-pay' });
+    book.receive(transfer('t2', START_DATE, 1, 'checking', 'old-card'));
+    expect(view(book, { statements: [OLD] }).cards.statements[0]).toMatchObject({ paid: 4_000, standing: 'paid' });
+  });
+
+  it('9.9 9.8 a card whose reminders are off says so, and none is an empty list', () => {
+    const book = openTestBook();
+    expect(view(book).cards).toEqual({ statements: [], off: [] });
+    const off = [{ card: 'old-card', why: 'no-statement-date' }] as const;
+    expect(view(book, { statements: [EVERYDAY], cardsOff: off }).cards).toEqual({ statements: [cardStanding(START_DATE, EVERYDAY, [])], off });
   });
 });

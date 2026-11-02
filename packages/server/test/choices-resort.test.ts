@@ -180,7 +180,7 @@ describe('B101 sorting it to where it already is changes nothing, and says so', 
     book.sort('d1', { to: 'not-mine' }, START_DATE);
     book.receive(payPerson('z1', START_DATE, 4_000, 'MADE UP AUNT'));
     book.sort('z1', { to: 'mom' }, START_DATE);
-    expect(refused(desk.decide(ask({ item: 'd1', choice: { to: 'not-mine' } }))).why).toBe('It is already marked not mine. Nothing was changed.');
+    expect(refused(desk.decide(ask({ item: 'd1', choice: { to: 'not-mine' } }))).why).toBe('It is already marked Other. Nothing was changed.');
     expect(refused(desk.decide(ask({ item: 'z1', choice: { to: 'mom' } }))).why).toBe('It is already marked for mom. Nothing was changed.');
   });
 
@@ -345,11 +345,11 @@ describe('B100 what cannot be sorted again is refused, says why, and changes not
     expect(snapshot(book)).toBe(before);
   });
 
-  it('B100 a choice the item does not offer is refused: a purchase cannot be savings, mom, or not mine, and a card purchase cannot be a transfer', () => {
+  it('B100 a choice the item does not offer is refused: a purchase cannot be savings or mom, and a card purchase cannot be a transfer', () => {
     const { book, desk } = setup();
     book.receive(purchase('g1', START_DATE, 3_250, 'MADE UP GROCERY'));
     const before = snapshot(book);
-    for (const choice of [{ to: 'savings' }, { to: 'mom' }, { to: 'not-mine' }, { to: 'paycheck' }, { transfer: 'savings' }, { leftover: 'roll-over' }, { acknowledge: true }] as ChoiceRequest['choice'][]) {
+    for (const choice of [{ to: 'savings' }, { to: 'mom' }, { to: 'paycheck' }, { transfer: 'savings' }, { leftover: 'roll-over' }, { acknowledge: true }] as ChoiceRequest['choice'][]) {
       const r = refused(desk.decide(ask({ item: 'g1', choice, confirmed: true })));
       expect(r.code, JSON.stringify(choice)).toBe('refused');
     }

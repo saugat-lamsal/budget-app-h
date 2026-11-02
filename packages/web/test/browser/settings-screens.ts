@@ -93,7 +93,7 @@ const CHOICE_WORDS: Readonly<Record<string, string>> = {
   savings: 'Savings',
   momReserve: 'Mom reserve',
   'other-income': 'Other income (split)',
-  'not-mine': 'Not mine',
+  'not-mine': 'Other',
   mom: 'For mom',
 };
 

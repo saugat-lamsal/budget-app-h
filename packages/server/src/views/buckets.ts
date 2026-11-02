@@ -1,5 +1,6 @@
-import { bucketLevel, monthOf, type BankBalances, type Book, type Cents, type InTransitItem, type IsoDate, type OthersMoney } from '@budget-app/money';
-import type { BucketBar, WhyLine } from './home.js';
+import { bucketLevel, cardStanding, monthOf, type BankBalances, type Book, type CardStanding, type CardStatement, type Cents, type InTransitItem, type IsoDate, type OthersMoney } from '@budget-app/money';
+import { cardPaymentsSeen, type PaidBeforeSetup } from '../bank/paid-before-setup.js';
+import type { BucketBar, CardRemindersOff, WhyLine } from './home.js';
 
 // What the Buckets screen shows, worked out on the server from the book. The
 // screen only formats it: every number here comes from the money math, in
@@ -17,6 +18,11 @@ export interface BucketsInput {
   readonly catchingUp?: boolean;
   // 12.6 (A57): why the totals do not match; null when not known (the bank cannot be read).
   readonly why?: readonly WhyLine[] | null;
+  // 9.9: each card's latest statement, and the cards whose reminders are off (9.8).
+  readonly statements?: readonly CardStatement[];
+  readonly cardsOff?: readonly CardRemindersOff[];
+  // 9.3 (her rulebook, 60i): payments from before setup day count, as on Home.
+  readonly paidBeforeSetup?: PaidBeforeSetup;
 }
 
 export type BucketsView =
@@ -41,6 +47,8 @@ export type BucketsView =
       readonly waiting: { readonly count: number; readonly moneyIn: Cents; readonly spending: Cents };
       // 12.4: tracked on its own, not part of the total. Negative is a credit (B14).
       readonly oldCard: Cents;
+      // 9.9: at any time, the everyday card first.
+      readonly cards: { readonly statements: readonly CardStanding[]; readonly off: readonly CardRemindersOff[] };
       // 12.5, B44: every transfer with one side showing. What the self-check
       // counts, and each one; one to the old card is listed but not counted (12.4).
       readonly onItsWay: { readonly counted: Cents; readonly items: readonly OnItsWay[] };
@@ -102,8 +110,14 @@ export function bucketsView(input: BucketsInput): BucketsView {
     heldForOthers: book.othersMoney(),
     waiting: { count: book.reviewItems().length, moneyIn: pots.unsortedIn, spending: pots.unsortedOut },
     oldCard: book.oldCardDebt(),
+    cards: { statements: cardsOf(input.statements ?? [], book, today, input.paidBeforeSetup), off: input.cardsOff ?? [] },
     onItsWay: onItsWayOf(book),
   };
+}
+
+function cardsOf(statements: readonly CardStatement[], book: Book, today: IsoDate, paidBeforeSetup: PaidBeforeSetup | undefined): readonly CardStanding[] {
+  const standings = statements.map((statement) => cardStanding(today, statement, cardPaymentsSeen(book, statement.card, paidBeforeSetup)));
+  return standings.sort((x, y) => (x.card === y.card ? 0 : x.card === 'everyday-card' ? -1 : 1));
 }
 
 export function onItsWayOf(book: Book): { readonly counted: Cents; readonly items: readonly OnItsWay[] } {

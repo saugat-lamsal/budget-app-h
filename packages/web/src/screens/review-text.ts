@@ -19,7 +19,7 @@ export const ACCOUNT_NAMES: Readonly<Record<AccountId, string>> = withCardNames(
 
 export const BUCKET_NAMES: Readonly<Record<string, string>> = {
   ...POT_NAMES,
-  'not-mine': 'Not mine',
+  'not-mine': 'Other',
 };
 
 type Item = ReviewDetail['item'];
@@ -93,7 +93,8 @@ export function pickLabel(kind: 'money-in' | 'spending', to: PickTo, short = fal
   const bucket = BUCKET_NAMES[to] ?? to;
   if (to === 'paycheck') return 'This is my paycheck';
   if (to === 'other-income') return 'Other income';
-  if (to === 'not-mine') return 'Not mine';
+  // B278: on a sheet beside "Other income", it says what it is.
+  if (to === 'not-mine') return short ? 'Other' : 'Other (not Needs or Wants)';
   if (to === 'mom') return 'For mom';
   if (kind === 'money-in') return short ? `Into ${bucket}` : `Payback into ${bucket}`;
   return bucket;
@@ -130,7 +131,7 @@ export function nowWords(now: SortedNow): string {
   if ('split' in now) return `split: ${now.split.map((p) => `${BUCKET_NAMES[p.bucket] ?? p.bucket} ${moneyText(p.amount)}`).join(', ')}`;
   switch (now.to) {
     case 'not-mine':
-      return 'marked not mine';
+      return 'marked Other';
     case 'mom':
       return 'marked for mom';
     case 'other-income':
@@ -188,7 +189,7 @@ export function doneText(label: string, kind: 'money-in' | 'spending' | 'leftove
   } else if ('to' in c) {
     if (c.to === 'paycheck') text = `${label} is your paycheck. A new pay period started.`;
     else if (c.to === 'other-income') text = `${label} counted as other income.`;
-    else if (c.to === 'not-mine') text = kind === 'money-in' ? `${label} is held for others.` : `${label} marked not mine.`;
+    else if (c.to === 'not-mine') text = `${label} marked Other.`;
     else if (c.to === 'mom') text = `${label} marked for mom.`;
     else if (kind === 'money-in') text = `${label} put back into ${BUCKET_NAMES[c.to] ?? c.to}.`;
     else if (c.to === 'savings') text = `${label} taken out of Savings.`;

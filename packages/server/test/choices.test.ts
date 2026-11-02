@@ -374,11 +374,34 @@ describe('a refused choice changes nothing and says why', () => {
     }
   });
 
+  it('7.8 a deposit split at the desk: the rest is worked out, and sorted again the same way changes nothing', () => {
+    const { book, desk } = setup();
+    book.receive(deposit('d1', START_DATE, 14_000, 'MADE UP ATM DEPOSIT'));
+    const before = book.pots();
+    const answer = desk.decide(ask({ id: 'split-one', item: 'd1', choice: { split: [{ bucket: 'not-mine', amount: 12_500 }, { bucket: 'wants', amount: 'rest' }] } }));
+    expect(answer.ok).toBe(true);
+    expect(book.pots().heldForOthers).toBe(before.heldForOthers + 12_500);
+    expect(book.pots().wants).toBe(before.wants + 1_500);
+    const again = refused(desk.decide(ask({ id: 'split-two', item: 'd1', resort: true, choice: { split: [{ bucket: 'not-mine', amount: 12_500 }, { bucket: 'wants', amount: 'rest' }] } })));
+    expect(again.why).toContain('split that way');
+    const moved = desk.decide(ask({ id: 'split-three', item: 'd1', resort: true, choice: { split: [{ bucket: 'savings', amount: 1 }, { bucket: 'wants', amount: 'rest' }] } }));
+    expect(moved.ok).toBe(true);
+    expect(book.pots()).toMatchObject({ heldForOthers: before.heldForOthers, savings: before.savings + 1, wants: before.wants + 13_999 });
+  });
+
+  it('7.8 a split with nothing left for the rest, or more than the deposit, is refused, and says so', () => {
+    const { book, desk } = setup();
+    book.receive(deposit('d1', START_DATE, 14_000));
+    expect(refused(desk.decide(ask({ item: 'd1', choice: { split: [{ bucket: 'not-mine', amount: 14_000 }, { bucket: 'wants', amount: 'rest' }] } }))).why).toContain('Nothing is left for Wants');
+    expect(refused(desk.decide(ask({ item: 'd1', choice: { split: [{ bucket: 'not-mine', amount: 14_001 }, { bucket: 'wants', amount: 'rest' }] } }))).why).toContain('more than');
+    expect(book.reviewItems()).toHaveLength(1);
+  });
+
   it('a split of a kind the item does not offer is refused, and says so', () => {
     const { book, desk } = setup();
     book.receive(purchase('p1', START_DATE, 1_150, 'CORNER STORE'));
     book.receive(purchase('one', START_DATE, 1, 'TINY'));
-    expect(refused(desk.decide(ask({ item: 'p1', choice: { split: [{ bucket: 'needs', amount: 400 }, { bucket: 'not-mine', amount: 'rest' }] } }))).why).toBe("This one can't be split that way. Nothing was changed.");
+    expect(refused(desk.decide(ask({ item: 'p1', choice: { split: [{ bucket: 'needs', amount: 400 }, { bucket: 'savings', amount: 'rest' }] } }))).why).toBe("This one can't be split that way. Nothing was changed.");
     expect(refused(desk.decide(ask({ item: 'one', choice: { split: [{ bucket: 'needs', amount: 1 }, { bucket: 'wants', amount: 'rest' }] } }))).why).toBe("This one can't be split. Nothing was changed.");
   });
 
@@ -406,7 +429,7 @@ describe('a refused choice changes nothing and says why', () => {
       ['p1', { to: 'savings' }],
       ['p1', { to: 'paycheck' }],
       ['p1', { to: 'mom' }],
-      ['p1', { to: 'not-mine' }],
+      ['o1', { to: 'not-mine' }],
       ['p1', { leftover: 'roll-over' }],
       ['p1', { acknowledge: true }],
       ['p1', { transfer: 'everyday-card' }],
@@ -683,6 +706,9 @@ describe('parsing what the phone sends', () => {
     expect(parseChoiceRequest(good)).toEqual(good);
     expect(parseChoiceRequest({ ...good, always: { contains: ' CORNER STORE ' }, confirmed: true })).toEqual({ ...good, always: { contains: 'CORNER STORE' }, confirmed: true });
     expect(parseChoiceRequest({ ...good, choice: { split: [{ bucket: 'needs', amount: 1 }, { bucket: 'wants', amount: 'rest' }] } })).not.toBeNull();
+    // 7.8: all four parts of a deposit's split.
+    const allFour = { split: [{ bucket: 'not-mine', amount: 1 }, { bucket: 'savings', amount: 2 }, { bucket: 'needs', amount: 3 }, { bucket: 'wants', amount: 'rest' }] };
+    expect(parseChoiceRequest({ ...good, choice: allFour })).toEqual({ ...good, choice: allFour });
     expect(parseChoiceRequest({ ...good, choice: { transfer: 'savings' } })).not.toBeNull();
     expect(parseChoiceRequest({ ...good, item: 'leftover:pay:needs', choice: { leftover: 'roll-over' } })).not.toBeNull();
     expect(parseChoiceRequest({ ...good, choice: { acknowledge: true } })).not.toBeNull();
@@ -744,7 +770,7 @@ describe('parsing what the phone sends', () => {
       { ...good, choice: { split: [{ bucket: 'needs', amount: Number.MAX_SAFE_INTEGER + 2 }, { bucket: 'wants', amount: 5 }] } },
       { ...good, choice: { split: [{ bucket: 'needs', amount: 5 }, { bucket: 'needs', amount: 5 }] } },
       { ...good, choice: { split: [{ bucket: 'needs', amount: 'rest' }, { bucket: 'wants', amount: 'rest' }] } },
-      { ...good, choice: { split: [{ bucket: 'savings', amount: 5 }, { bucket: 'wants', amount: 5 }] } },
+      { ...good, choice: { split: [{ bucket: 'momReserve', amount: 5 }, { bucket: 'wants', amount: 5 }] } },
       { ...good, choice: { split: [{ bucket: 'needs', amount: 1 }, { bucket: 'wants', amount: 1 }, { bucket: 'not-mine', amount: 1 }, { bucket: 'needs', amount: 1 }] } },
       { ...good, choice: { split: [{ bucket: 'needs', amount: 5, extra: 1 }, { bucket: 'wants', amount: 5 }] } },
       { ...good, always: {} },

@@ -17,8 +17,9 @@ import type { CardStatement, EverydayCard } from './reminders.js';
 // bank takes back is on the statement it posted in, and its take-back on the
 // one it came in. Readings HB14 to HB18, docs/her-questions.txt.
 
-// Her rulebook, 52.4 (PR 9): Wishlist too, where the setup has it.
-export type StatementBucket = 'needs' | 'wants' | 'wishlist' | 'unsorted' | 'before-setup';
+// Her rulebook, 52.4 (PR 9): Wishlist too, where the setup has it. 60j: Other, a
+// purchase marked it (7.7), which is on the card all the same.
+export type StatementBucket = 'needs' | 'wants' | 'wishlist' | 'other' | 'unsorted' | 'before-setup';
 
 export interface StatementItem {
   readonly id: string;
@@ -83,7 +84,7 @@ export interface StatementView {
   readonly from: IsoDate;
   readonly carriedIn: CarriedIn;
   // Only the groups with something in them, in this order: needs, wants,
-  // Wishlist, still unsorted, before setup day.
+  // Wishlist, Other, still unsorted, before setup day.
   readonly byBucket: readonly { readonly bucket: StatementBucket; readonly total: Cents; readonly items: readonly StatementItem[] }[];
   // Before setup day first, then each pay period, oldest first.
   readonly byPayPeriod: readonly { readonly period: StatementPeriod | 'before-setup'; readonly total: Cents; readonly items: readonly StatementItem[] }[];
@@ -102,7 +103,7 @@ interface Line {
   readonly pieces: readonly Piece[];
 }
 
-const BUCKET_ORDER: readonly StatementBucket[] = ['needs', 'wants', 'wishlist', 'unsorted', 'before-setup'];
+const BUCKET_ORDER: readonly StatementBucket[] = ['needs', 'wants', 'wishlist', 'other', 'unsorted', 'before-setup'];
 
 // A bucket a purchase or a refund can be listed by.
 const isListed = (to: string): to is 'needs' | 'wants' | 'wishlist' => to === 'needs' || to === 'wants' || to === 'wishlist';
@@ -214,13 +215,15 @@ function piecesOf(entry: CardEntry, amount: Cents, charges: ReadonlyMap<string, 
     return nonZero(of === undefined ? [{ where: 'unsorted', amount }] : spread(of.sortedTo, amount, true));
   }
   const to = entry.sortedTo;
+  // 7.8: a refund split in review, each part as it would be sorted alone.
+  if (to === 'split') return (entry.parts ?? []).map((part) => ({ where: isListed(part.bucket) ? part.bucket : 'credit', amount: -part.amount }));
   return nonZero([{ where: to === 'unsorted' || isListed(to) ? to : 'credit', amount }]);
 }
 
 // An amount spread as a spending sort spreads it.
 function spread(sorted: SpendingSort, amount: Cents, refund = false): Piece[] {
   if ('split' in sorted) {
-    const parts = sorted.split.map((part): Piece => ({ where: isListed(part.bucket) ? part.bucket : 'unsorted', amount: part.amount }));
+    const parts = sorted.split.map((part): Piece => ({ where: isListed(part.bucket) ? part.bucket : part.bucket === 'not-mine' ? 'other' : 'unsorted', amount: part.amount }));
     const sum = addCents(...parts.map((p) => p.amount));
     const [first, ...others] = parts;
     if (first === undefined) return [{ where: 'unsorted', amount }];
@@ -230,6 +233,7 @@ function spread(sorted: SpendingSort, amount: Cents, refund = false): Piece[] {
     return [{ where: first.where, amount: addCents(first.amount, subtractCents(amount, sum)) }, ...others];
   }
   if (isListed(sorted.to)) return [{ where: sorted.to, amount }];
+  if (sorted.to === 'not-mine') return [{ where: 'other', amount }];
   if (sorted.to === 'counted-at-setup') return [{ where: 'before-setup', amount }];
   return [{ where: 'unsorted', amount }];
 }

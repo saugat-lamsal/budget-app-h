@@ -316,6 +316,43 @@ examples[7] = async () => {
 };
 
 // From her rehearsal: statements she paid before setup day (9.3, 60i).
+// The Capital One card's statement paid before setup day, the Amex card's in part after it.
+examples[9] = async () => {
+  const E = ACCOUNT_IDS.everyday;
+  const SECOND = ACCOUNT_IDS.second;
+  const statement = (closing: string, balance: number, minimum: number) => ({ is_overdue: false, last_payment_amount: null, last_payment_date: null, last_statement_issue_date: closing, last_statement_balance: balance, minimum_payment_amount: minimum, next_payment_due_date: '2026-10-25' });
+  const rules = checkBankRules([...HER_BANK_RULES, { id: 'chk-pays-second', account: 'checking', contains: 'payment to CRD 5555', means: 'transfer', other: 'second-card' }, { id: 'second-paid', account: 'second-card', contains: 'PAYMENT - THANK YOU', means: 'transfer', other: 'checking' }]);
+  const life = await lifeInAFile({
+    herSetup: true,
+    secondCard: 25_000,
+    rules,
+    start: HER_START,
+    history: (fake) => {
+      fake.setStatement(E, statement('2026-09-20', 450, 35));
+      fake.setStatement(SECOND, statement('2026-09-28', 250, 25));
+      fake.addPosted({ id: 'pay-c', account: ACCOUNT_IDS.checking, amount: 45_000, date: '2026-09-25', description: 'payment to CRD 3333' });
+      fake.addPosted({ id: 'paid-e', account: E, amount: -45_000, date: '2026-09-25', description: 'PAYMENT - THANK YOU' });
+    },
+  });
+  setUpHer(life);
+  life.h.fake.addPosted({ id: 'pay-s', account: ACCOUNT_IDS.checking, amount: 4_000, date: '2026-10-02', description: 'payment to CRD 5555' });
+  life.h.fake.addPosted({ id: 'paid-s', account: SECOND, amount: -4_000, date: '2026-10-02', description: 'PAYMENT - THANK YOU' });
+  life.now = noonInNewYork('2026-10-02');
+  await life.sync();
+  const view = life.keeper.buckets();
+  if (view.state !== 'tracking') throw new Error('not tracking');
+  const [capitalOne, amex] = view.cards.statements;
+  if (capitalOne?.standing !== 'paid' || amex?.standing !== 'to-pay' || amex.daysLeft !== 23) throw new Error(`stands wrong: ${JSON.stringify(view.cards.statements)}`);
+  life.done();
+  return {
+    'capital one statement': capitalOne.statementBalance ?? -1,
+    'capital one paid': capitalOne.paid,
+    'amex statement': amex.statementBalance ?? -1,
+    'amex paid': amex.paid,
+    'amex left to pay': (amex.statementBalance ?? 0) - amex.paid,
+  };
+};
+
 examples[8] = async () => {
   const statement = (balance: number) => ({ is_overdue: false, last_payment_amount: null, last_payment_date: null, last_statement_issue_date: '2026-09-20', last_statement_balance: balance, minimum_payment_amount: 35, next_payment_due_date: '2026-10-15' });
   const life = await lifeInAFile({

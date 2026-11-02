@@ -215,7 +215,7 @@ describe('4.2 and 4.4 spending to Wishlist', () => {
   it('4.2 spending goes to needs, wants or Wishlist: a purchase sorted to Wishlist comes out of it, on the day of the purchase', () => {
     const book = herBook();
     book.receive(purchase('c1', '2026-10-03', 4_999, 'MADE UP GADGETS'));
-    expect(sortOptions(book, 'c1').picks.map((p) => p.to)).toEqual(['needs', 'wants', 'wishlist']);
+    expect(sortOptions(book, 'c1').picks.map((p) => p.to)).toEqual(['needs', 'wants', 'wishlist', 'not-mine']);
     book.sort('c1', { to: 'wishlist' }, '2026-10-05');
     expect(book.pots()).toMatchObject({ wishlist: POTS.wishlist - 4_999, needs: POTS.needs, wants: POTS.wants, unsortedOut: 0 });
     expect(book.activity('wishlist').rows.map((r) => [r.id, r.amount, r.date])).toEqual([['c1', -4_999, '2026-10-03']]);
@@ -254,7 +254,7 @@ describe('4.2 and 4.4 spending to Wishlist', () => {
   it('4.4 a purchase can be split across needs, wants and Wishlist; the parts must add up to the total, a cent each at least', () => {
     const book = herBook();
     book.receive(purchase('c1', '2026-10-03', 10_000));
-    expect(sortOptions(book, 'c1').split).toEqual(['needs', 'wants', 'wishlist']);
+    expect(sortOptions(book, 'c1').split).toEqual(['needs', 'not-mine', 'wishlist', 'wants']);
     refused(book, 'split-does-not-add-up', () => book.sort('c1', { split: [{ bucket: 'needs', amount: 3_000 }, { bucket: 'wants', amount: 3_000 }, { bucket: 'wishlist', amount: 3_999 }] }, '2026-10-03'));
     refused(book, 'not-positive', () => book.sort('c1', { split: [{ bucket: 'needs', amount: 10_000 }, { bucket: 'wishlist', amount: 0 }] }, '2026-10-03'));
     book.sort('c1', { split: [{ bucket: 'needs', amount: 3_000 }, { bucket: 'wants', amount: 2_000 }, { bucket: 'wishlist', amount: 5_000 }] }, '2026-10-03');
@@ -270,7 +270,7 @@ describe('4.2 and 4.4 spending to Wishlist', () => {
     book.receive(purchase('c1', '2026-10-03', 2_500));
     book.sort('c1', { to: 'wants' }, '2026-10-03');
     const detail = book.resortDetail('c1');
-    expect(detail?.resortable === true && detail.options.picks.map((p) => p.to)).toEqual(['needs', 'wants', 'wishlist']);
+    expect(detail?.resortable === true && detail.options.picks.map((p) => p.to)).toEqual(['needs', 'wants', 'wishlist', 'not-mine']);
     book.sort('c1', { to: 'wishlist' }, '2026-10-04');
     expect(book.pots()).toMatchObject({ wants: POTS.wants, wishlist: POTS.wishlist - 2_500 });
     book.sort('c1', { to: 'needs' }, '2026-10-05');

@@ -786,8 +786,8 @@
   {
     "section": "home",
     "file": "packages/web/src/screens/Buckets.tsx",
-    "find": "settled: 'Settled: nothing held either way',",
-    "replace": "settled: \"Holding money that isn't yours\",",
+    "find": "settled: 'Not in Needs or Wants. Nothing here now.',",
+    "replace": "settled: 'Not in Needs or Wants.',",
     "why": "[review] 7.3 settled is said as holding money"
   },
   {
@@ -3381,10 +3381,45 @@
     "why": "[her-switches] Off in this setup: the mom reserve's screen cannot load"
   },
   {
+    "section": "words",
+    "file": "packages/web/src/screens/buckets-text.ts",
+    "find": "line.card !== 'old-card' ? 'Paid' : 'Minimum paid'",
+    "replace": "line.card === 'old-card' ? 'Paid' : 'Minimum paid'",
+    "why": "[a61] 9.9 paid in the wrong words for the card"
+  },
+  {
+    "section": "words",
+    "file": "packages/web/src/screens/buckets-text.ts",
+    "find": "if (line.card !== 'old-card') parts.push(minimum);",
+    "replace": "parts.push(minimum);",
+    "why": "[a61] 9.9 the old card says its minimum twice"
+  },
+  {
+    "section": "words",
+    "file": "packages/web/src/screens/buckets-text.ts",
+    "find": "if (line.paid > 0) parts.push",
+    "replace": "if (line.paid > 1) parts.push",
+    "why": "[a61] 9.9 one cent paid is not said"
+  },
+  {
+    "section": "words",
+    "file": "packages/web/src/screens/buckets-text.ts",
+    "find": "line.card === 'old-card' ? 'Old card minimum' :",
+    "replace": "line.card !== 'old-card' ? 'Old card minimum' :",
+    "why": "[a61] 9.9 the row names the wrong card"
+  },
+  {
+    "section": "words",
+    "file": "packages/web/src/screens/buckets-text.ts",
+    "find": "const when = dueText(line.daysLeft);",
+    "replace": "const when = dueText(line.daysLeft + 1);",
+    "why": "[a61] 9.9 the days to the due date off by one"
+  },
+  {
     "section": "home",
     "file": "packages/web/src/screens/Buckets.tsx",
-    "find": "detail={momReserve !== undefined ? 'Needs, wants, savings, the mom reserve, or money held for others' : view.wishlist !== undefined",
-    "replace": "detail={momReserve !== null ? 'Needs, wants, savings, the mom reserve, or money held for others' : view.wishlist !== undefined",
+    "find": "detail={momReserve !== undefined ? 'Needs, wants, savings, the mom reserve, or Other' : view.wishlist !== undefined",
+    "replace": "detail={momReserve !== null ? 'Needs, wants, savings, the mom reserve, or Other' : view.wishlist !== undefined",
     "why": "[her-switches] Off in this setup: Buckets: moving money names the mom reserve"
   },
   {
@@ -3470,6 +3505,34 @@
     "find": "  return on === true ? 'On: every paycheck waits for your yes' : 'Off: a paycheck is split by itself';",
     "replace": "  return on === false ? 'On: every paycheck waits for your yes' : 'Off: a paycheck is split by itself';",
     "why": "[her-ask] section 2 Settings says on for off"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Buckets.tsx",
+    "find": "cents={line.statementBalance ?? line.minimumPayment}",
+    "replace": "cents={line.minimumPayment}",
+    "why": "[a61] 9.9 the everyday card shows the minimum for the statement balance"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Buckets.tsx",
+    "find": "detail={cardStatementDetail(line)}",
+    "replace": "detail={cardStatementTitle(line)}",
+    "why": "[a61] 9.9 the row does not say when it is due"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Buckets.tsx",
+    "find": "{view.cards.off.map((off) => {",
+    "replace": "{view.cards.off.slice(1).map((off) => {",
+    "why": "[a61] 9.8 9.9 a card whose reminders are off is left out"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Buckets.tsx",
+    "find": "{(view.cards.statements.length > 0 || view.cards.off.length > 0) && (",
+    "replace": "{view.cards.statements.length > 0 && (",
+    "why": "[a61] 9.8 9.9 with every card off, the card is not shown"
   },
   {
     "section": "words",
@@ -3834,5 +3897,117 @@
     "find": "connectedThrough: (name: string): string => `${name}, through Plaid`,",
     "replace": "connectedThrough: (name: string): string => name,",
     "why": "[her-bank-names] HB8 her bank's line leaves out \"through Plaid\""
+  },
+  {
+    "section": "words",
+    "file": "packages/web/src/screens/review-text.ts",
+    "find": "return short ? 'Other' : 'Other (not Needs or Wants)';",
+    "replace": "return 'Other';",
+    "why": "[a62] the sheet can be taken for Other income"
+  },
+  {
+    "section": "words",
+    "file": "packages/web/src/screens/review-text.ts",
+    "find": "text = `${label} marked Other.`;",
+    "replace": "text = `${label} marked not mine.`;",
+    "why": "[a62] the notice says the old word"
+  },
+  {
+    "section": "words",
+    "file": "packages/web/src/screens/review-text.ts",
+    "find": "  'not-mine': 'Other',",
+    "replace": "  'not-mine': 'Not mine',",
+    "why": "[a62] a split says the old word"
+  },
+  {
+    "section": "words",
+    "file": "packages/web/src/screens/review-text.ts",
+    "find": "      return 'marked Other';",
+    "replace": "      return 'marked not mine';",
+    "why": "[a62] where it is now says the old word"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/ui/names.ts",
+    "find": "  heldForOthers: 'Other',",
+    "replace": "  heldForOthers: 'Held for others',",
+    "why": "[a62] the bucket keeps the old name"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Buckets.tsx",
+    "find": "title=\"Other\"",
+    "replace": "title=\"Held for others\"",
+    "why": "[a62] Buckets says the old name"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Buckets.tsx",
+    "find": "'owed-to-you': 'More went out than came in. Move money in to clear it.',",
+    "replace": "'owed-to-you': 'Someone owes you',",
+    "why": "[a62] 7.3 a negative says someone owes you"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/choose.tsx",
+    "find": "changedUntil.current.set(id, Infinity);",
+    "replace": "changedUntil.current.set(id, performance.now() + CHANGED_HOLD_MS);",
+    "why": "[b281] 13.7 the second starts before the change can be seen"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/choose.tsx",
+    "find": "const until = performance.now() + CHANGED_HOLD_MS;\n      for (const [id, at]",
+    "replace": "const until = performance.now();\n      for (const [id, at]",
+    "why": "[b281] 13.7 no second at all once the change is shown"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/choose.tsx",
+    "find": "if (at === Infinity) changedUntil.current.set(id, until);\n      redraw((n) => n + 1);",
+    "replace": "if (at === Infinity) changedUntil.current.set(id, until);",
+    "why": "[b281] 13.7 the item never takes a tap again"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/choose.tsx",
+    "find": "if (at === Infinity) changedUntil.current.set(id, until);\n",
+    "replace": "\n",
+    "why": "[b281] 13.7 the hold never ends"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/choose.tsx",
+    "find": "if (target.kind === 'spending' && (options.wishlistItems?.length ?? 0) > 0 && putsInWishlist(choice)) {",
+    "replace": "if ((options.wishlistItems?.length ?? 0) > 0 && putsInWishlist(choice)) {",
+    "why": "[her-other] 7.8 money in asks which thing on her list it was"
+  },
+  {
+    "section": "home",
+    "file": "packages/web/src/screens/Buckets.tsx",
+    "find": "{...(line.card !== 'old-card' && cardNames() !== null ? { href: statementPath(line.card) } : {})}",
+    "replace": "",
+    "why": "[her-other] 9.9 a card on Buckets does not open its statement"
+  },
+  {
+    "section": "words",
+    "file": "packages/web/src/screens/cards-text.ts",
+    "find": "    case 'other':\n      return 'Other';",
+    "replace": "    case 'other':\n      return 'Still unsorted';",
+    "why": "[her-other] 52.4 the Other group is called still unsorted"
+  },
+  {
+    "section": "words",
+    "file": "packages/web/src/screens/buckets-text.ts",
+    "find": "`${STATEMENT_NAMES[line.card]} statement`",
+    "replace": "'Your card statement'",
+    "why": "[her-other] 9.9 the row does not name the card"
+  },
+  {
+    "section": "words",
+    "file": "packages/web/src/screens/buckets-text.ts",
+    "find": "const STATEMENT_NAMES = withCardNames({ 'everyday-card': 'Everyday card', 'second-card': 'Second card' } as const);",
+    "replace": "const STATEMENT_NAMES = { 'everyday-card': 'Everyday card', 'second-card': 'Second card' } as const;",
+    "why": "[her-other] 9.9 the row ignores her bank's name for the card"
   }
 ]

@@ -1,17 +1,19 @@
 import type { BucketsShown as BucketsView } from '@budget-app/server/views';
 import { useState } from 'react';
 import type { Load, Reload } from '../app/api.js';
-import { activityPath, pathOf } from '../app/routes.js';
+import { activityPath, pathOf, statementPath } from '../app/routes.js';
 import { BucketBar, Button, Card, Hero, ListRow, MadeUpPill, Money, Skeleton, StateMessage, TargetBar } from '../ui/blocks.js';
 import { longDate, monthName } from '../ui/dates.js';
+import { cardNames } from '../ui/card-names.js';
 import { Icon } from '../ui/Icon.js';
-import { onItsWayDetail, onItsWayTitle } from './buckets-text.js';
+import { cardStatementDetail, cardStatementTitle, onItsWayDetail, onItsWayTitle } from './buckets-text.js';
 import { SaidNotice, type Said } from './choose.js';
 import { MoveMoney } from './Move.js';
 import { CheckBanner } from './check-banner.js';
+import { cardsOffText } from './home-text.js';
 
 // Buckets: what is left in each bucket, the mom reserve with this month
-// against the target, money held for others, and the old card debt. The one
+// against the target, Other, and the old card debt. The one
 // main number is everything in the buckets (12.2). Every number comes from
 // the server, worked out by the money math. Each bucket opens the list of
 // what went in and out of it (B97), money can be moved between them by hand
@@ -62,9 +64,9 @@ type Tracking = Extract<BucketsView, { state: 'tracking' }>;
 
 // 7.3, B22
 const HELD_WORDS = {
-  settled: 'Settled: nothing held either way',
-  'holding-for-others': "Holding money that isn't yours",
-  'owed-to-you': 'Someone owes you',
+  settled: 'Not in Needs or Wants. Nothing here now.',
+  'holding-for-others': 'Not in Needs or Wants.',
+  'owed-to-you': 'More went out than came in. Move money in to clear it.',
 } as const;
 
 function BucketsReady({ view, reload, onChanged }: { readonly view: Tracking; readonly reload: Reload; readonly onChanged: Reload }) {
@@ -134,7 +136,7 @@ function BucketsReady({ view, reload, onChanged }: { readonly view: Tracking; re
         )}
         <ListRow
           icon="people"
-          title="Held for others"
+          title="Other"
           detail={HELD_WORDS[heldForOthers.meaning]}
           trailing={<Money cents={heldForOthers.heldForOthers} roll testId="held-for-others" />}
           href={activityPath('heldForOthers')}
@@ -146,7 +148,7 @@ function BucketsReady({ view, reload, onChanged }: { readonly view: Tracking; re
         <ListRow
           icon="move"
           title="Move money between buckets"
-          detail={momReserve !== undefined ? 'Needs, wants, savings, the mom reserve, or money held for others' : view.wishlist !== undefined ? 'Needs, wants, Wishlist, savings, or money held for others' : 'Needs, wants, savings, or money held for others'}
+          detail={momReserve !== undefined ? 'Needs, wants, savings, the mom reserve, or Other' : view.wishlist !== undefined ? 'Needs, wants, Wishlist, savings, or Other' : 'Needs, wants, savings, or Other'}
           onClick={() => setMoving(true)}
           testId="move-open"
         />
@@ -211,6 +213,28 @@ function BucketsReady({ view, reload, onChanged }: { readonly view: Tracking; re
               testId={`transit-${item.id}`}
             />
           ))}
+        </Card>
+      )}
+
+      {/* 9.9: each card's statement at any time, and any card whose reminders are off (9.8). */}
+      {(view.cards.statements.length > 0 || view.cards.off.length > 0) && (
+        <Card title="Card statements" testId="card-statements">
+          {view.cards.statements.map((line) => (
+            <ListRow
+              key={line.card}
+              icon={line.standing === 'overdue' ? 'alert' : line.standing === 'paid' ? 'check' : 'card'}
+              tone={line.standing === 'overdue' ? 'danger' : 'info'}
+              title={cardStatementTitle(line)}
+              detail={cardStatementDetail(line)}
+              trailing={<Money cents={line.statementBalance ?? line.minimumPayment} testId={`statement-${line.card}-amount`} />}
+              {...(line.card !== 'old-card' && cardNames() !== null ? { href: statementPath(line.card) } : {})}
+              testId={`statement-${line.card}`}
+            />
+          ))}
+          {view.cards.off.map((off) => {
+            const words = cardsOffText(off);
+            return <ListRow key={off.card} icon="alert" tone="warning" title={words.title} detail={words.detail} {...(off.why === 'no-statement-date' ? { href: pathOf('settings') } : {})} testId={`statement-off-${off.card}`} />;
+          })}
         </Card>
       )}
 

@@ -261,6 +261,44 @@ const examples: Record<number, () => Record<string, Cents>> = {
       'bike has after': after.items.find((i) => i.name === 'Bike')?.has ?? -1,
     };
   },
+
+  19: () => {
+    const book = herBook({ needs: parseDollars('500.00'), wants: parseDollars('300.00'), wishlist: parseDollars('200.00') });
+    book.receive(purchase('tickets', '2026-10-05', parseDollars('80.00'), 'MADE UP TICKETS', { account: 'second-card' }));
+    book.sort('tickets', { to: 'not-mine' }, '2026-10-05');
+    const afterTickets = book.pots().heldForOthers;
+    const safe = book.safeToSpend('2026-10-05').amount;
+    book.receive(purchase('both', '2026-10-07', parseDollars('100.00'), 'MADE UP SHOP', { account: 'everyday-card' }));
+    book.sort('both', { split: [{ bucket: 'not-mine', amount: parseDollars('60.00') }, { bucket: 'wishlist', amount: parseDollars('25.00') }, { bucket: 'wants', amount: parseDollars('15.00') }] }, '2026-10-07');
+    const afterSplit = book.pots();
+    book.receive(deposit('back', '2026-10-09', parseDollars('140.00'), 'MADE UP FRIEND'));
+    book.sort('back', { to: 'not-mine' }, '2026-10-09');
+    return {
+      'other after the tickets': afterTickets,
+      'safe to spend after the tickets': safe,
+      'other after the split': afterSplit.heldForOthers,
+      'wishlist after the split': afterSplit.wishlist ?? -1,
+      'wants after the split': afterSplit.wants,
+      'other after being paid back': book.pots().heldForOthers,
+    };
+  },
+
+  20: () => {
+    const book = herBook({ savings: parseDollars('2,000.00'), wants: parseDollars('150.00'), wishlist: parseDollars('300.00') });
+    const inSavings = { savingsAccountBalance: parseDollars('2,500.00'), statements: {}, today: '2026-10-06' };
+    book.receive(purchase('lamp', '2026-10-04', parseDollars('90.00'), 'MADE UP LAMPS', { account: 'checking' }));
+    book.sort('lamp', { to: 'wishlist' }, '2026-10-04');
+    const before = wishlistMove(book, inSavings)?.amount ?? -1;
+    book.receive(deposit('cash', '2026-10-06', parseDollars('140.00'), 'MADE UP ATM DEPOSIT'));
+    book.sort('cash', { split: [{ bucket: 'not-mine', amount: parseDollars('100.00') }, { bucket: 'wishlist', amount: parseDollars('25.00') }, { bucket: 'wants', amount: parseDollars('15.00') }] }, '2026-10-06');
+    return {
+      'move after the lamp': before,
+      'other after the deposit': book.pots().heldForOthers,
+      'wishlist after the deposit': book.pots().wishlist ?? -1,
+      'wants after the deposit': book.pots().wants,
+      'move after the deposit': wishlistMove(book, inSavings)?.amount ?? -1,
+    };
+  },
 };
 
 // Example 14: savings 2,000.00, Wishlist 300.00 and wants 150.00; headphones

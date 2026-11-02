@@ -25,12 +25,12 @@ import type { FoundGroup, FoundPreview } from './rule-finder.js';
 // A part of a split (4.4, 7.6). 'rest' is whatever the other parts leave: the
 // money math works it out, so the screen never subtracts.
 export interface ChoicePart {
-  readonly bucket: 'needs' | 'wants' | 'wishlist' | 'not-mine';
+  readonly bucket: 'needs' | 'wants' | 'wishlist' | 'not-mine' | 'savings';
   readonly amount: Cents | 'rest';
 }
 
 export type ChoiceOf =
-  // One tap: a bucket, other income, my paycheck, not mine, for mom.
+  // One tap: a bucket, other income, my paycheck, Other, for mom.
   | { readonly to: PickTo }
   | { readonly split: readonly ChoicePart[] }
   // "Transfer between my accounts" (5.6), with that account.

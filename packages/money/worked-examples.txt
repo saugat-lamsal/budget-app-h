@@ -1320,3 +1320,71 @@ If the Oct 30 paycheck comes a day early, on Thu, Oct 29, the payday it is
 nearest is still Oct 30, so the next one is still Nov 13.
 
 Check: twice a month share 469.14 | every fourteen days share 390.95
+
+
+EXAMPLE 43. A friend's cash, deposited and sent on (rules 7.1, 7.2, 7.7; QUESTIONS.md A60)
+
+Made-up numbers. Needs 1,000.00, wants 500.00, nothing held for others.
+
+Oct 5. A friend gives him 200.00 in cash. He deposits it. It waits in review;
+       he picks Not mine. Held for others 200.00. Needs and wants do not move.
+Oct 6. He sends it on through Zelle, from savings. The bank's words read as
+       money leaving savings, and it waits in review; he picks Not mine.
+       Held for others 200.00 - 200.00 = 0.00. Needs and wants do not move.
+Oct 7. He sends 85.00, of which 15.00 was his share of a dinner. He splits it:
+       Wants 15.00 and Not mine 70.00.
+       Wants 500.00 - 15.00 = 485.00. Held for others 0.00 - 70.00 = -70.00,
+       which means someone owes him, until that friend pays him (7.3).
+
+Check: held after the deposit 200.00 | held after sending it on 0.00
+Check: last needs 1,000.00 | last wants 485.00 | last held -70.00
+
+
+EXAMPLE 44. A card's statement, at any time (rules 9.3, 9.4, 9.9; QUESTIONS.md A61)
+
+Made-up numbers. The everyday card's statement closed Oct 5 at 250.00, with a
+25.00 minimum, due Nov 1.
+
+On Oct 10 that is 22 days away, 15 days before the first reminder day, so Home
+says nothing and Buckets shows the statement: still to pay.
+After a 100.00 payment on Oct 10: 100.00 paid, still to pay, since the everyday
+card asks for the full statement balance (9.3).
+After 250.00 instead: paid.
+On Nov 2, the day after the due date:
+  with 100.00 paid, the minimum was met and the rest was not: no overdue alert
+  (9.4), and Buckets says so.
+  with nothing paid: overdue.
+
+Check: statement balance 250.00 | minimum 25.00 | paid in part 100.00
+
+
+EXAMPLE 45. A friend's cash, part theirs and part what they owed, sent on first (rules 7.3, 7.7, 7.8; QUESTIONS.md A62, A63)
+
+Made-up numbers. Needs 1,000.00, wants 500.00, nothing in Other.
+
+A friend hands him 140.00 in cash: 125.00 to send back to them, and 15.00 they
+owed him. The app reads only the bank, so the cash is not in it yet.
+
+Oct 5. He sends the 125.00 through Zelle. He marks it Other.
+       Other 0.00 - 125.00 = -125.00: more went out than came in, for now.
+Oct 8. He deposits the 140.00 and splits it: Other 125.00, and Wants gets the
+       rest, 15.00.
+       Other -125.00 + 125.00 = 0.00. Wants 500.00 + 15.00 = 515.00.
+       Needs does not move.
+
+Check: other after sending it on -125.00 | other after the deposit 0.00
+Check: last wants 515.00 | last needs 1,000.00
+
+
+EXAMPLE 46. Something bought for a friend on the everyday card (rules 7.1, 7.7, 11.3; QUESTIONS.md A64)
+
+Made-up numbers. Needs 1,000.00, wants 500.00, nothing in Other, and nothing
+waiting in review, so safe to spend is 500.00.
+
+Oct 5. He buys tickets for a friend on the everyday card, 80.00. He marks them
+       Other. Other 0.00 - 80.00 = -80.00. Wants does not move, so safe to
+       spend is still 500.00.
+Oct 9. The friend pays him back, 80.00. He marks it Other.
+       Other -80.00 + 80.00 = 0.00.
+
+Check: other after buying -80.00 | other after being paid back 0.00 | safe to spend 500.00

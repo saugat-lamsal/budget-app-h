@@ -58,7 +58,7 @@ describe('the tab bar says where you are', () => {
   it('each screen has a title for the tab of the browser', () => {
     expect(routeTitle({ screen: 'activity', pot: 'needs' })).toBe('Needs · Budget');
     expect(routeTitle({ screen: 'activity', pot: 'momReserve' })).toBe('Mom reserve · Budget');
-    expect(routeTitle({ screen: 'activity', pot: 'heldForOthers' })).toBe('Held for others · Budget');
+    expect(routeTitle({ screen: 'activity', pot: 'heldForOthers' })).toBe('Other · Budget');
     expect(routeTitle({ screen: 'payday' })).toBe('Payday · Budget');
     expect(routeTitle({ screen: 'tab', tab: 'home' })).toBe('Home · Budget');
   });
