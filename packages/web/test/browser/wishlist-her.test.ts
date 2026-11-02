@@ -124,7 +124,6 @@ describe.each(ENGINES)('her Wishlist on the screens, in %s', (_name, engine) => 
       await sheet.waitFor();
       expect(words(await sheet.getByTestId('split-rest').innerText())).toBe('Wants gets the rest.');
       await sheet.getByTestId('split-needs').fill('30.00');
-      await sheet.getByTestId('split-wants').fill('20.00');
       await sheet.getByTestId('split-submit').click();
       await item(page, 'gadget-1').waitFor({ state: 'detached' });
       const after = life.keeper.book()!.pots();

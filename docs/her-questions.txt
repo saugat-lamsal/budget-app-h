@@ -15,6 +15,15 @@ PART A. WAITING FOR AN ANSWER
 
 PART A, ANSWERED
 
+HA12 (7.7, 7.8, 9.9, 52.4). ANSWERED Nov 1: yes to all five. As asked, on
+    bringing in upstream's Other, split deposits and statements: (1) Wishlist
+    is a part of a deposit split; (2) Wishlist stays a part of a purchase
+    split with Other, and a payment to a person stays needs, wants, Other;
+    (3) Wants gets the rest on a purchase's split sheet, which changes what
+    she had (Wishlist got it, HB30) and one test of hers; (4) a purchase on
+    both her cards can be marked Other, and her statement gets an Other
+    group; (5) the rule text as drafted. Rulebook 60j.
+
 HA9 to HA11: from her rehearsal on the test bank (Oct 27, 2026), asked and
 answered the same day.
 
@@ -586,3 +595,39 @@ HB38 (her rehearsal, Oct 27, 2026; 1.2, 13.5, 53.1, HA10). Screens fixed
       hers, and accounts read before it would have none. Her real
       accounts have names of their own (the test bank's two "••3333" were
       a made-up coincidence). Ask if wanted.
+
+HB39 (7.1 to 7.3, 60j). Other is words only, as upstream's A62. Inside, the
+    books still say heldForOthers and not-mine, and the address stays
+    /buckets/held-for-others, so the history replays as it was. The sheet says
+    "Other (not Needs or Wants)" and Buckets "Not in Needs or Wants.", his
+    words, though Other is not in Wishlist either. Her dated answers above
+    section 60 keep the old words.
+
+HB40 (7.7, 7.8, 52.4). A purchase on a card marked Other is still on the card,
+    so her statement lists it under its own group, Other, after Wishlist, and
+    its refund under the same group. A refund on a card that waited in review
+    and was then sorted by hand reads as it did: into needs, wants or Wishlist
+    it is under that bucket, and into Other or savings it is a credit, like a
+    payment. Split, each part reads the same way. A split refund the bank takes
+    back comes out the same way on the statement it came in.
+
+HB41 (4.4, 50.3, HB30, 60j). Wants gets the rest on every purchase's sheet, so
+    "Which thing on your list was it?" comes only when she typed a Wishlist
+    amount; HB30's odd question on a Needs and Wants split is gone from the
+    screen. The server still takes Wishlist as the rest, and HB30's split with
+    nothing left. Money in never asks which thing: it is not a purchase, so
+    the sheet no longer asks for a whole payback into Wishlist either, where
+    picking a thing was refused anyway.
+
+HB42 (9.9, 9.3, 60i, 52.1). Buckets counts payments from before setup day, as
+    Home and the alerts do; upstream's reads only the books', which would say
+    overdue for a statement she had paid. Home (52.1) and Buckets both show the
+    cards: Home says what it owes and what is set aside, and Buckets is the
+    statement and where it stands. A row opens that card's statement; a row in
+    upstream's setup opens nothing, since that setup has no statement screen.
+
+HB43 (merging). These came in by a real merge of upstream/main (his 24048bf,
+    b400ebe, 06a6592, 44b56fe), as docs/her-merging.txt says, conflicts settled
+    for her setup. Upstream's rulebook sections 43 and 44 are not copied: 60j
+    says the same for her. Upstream's QUESTIONS.md came with the merge
+    unedited, as his history.
