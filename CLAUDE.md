@@ -536,3 +536,11 @@ or "Due" on Wishlist items and cards, never color alone.
   - Break-it: "[her-other]" 23 of 23, and "[a60]", "[a61]", "[a62]", "[a63]",
     "[b281]" and 5 older breaks pointed at the code again, 70 of 70; each judged
     with --only by its own test file, the screens' in Chromium.
+- PR #23 merged and deployed Nov 1, 2026, at his word: CI green on all four
+  checks, the deploy check on main (every event replays, "The backup works."),
+  then that exact image (deploy-check-20261102t002423z). One machine on
+  budget_h_real; /health and /health/backups ok, /api/home and /api/buckets 401
+  without a login, http sent to https, the webhook address refuses GET and an
+  unsigned call; the restore check on the machine: "The backup works." The way
+  back is the image deployment-01M5ZYDRQ60T08NJMWABZQBTT2. Not yet seen on her
+  phone.
